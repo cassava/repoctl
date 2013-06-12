@@ -1,0 +1,5 @@
+A brief explanation of the files in this directory:
+
+    `zsh_completion`: In case you use Zsh, you can install the Zsh completion
+        file for repo-keep, which makes using `repo` much easier. Put it in
+        the directory `/usr/share/zsh/site-functions/` as the file `_repo`.
