@@ -1,27 +1,29 @@
 package actions
 
 import (
-	"bytes"
-	"strings"
-	"unicode/utf8"
+	"fmt"
+	"sort"
 
-	"code.google.com/p/go.crypto/ssh/terminal"
-	"github.com/cassava/little/pr"
+	//"github.com/goulash/pr"
 )
 
 // List displays all the packages available for the database.
 // Note that they don't need to be registered with the database.
 func List() {
-	var list []string
-	// Get a list of all the files that match the pattern
+	files, err := readPackageFiles("/home/benmorgan/")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
-	// Extract the package names from the files
+	// Extract the package names from the files.
+	pkgs := readPackageNames(files)
 
-	// Sort the names into a list
+	// Sort the names into a list.
+	sort.StringSlice(pkgs).Sort()
+	list := uniq(pkgs)
 
-	// Print the list as columns
-
-	// If GetSize fails, width is -1, and Printc prints single column.
-	width, _, _ := terminal.GetSize()
-	pr.Printc(list, width)
+	// Print the list as a grid, like ls always does it.
+	//pr.PrintAutoGrid(pkgs)
+	fmt.Println(list)
 }

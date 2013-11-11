@@ -1,7 +1,5 @@
 package main
 
-import "fmt"
-
 const (
 	progName    = "repo"
 	progVersion = "2.0.0"

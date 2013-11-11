@@ -1,3 +1,4 @@
 package actions
 
-func Update()
+func Update() {
+}

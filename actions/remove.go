@@ -1,3 +1,4 @@
 package actions
 
-func Remove()
+func Remove() {
+}

@@ -1,14 +1,11 @@
 package actions
 
-type Configuration struct {
-	Soft      bool
-	Verbose   bool
-	NoConfirm bool
+// readPackages gets a list of all the files that match the pattern
+// in pkgExt.
+func readPackageFiles(path string) ([]string, error) {
+	return nil, nil
+}
 
-	ConfigFile   string
-	DatabaseName string
-	DatabaseDir  string
-	DatabasePath string
-
-	Packages []string
+func readPackageNames(files []string) []string {
+	return nil
 }
