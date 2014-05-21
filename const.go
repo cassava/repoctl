@@ -3,7 +3,7 @@ package main
 const (
 	progName    = "repo"
 	progVersion = "2.0.0"
-	progDate    = "7. June 2013"
+	progDate    = "21. May 2014"
 	progString  = progName + " " + progVersion + " (" + progDate + ")"
 
 	configPath = "~/.repo.conf"
@@ -11,8 +11,8 @@ const (
 	sysRepoAdd    = "/usr/bin/repo-add"
 	sysRepoRemove = "/usr/bin/repo-remove"
 
-	pkgStrictExt  = "-[0-9][a-z0-9._]*-[0-9]+-(any|i686|x86_64).pkg.tar.(gz|bz2|xz)$"
-	pkgLenientExt = "-[0-9].*-[0-9]+-(any|i686|x86_64).pkg.tar.(gz|bz2|xz)$"
+	pkgStrictExt  = "-[0-9]+-(any|i686|x86_64).pkg.tar.(gz|bz2|xz)$"
+	pkgLenientExt = ".pkg.tar.(gz|bz2|xz)$"
 	pkgExt        = pkgLenientExt
 )
 

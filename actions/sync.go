@@ -1,4 +1,0 @@
-package actions
-
-func Sync() {
-}

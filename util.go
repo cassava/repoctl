@@ -1,4 +1,4 @@
-package actions
+package main
 
 // uniq returns a slice with all the duplicate elements in input removed;
 // input must be sorted such that same elements are next to each other.

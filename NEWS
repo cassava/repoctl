@@ -1,9 +1,10 @@
-NEWS: REPO-KEEP                                                     05.07.2012
+NEWS: REPOCTL                                                       22.05.2014
 ===============================================================================
 
-# 2.0.0 (7. June 2012)
-This release rewrites repo-keep in the Go programming language.
-I hope you aren't disappointed. It was fun. :-)
+# 2.0.0 (22. May 2014)
+This release rewrites repo-keep in the Go programming language. Additionally
+we have changed the name from repo-keep to repoctl, because it's a name I can
+actually use just like it is. I hope you aren't disappointed. It was fun. :-)
 
 # 1.9.4 (5. July 2012)
 This release is repo-keep considered stable enough, with all commands available
@@ -27,7 +28,6 @@ improvements have been made to the concept (hence the name change).
   - Available commands: add, remove, (sync, update)
     Right now, sync and update do not work
   - See help for options
-
 
 # 1.4.1 (20. April 2011)
 This release just adds a Zsh completion script for repo-update,
