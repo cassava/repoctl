@@ -57,10 +57,10 @@ type Package struct {
 func (pkg *Package) VersionLess(alt *Package) bool {
 	// If the Epoch values are different, the package with the higher
 	// Epoch value is always more recent.
-	if pi.Epoch != pkg.Epoch {
-		return pi.Epoch < pkg.Epoch
+	if pkg.Epoch != alt.Epoch {
+		return pkg.Epoch < alt.Epoch
 	}
-	return pi.Version < pkg.Version
+	return pkg.Version < alt.Version
 }
 
 // HasPackageFormat returns true if the filename matches a known
@@ -89,7 +89,7 @@ func ReadPackage(path string) (*Package, error) {
 	}
 
 	info.Filename = path
-	return info
+	return info, nil
 }
 
 // readPackageInfo reads the package information from a pacman package.
@@ -99,6 +99,8 @@ func ReadPackage(path string) (*Package, error) {
 // Even if you don't, nothing bad should happen, but just in case.
 func readPackageInfo(r io.Reader) (*Package, error) {
 	var info Package
+	var err error
+
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -168,7 +170,7 @@ func readPackageInfo(r io.Reader) (*Package, error) {
 			log.Printf("Warning: unknown field '%s' in .PKGINFO\n", kv[0])
 		}
 	}
-	if err := scanner.Err(); err != nil {
+	if err = scanner.Err(); err != nil {
 		return nil, err
 	}
 
@@ -195,6 +197,7 @@ func GetAllPackages(path string) []*Package {
 			pkgs = append(pkgs, p)
 		}
 
+		return nil
 	})
 
 	return pkgs
@@ -209,7 +212,7 @@ func GetAllMatchingPackages(path, pkgname string) []*Package {
 			log.Printf("Warning: %s\n", err)
 			return nil
 		}
-		if !info.Mode().IsDir() && strings.HasPrefix(pkgname) && HasPackageFormat(path) {
+		if !info.Mode().IsDir() && strings.HasPrefix(path, pkgname) && HasPackageFormat(path) {
 			p, err := ReadPackage(path)
 			if err != nil {
 				log.Printf("Warning: %s\n", err)
@@ -221,6 +224,7 @@ func GetAllMatchingPackages(path, pkgname string) []*Package {
 			}
 		}
 
+		return nil
 	})
 
 	return pkgs

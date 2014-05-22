@@ -1,3 +1,7 @@
+// Copyright (c) 2014, Ben Morgan. All rights reserved.
+// Use of this source code is governed by an MIT license
+// that can be found in the LICENSE file.
+
 package main
 
 // uniq returns a slice with all the duplicate elements in input removed;
@@ -10,12 +14,11 @@ func uniq(input []string) []string {
 		return []string{}
 	}
 
-	output := make([]string, 0, n)
-	var head string
-	for _, v := range input {
-		if head != v {
-			output = append(output, head)
-			head = v
+	output := make([]string, 1, n)
+	output[0] = input[0]
+	for _, v := range input[1:] {
+		if output[len(output)-1] != v {
+			output = append(output, v)
 		}
 	}
 	return output
