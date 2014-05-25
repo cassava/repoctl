@@ -58,6 +58,6 @@ type Configuration struct {
 func main() {
 	args := os.Args[1:]
 	for _, dir := range args {
-		List(dir)
+		List(dir, ListDefault)
 	}
 }
