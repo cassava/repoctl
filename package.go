@@ -204,7 +204,7 @@ func GetAllPackages(path string) []*Package {
 }
 
 // Note that we recurse into subdirectories.
-func GetAllMatchingPackages(path, pkgname string) []*Package {
+func GetMatchingPackages(path, pkgname string) []*Package {
 	var pkgs []*Package
 
 	filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
@@ -226,6 +226,33 @@ func GetAllMatchingPackages(path, pkgname string) []*Package {
 
 		return nil
 	})
+
+	return pkgs
+}
+
+// Note that we do not recurse into subdirectories!
+func GetAllMatchingPackages(path string, pkgnames []string) []*Package {
+	var pkgs []*Package
+
+	for _, n := range pkgnames {
+		matches, err := filepath.Glob(filepath.Join(path, n+"-*.pkg.tar.*"))
+		if err != nil {
+			log.Printf("Warning: cannot find package %s.\n", n)
+			continue
+		}
+
+		for _, fp := range matches {
+			p, err := ReadPackage(fp)
+			if err != nil {
+				log.Printf("Warning: %s\n.", err)
+				continue
+			}
+
+			if p.Name == n {
+				pkgs = append(pkgs, p)
+			}
+		}
+	}
 
 	return pkgs
 }
