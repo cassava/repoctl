@@ -12,6 +12,11 @@ import (
 	"github.com/goulash/pr"
 )
 
+const (
+	sysRepoAdd    = "/usr/bin/repo-add"
+	sysRepoRemove = "/usr/bin/repo-remove"
+)
+
 type ListFlag int
 
 const (
@@ -78,6 +83,13 @@ const (
 	Confirm    ModFlag = 1 << iota
 	NoDelete
 	Verbose
+
+	// FastUpdate considers adding only packages that are newer than the database
+	// file itself.
+	//
+	// Caveat: This option can easily cause the Update() command to miss packages
+	// that it would otherwise find; use with caution.
+	FastUpdate
 )
 
 func (f ModFlag) Is(o ModFlag) bool {
