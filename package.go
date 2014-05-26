@@ -283,3 +283,7 @@ func SplitOldPackages(pkgs []*Package) (updated []*Package, old []*Package) {
 
 	return updated, old
 }
+
+func SearchAUR(pkgname string) []*Package {
+	//https://aur.archlinux.org/rpc.php?type=info&arg=dropbox
+}
