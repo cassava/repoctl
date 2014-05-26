@@ -17,32 +17,10 @@ const (
 	sysRepoRemove = "/usr/bin/repo-remove"
 )
 
-type ListFlag int
-
-const (
-	// ListDefault effects no change to the way packages are printed. The
-	// default is to print all package names in columns.
-	ListDefault ListFlag = 0
-
-	// OnePackagePerLine causes each package to be printed on it's own line
-	// instead of printing them in columns.
-	OnePackagePerLine ListFlag = 1 << iota
-
-	// ShowVersion causes the (highest) package version to be shown:
-	ShowVersion
-
-	// ShowDuplicates causes the number of duplicate packages to be shown.
-	ShowDuplicates
-)
-
-func (f ListFlag) Is(o ListFlag) bool {
-	return f&o != 0
-}
-
 // List displays all the packages available for the database.
 // Note that they don't need to be registered with the database.
-func List(dbdir string, flags ListFlag) {
-	pkgs := GetAllPackages(dbdir)
+func List(c *Config) {
+	pkgs := GetAllPackages(c.RepoPath)
 	updated, old := SplitOldPackages(pkgs)
 
 	// Find out how many old duplicates each package has.
@@ -55,10 +33,10 @@ func List(dbdir string, flags ListFlag) {
 	var pkgnames []string
 	for _, p := range updated {
 		name := p.Name
-		if flags.Is(ShowVersion) {
+		if c.Versioned {
 			name += fmt.Sprintf(" %s", p.Version)
 		}
-		if flags.Is(ShowDuplicates) && dups[p.Name] > 0 {
+		if c.Duplicates && dups[p.Name] > 0 {
 			name += fmt.Sprintf(" [%v]", dups[p.Name])
 		}
 		pkgnames = append(pkgnames, name)
@@ -67,39 +45,19 @@ func List(dbdir string, flags ListFlag) {
 	sort.Strings(pkgnames)
 
 	// Print packages to stdout
-	if flags.Is(OnePackagePerLine) {
+	if c.Columnated {
+		pr.PrintAutoGrid(pkgnames)
+	} else {
 		for _, pkg := range pkgnames {
 			fmt.Println(pkg)
 		}
-	} else {
-		pr.PrintAutoGrid(pkgnames)
 	}
-}
-
-type ModFlag int
-
-const (
-	ModDefault ModFlag = 0
-	Confirm    ModFlag = 1 << iota
-	NoDelete
-	Verbose
-
-	// FastUpdate considers adding only packages that are newer than the database
-	// file itself.
-	//
-	// Caveat: This option can easily cause the Update() command to miss packages
-	// that it would otherwise find; use with caution.
-	FastUpdate
-)
-
-func (f ModFlag) Is(o ModFlag) bool {
-	return f&o != 0
 }
 
 // Add finds the newest packages given in pkgs and adds them, removing the old
 // packages.
-func Add(dbdir, dbname string, pkgs []string, flags ModFlag) {
-	pkgs := GetAllMatchingPackages(dbdir, pkgs)
+func Add(c *Config) {
+	pkgs := GetAllMatchingPackages(c.RepoPath, c.Args)
 	updated, old := SplitOldPackages(pkgs)
 
 	// Find out how many old duplicates each package has.
@@ -108,27 +66,47 @@ func Add(dbdir, dbname string, pkgs []string, flags ModFlag) {
 		dups[p.Name]++
 	}
 
+	if c.Confirm {
+		fmt.Println("The following packages will be added to the database:")
+		// TODO
+		return
+	}
 	addPackages(updated)
 
-	if !flags.Is(NoDelete) {
+	if c.Delete {
+		if c.Confirm {
+			fmt.Println("The following outdated packages will be deleted:")
+			// TODO
+			return
+		}
 		for _, p := range old {
-			if flags.Is(Verbose) {
-				fmt.Printf("removing %s...", p.Filepath)
-				// TODO: continue here...
+			if c.Verbose {
+				fmt.Printf("removing %s...", p.Filename)
 			}
-			err := os.Remove(p.Filepath)
+			err := os.Remove(p.Filename)
+			if err != nil {
+				fmt.Printf("error:", err)
+			}
 		}
 	}
 }
 
-func Remove(dbdir, dbname string, pkgs []string, flags ModFlag) {
+func Remove(c *Config) {
 
 }
 
-func Update(dbdir, dbname string, flags ModFlag) {
+func Update(c *Config) {
 
 }
 
-func Sync(dbdir string) {
+func Sync(c *Config) {
+
+}
+
+func addPackages(pkgs []*Package) {
+
+}
+
+func removePackages(pkgs []*Package) {
 
 }

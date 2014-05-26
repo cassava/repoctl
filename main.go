@@ -4,25 +4,14 @@
 
 package main
 
-import "os"
-
-const (
-	progName    = "repo"
-	progVersion = "2.0.0"
-	progDate    = "22. May 2014"
-	progString  = progName + " " + progVersion + " (" + progDate + ")"
-
-	configPath = "~/.repo.conf"
-
-	sysRepoAdd    = "/usr/bin/repo-add"
-	sysRepoRemove = "/usr/bin/repo-remove"
-
-	pkgStrictExt  = "-[0-9]+-(any|i686|x86_64).pkg.tar.(gz|bz2|xz)$"
-	pkgLenientExt = ".pkg.tar.(gz|bz2|xz)$"
-	pkgExt        = pkgLenientExt
+import (
+	"fmt"
+	"os"
 )
 
-const usage = `
+func Help() {
+	fmt.Printf("%s %s (%s)\n", progName, progVersion, progDate)
+	fmt.Println(`
 Manage local pacman repositories.
 
 Commands available:
@@ -41,23 +30,36 @@ Commands available:
 
 NOTE: In all of these cases, <pkgname> is the name of the package, without
 anything else. For example: pacman, and not pacman-3.5.3-1-i686.pkg.tar.xz
-`
+`)
 
-type Configuration struct {
-	Verbose bool
-	Confirm bool
-
-	ConfigFile   string
-	DatabaseName string
-	DatabaseDir  string
-	DatabasePath string
-
-	PackageNames []string
 }
 
 func main() {
-	args := os.Args[1:]
-	for _, dir := range args {
-		List(dir, ListDefault)
+	if len(os.Args) == 1 {
+		Help()
+		os.Exit(1)
+	}
+
+	config := NewConfig("/srv/abs", "atlas.db.tar.gz")
+	config.Args = os.Args[2:]
+	cmd := os.Args[1]
+
+	switch cmd {
+	case "list", "ls":
+		List(config)
+	case "update":
+		Update(config)
+	case "add":
+		Add(config)
+	case "remove", "rm":
+		Remove(config)
+	case "synchronize", "sync":
+		Sync(config)
+	case "help":
+		Help()
+	default:
+		fmt.Printf("Error: unrecognized command '%s'\n", cmd)
+		Help()
+		os.Exit(1)
 	}
 }
