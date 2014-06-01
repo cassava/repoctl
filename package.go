@@ -92,6 +92,122 @@ func ReadPackage(path string) (*Package, error) {
 	return info, nil
 }
 
+// GetAllPackages takes a directory path as an argument, and
+// then reads all the package information into a list.
+func GetAllPackages(path string) []*Package {
+	var pkgs []*Package
+
+	filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			log.Printf("Warning: %s\n", err)
+			return nil
+		}
+		if !info.Mode().IsDir() && HasPackageFormat(path) {
+			p, err := ReadPackage(path)
+			if err != nil {
+				log.Printf("Warning: %s\n", err)
+				return nil
+			}
+
+			pkgs = append(pkgs, p)
+		}
+
+		return nil
+	})
+
+	return pkgs
+}
+
+// Note that we recurse into subdirectories.
+func GetMatchingPackages(path, pkgname string) []*Package {
+	var pkgs []*Package
+
+	filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			log.Printf("Warning: %s\n", err)
+			return nil
+		}
+		if !info.Mode().IsDir() && strings.HasPrefix(path, pkgname) && HasPackageFormat(path) {
+			p, err := ReadPackage(path)
+			if err != nil {
+				log.Printf("Warning: %s\n", err)
+				return nil
+			}
+
+			if p.Name == pkgname {
+				pkgs = append(pkgs, p)
+			}
+		}
+
+		return nil
+	})
+
+	return pkgs
+}
+
+// Note that we do not recurse into subdirectories!
+func GetAllMatchingPackages(path string, pkgnames []string) []*Package {
+	var pkgs []*Package
+
+	for _, n := range pkgnames {
+		matches, err := filepath.Glob(filepath.Join(path, n+"-*.pkg.tar.*"))
+		if err != nil {
+			log.Printf("Warning: cannot find package %s.\n", n)
+			continue
+		}
+
+		for _, fp := range matches {
+			p, err := ReadPackage(fp)
+			if err != nil {
+				log.Printf("Warning: %s\n.", err)
+				continue
+			}
+
+			if p.Name == n {
+				pkgs = append(pkgs, p)
+			}
+		}
+	}
+
+	return pkgs
+}
+
+func SearchAUR(pkgname string) ([]*Package, error) {
+	//https://aur.archlinux.org/rpc.php?type=info&arg=dropbox
+	return nil, implErr
+}
+
+func ReadPackagesFromDatabase(dbpath string) ([]*Package, error) {
+	return nil, implErr
+}
+
+// SplitOldPackages splits the input array into one containing the newest
+// packages and another containing the outdated packages.
+func SplitOldPackages(pkgs []*Package) (updated []*Package, old []*Package) {
+	var m = make(map[string]*Package)
+
+	// Find out which packages are newest and put the others in the old array.
+	for _, p := range pkgs {
+		if cur, ok := m[p.Name]; ok {
+			if cur.VersionLess(p) {
+				old = append(old, cur)
+			} else {
+				old = append(old, p)
+				continue
+			}
+		}
+		m[p.Name] = p
+	}
+
+	// Add the newest packages to the updated array and return.
+	updated = make([]*Package, 0, len(m))
+	for _, v := range m {
+		updated = append(updated, v)
+	}
+
+	return updated, old
+}
+
 // readPackageInfo reads the package information from a pacman package.
 //
 // We don't do any specific controlling for you, so you should use
@@ -177,114 +293,6 @@ func readPackageInfo(r io.Reader) (*Package, error) {
 	return &info, nil
 }
 
-// GetAllPackages takes a directory path as an argument, and
-// then reads all the package information into a list.
-func GetAllPackages(path string) []*Package {
-	var pkgs []*Package
-
-	filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			log.Printf("Warning: %s\n", err)
-			return nil
-		}
-		if !info.Mode().IsDir() && HasPackageFormat(path) {
-			p, err := ReadPackage(path)
-			if err != nil {
-				log.Printf("Warning: %s\n", err)
-				return nil
-			}
-
-			pkgs = append(pkgs, p)
-		}
-
-		return nil
-	})
-
-	return pkgs
-}
-
-// Note that we recurse into subdirectories.
-func GetMatchingPackages(path, pkgname string) []*Package {
-	var pkgs []*Package
-
-	filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			log.Printf("Warning: %s\n", err)
-			return nil
-		}
-		if !info.Mode().IsDir() && strings.HasPrefix(path, pkgname) && HasPackageFormat(path) {
-			p, err := ReadPackage(path)
-			if err != nil {
-				log.Printf("Warning: %s\n", err)
-				return nil
-			}
-
-			if p.Name == pkgname {
-				pkgs = append(pkgs, p)
-			}
-		}
-
-		return nil
-	})
-
-	return pkgs
-}
-
-// Note that we do not recurse into subdirectories!
-func GetAllMatchingPackages(path string, pkgnames []string) []*Package {
-	var pkgs []*Package
-
-	for _, n := range pkgnames {
-		matches, err := filepath.Glob(filepath.Join(path, n+"-*.pkg.tar.*"))
-		if err != nil {
-			log.Printf("Warning: cannot find package %s.\n", n)
-			continue
-		}
-
-		for _, fp := range matches {
-			p, err := ReadPackage(fp)
-			if err != nil {
-				log.Printf("Warning: %s\n.", err)
-				continue
-			}
-
-			if p.Name == n {
-				pkgs = append(pkgs, p)
-			}
-		}
-	}
-
-	return pkgs
-}
-
-// SplitOldPackages splits the input array into one containing the newest
-// packages and another containing the outdated packages.
-func SplitOldPackages(pkgs []*Package) (updated []*Package, old []*Package) {
-	var m = make(map[string]*Package)
-
-	// Find out which packages are newest and put the others in the old array.
-	for _, p := range pkgs {
-		if cur, ok := m[p.Name]; ok {
-			if cur.VersionLess(p) {
-				old = append(old, cur)
-			} else {
-				old = append(old, p)
-				continue
-			}
-		}
-		m[p.Name] = p
-	}
-
-	// Add the newest packages to the updated array and return.
-	updated = make([]*Package, 0, len(m))
-	for _, v := range m {
-		updated = append(updated, v)
-	}
-
-	return updated, old
-}
-
-func SearchAUR(pkgname string) []*Package {
-	//https://aur.archlinux.org/rpc.php?type=info&arg=dropbox
-	return nil
+func readPackageInfoFromDatabase(r io.Reader) (*Package, error) {
+	return nil, implErr
 }

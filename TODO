@@ -8,3 +8,5 @@ ToDo
  2. Read the database file to make updating faster and more pleasant:
     repo-add will only be called with the files that are absolutely
     necessary.
+
+ 3. Split out package.go into a goulash/pacman package
