@@ -1,6 +1,10 @@
 ToDo
 ====
 
-  1. Allow for scanning the repository to see for which packages there are
-     newer versions in the AUR. (This could be complicated, but would be
-     very very useful.) (syntax: repo sync)
+ 1. Allow for scanning the repository to see for which packages there are
+    newer versions in the AUR. (This could be complicated, but would be
+    very very useful.) (syntax: repo sync)
+
+ 2. Read the database file to make updating faster and more pleasant:
+    repo-add will only be called with the files that are absolutely
+    necessary.
