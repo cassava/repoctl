@@ -4,6 +4,13 @@
 
 package main
 
+import (
+	"errors"
+	"fmt"
+
+	flag "github.com/ogier/pflag"
+)
+
 const (
 	progName    = "repoctl"
 	progVersion = "1.9.9"
@@ -14,14 +21,6 @@ const (
 
 // Config contains all the configuration flags, variables, and arguments that
 // are needed for the various actions.
-//
-// The following configuration variables are read by:
-//
-//	List:	RepoPath,Verbose,Columnated,Versioned,Duplicates
-//	Add:	RepoPath,Database,Verbose,Confirm,
-//  Remove: RepoPath,Database,Verbose,
-//  Update: RepoPath,Database,Verbose,FastUpdate,Confirm,
-//  Sync:	RepoPath,Verbose,
 type Config struct {
 	// ConfigFile stores the name of the configuration file from which this
 	// configuration was loaded from, otherwise it is empty.
@@ -33,6 +32,10 @@ type Config struct {
 	// Database stores the name of the repository database. This is the file
 	// that is usually has the ".db.tar.gz" suffix.
 	Database string
+	// AddParameters are parameters to add to the repo-add command line.
+	AddParameters []string
+	// RemoveParameters are parameters to add to the repo-remove command line.
+	RemoveParameters []string
 
 	// Verbose causes more information to be printed than usual.
 	// Default is false.
@@ -67,6 +70,24 @@ type Config struct {
 	Args []string
 }
 
+// Action is the type that all action functions need to satisfy.
+type Action func(*Config) error
+
+// actions is a map from names to action functions.
+var actions map[string]Action = map[string]Action{
+	"list":        List,
+	"ls":          List,
+	"update":      Update,
+	"add":         Add,
+	"remove":      Remove,
+	"rm":          Remove,
+	"synchronize": Sync,
+	"sync":        Sync,
+	"help":        Usage,
+	"usage":       Usage,
+}
+
+// NewConfig creates a minimal configuration.
 func NewConfig(repoPath, db string) *Config {
 	return &Config{
 		RepoPath: repoPath,
@@ -78,6 +99,73 @@ func NewConfig(repoPath, db string) *Config {
 	}
 }
 
-func ReadConfig(path string) *Config {
+// NewConfigFromFile reads a configuration from a file.
+func NewConfigFromFile(path string) (conf *Config, err error) {
+	return nil, nil
+}
+
+// NewConfigFromFlags reads a configuration from the command line arguments.
+//
+// TODO: Implement Config file reading and merging
+func NewConfigFromFlags() (conf *Config, cmd Action, err error) {
+	conf = &Config{}
+
+	flag.StringVarP(&conf.ConfigFile, "config", "c", configPath, "configuration file to load settings from")
+	flag.StringVar(&conf.RepoPath, "repo", "/srv/abs", "the path to where the packages and database reside")
+	flag.StringVar(&conf.Database, "db", "atlas.db.tar.gz", "the name of the database")
+
+	flag.BoolVarP(&conf.Verbose, "verbose", "v", false, "print more information")
+
+	flag.BoolVarP(&conf.Columnated, "columns", "s", true, "print packages in columns like ls")
+	flag.BoolVarP(&conf.Versioned, "versioned", "V", false, "print the version of each package when listing")
+	flag.BoolVarP(&conf.Duplicates, "duplicates", "d", false, "mark the number of duplicate (outdated) packages")
+
+	flag.BoolVarP(&conf.Confirm, "confirm", "i", false, "confirm before deleting and changing the repo db")
+	flag.BoolVarP(&conf.Delete, "delete", "r", true, "delete outdated packages")
+	flag.BoolVarP(&conf.UpdateByAge, "fast-update", "f", false, "determine which packages to update by age")
+
+	flag.Usage = func() { Usage(nil) }
+	flag.Parse()
+	if len(flag.Args()) == 0 {
+		return nil, Usage, errors.New("no action specified on command line")
+	}
+	conf.Args = flag.Args()[1:]
+	cmd, ok := actions[flag.Arg(0)]
+	if !ok {
+		return nil, Usage, errors.New("unrecognized action " + flag.Arg(0))
+	}
+
+	return conf, cmd, nil
+}
+
+// Usage prints the help message for the program.
+// TODO: Print option usage too!
+func Usage(*Config) error {
+	fmt.Printf("%s %s (%s)\n", progName, progVersion, progDate)
+	fmt.Print(`
+Manage local pacman repositories.
+
+Commands available:
+  add <pkgname>    Add the package(s) with <pkgname> to the database by
+                   finding in the same directory of the database the latest
+                   file for that package (by file modification date),
+                   deleting the others, and updating the database.
+  list             List all the packages that are currently available.
+  (ls)             Note that this has nothing to do with the database.
+  remove <pkgname> Remove the package with <pkgname> from the database, by
+  (rm)             removing its entry from the database and deleting the files
+                   that belong to it.
+  update           Same as add, except scan and add changed packages.
+  synchronize      Compare packages in the database to AUR for new versions.
+  (sync)
+
+NOTE: In all of these cases, <pkgname> is the name of the package, without
+anything else. For example: pacman, and not pacman-3.5.3-1-i686.pkg.tar.xz
+
+Options:
+`)
+	flag.PrintDefaults()
+	fmt.Println()
+
 	return nil
 }
