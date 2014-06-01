@@ -52,7 +52,7 @@ func List(c *Config) error {
 
 	// Print packages to stdout
 	if c.Columnated {
-		pr.PrintAutoGrid(pkgnames)
+		pr.PrintFlex(pkgnames)
 	} else {
 		for _, pkg := range pkgnames {
 			fmt.Println(pkg)
