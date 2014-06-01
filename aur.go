@@ -4,7 +4,7 @@
 
 package pacman
 
-func SearchAUR(pkgname string) ([]*Package, error) {
+func searchAUR(pkgname string) ([]*Package, error) {
 	//https://aur.archlinux.org/rpc.php?type=info&arg=dropbox
 	return nil, implErr
 }

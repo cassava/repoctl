@@ -6,7 +6,7 @@ package pacman
 
 import "io"
 
-func ReadPackagesFromDatabase(dbpath string) ([]*Package, error) {
+func readPackagesFromDatabase(dbpath string) ([]*Package, error) {
 	return nil, implErr
 }
 
