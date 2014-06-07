@@ -4,15 +4,15 @@
 
 package pacman
 
-// SplitOldPackages splits the input array into one containing the newest
+// SplitOld splits the input array into one containing the newest
 // packages and another containing the outdated packages.
-func SplitOldPackages(pkgs []*Package) (updated []*Package, old []*Package) {
+func SplitOld(pkgs []*Package) (updated []*Package, old []*Package) {
 	var m = make(map[string]*Package)
 
 	// Find out which packages are newest and put the others in the old array.
 	for _, p := range pkgs {
 		if cur, ok := m[p.Name]; ok {
-			if cur.VersionLess(p) {
+			if cur.OlderThan(p) {
 				old = append(old, cur)
 			} else {
 				old = append(old, p)

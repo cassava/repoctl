@@ -9,20 +9,12 @@ import (
 	"bytes"
 	"io"
 	"log"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/goulash/util"
 )
-
-// packageExtensions lists the file extensions by which we recognize packages.
-// It is only used by the function HasPackageFormat, which is useful for quickly
-// separating the wheat from the chaff (e.g. filter out all the packages in a
-// directory.)
-var packageExtensions = []string{".pkg.tar.xz", ".pkg.tar.gz", ".pkg.tar.bz2"}
 
 // The Package datatype represents all the information that encompasses a Pacman
 // package, including the filename of the package.
@@ -52,22 +44,44 @@ type Package struct {
 	MakeOptions     []string  // makepkgopt
 }
 
-// VersionLess compares the version of pi to pkg, and returns true if pi is
-// older. It takes the Epoch value in account.
-func (pkg *Package) VersionLess(alt *Package) bool {
-	// If the Epoch values are different, the package with the higher
-	// Epoch value is always more recent.
-	if pkg.Epoch != alt.Epoch {
-		return pkg.Epoch < alt.Epoch
-	}
-	return pkg.Version < alt.Version
+// OlderThan returns true if pkg's version is older than alt's.
+// It takes the Epoch value into account.
+func (pkg *Package) OlderThan(alt *Package) bool {
+	return pkg.CompareVersion(alt) == -1
 }
 
-// HasPackageFormat returns true if the filename matches a known
-// pacman package format.
-func HasPackageFormat(path string) bool {
-	for _, ext := range packageExtensions {
-		if strings.HasSuffix(path, ext) {
+// NewerThan returns true if pkg's version is newer than alt's.
+// It takes the Epoch value into account.
+func (pkg *Package) NewerThan(alt *Package) bool {
+	return pkg.CompareVersion(alt) == 1
+}
+
+// CompareVersion compares the versions of two packages, taking the Epoch
+// value into account.
+func (pkg *Package) CompareVersion(alt *Package) int {
+	// If the Epoch values are different, the package with the higher Epoch
+	// value is always more recent.
+	if pkg.Epoch != alt.Epoch {
+		if pkg.Epoch < alt.Epoch {
+			return -1
+		}
+		return 1
+	}
+
+	return VerCmp(pkg.Version, alt.Version)
+}
+
+// HasPackageFormat returns true if the filename matches a pacman package
+// format that we can do anything with.
+//
+// Currently, only the following formats are supported:
+//	.pkg.tar.xz
+//	.pkg.tar.gz
+//	.pkg.tar.bz2
+//
+func HasPackageFormat(filename string) bool {
+	for _, ext := range []string{".pkg.tar.xz", ".pkg.tar.gz", ".pkg.tar.bz2"} {
+		if strings.HasSuffix(filename, ext) {
 			return true
 		}
 	}
@@ -76,28 +90,28 @@ func HasPackageFormat(path string) bool {
 
 // ReadPackage reads the package information from a pacman package
 // and returns it in the Package datatype.
-func ReadPackage(path string) (*Package, error) {
-	bs, err := util.ReadFileFromArchive(path, ".PKGINFO")
+func ReadPackage(filename string) (*Package, error) {
+	bs, err := util.ReadFileFromArchive(filename, ".PKGINFO")
 	if err != nil {
 		return nil, err
 	}
 
 	r := bytes.NewReader(bs)
-	info, err := readPackageInfo(r)
+	info, err := readFilePkgInfo(r)
 	if err != nil {
 		return nil, err
 	}
 
-	info.Filename = path
+	info.Filename = filename
 	return info, nil
 }
 
-// readPackageInfo reads the package information from a pacman package.
+// readFilePkgInfo reads the package information from a pacman package.
 //
 // We don't do any specific controlling for you, so you should use
 // HasPackageFormat on a path string before using this function on it.
 // Even if you don't, nothing bad should happen, but just in case.
-func readPackageInfo(r io.Reader) (*Package, error) {
+func readFilePkgInfo(r io.Reader) (*Package, error) {
 	var info Package
 	var err error
 
@@ -175,84 +189,4 @@ func readPackageInfo(r io.Reader) (*Package, error) {
 	}
 
 	return &info, nil
-}
-
-// GetAllPackages takes a directory path as an argument, and
-// then reads all the package information into a list.
-func GetAllPackages(path string) []*Package {
-	var pkgs []*Package
-
-	filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			log.Printf("Warning: %s\n", err)
-			return nil
-		}
-		if !info.Mode().IsDir() && HasPackageFormat(path) {
-			p, err := ReadPackage(path)
-			if err != nil {
-				log.Printf("Warning: %s\n", err)
-				return nil
-			}
-
-			pkgs = append(pkgs, p)
-		}
-
-		return nil
-	})
-
-	return pkgs
-}
-
-// Note that we recurse into subdirectories.
-func GetMatchingPackages(path, pkgname string) []*Package {
-	var pkgs []*Package
-
-	filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			log.Printf("Warning: %s\n", err)
-			return nil
-		}
-		if !info.Mode().IsDir() && strings.HasPrefix(path, pkgname) && HasPackageFormat(path) {
-			p, err := ReadPackage(path)
-			if err != nil {
-				log.Printf("Warning: %s\n", err)
-				return nil
-			}
-
-			if p.Name == pkgname {
-				pkgs = append(pkgs, p)
-			}
-		}
-
-		return nil
-	})
-
-	return pkgs
-}
-
-// Note that we do not recurse into subdirectories!
-func GetAllMatchingPackages(path string, pkgnames []string) []*Package {
-	var pkgs []*Package
-
-	for _, n := range pkgnames {
-		matches, err := filepath.Glob(filepath.Join(path, n+"-*.pkg.tar.*"))
-		if err != nil {
-			log.Printf("Warning: cannot find package %s.\n", n)
-			continue
-		}
-
-		for _, fp := range matches {
-			p, err := ReadPackage(fp)
-			if err != nil {
-				log.Printf("Warning: %s\n.", err)
-				continue
-			}
-
-			if p.Name == n {
-				pkgs = append(pkgs, p)
-			}
-		}
-	}
-
-	return pkgs
 }
