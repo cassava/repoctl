@@ -90,12 +90,6 @@ func readDatabasePkgInfo(r io.Reader, dbpath string) (*Package, error) {
 			info.Description = line
 		case "base":
 			info.Base = line
-		case "epoch":
-			// Didn't see this entry in any of extra.db, does it exist?
-			info.Epoch, err = strconv.ParseUint(line, 10, 64)
-			if err != nil {
-				log.Printf("Warning: cannot parse epoch value '%s'\n", line)
-			}
 		case "url":
 			info.URL = line
 		case "builddate":

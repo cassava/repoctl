@@ -7,6 +7,8 @@ package pacman
 import (
 	"bufio"
 	"bytes"
+	"errors"
+	"fmt"
 	"io"
 	"log"
 	"strconv"
@@ -25,7 +27,6 @@ type Package struct {
 	Version         string    // pkgver
 	Description     string    // pkgdesc
 	Base            string    // pkgbase
-	Epoch           uint64    // epoch
 	URL             string    // url
 	BuildDate       time.Time // builddate
 	Packager        string    // packager
@@ -42,6 +43,8 @@ type Package struct {
 	MakeDepends     []string  // makedepend
 	CheckDepends    []string  // checkdepend
 	MakeOptions     []string  // makepkgopt
+
+	epoch uint64 // epoch
 }
 
 // OlderThan returns true if pkg's version is older than alt's.
@@ -137,7 +140,7 @@ func readFilePkgInfo(r io.Reader) (*Package, error) {
 		case "pkgbase":
 			info.Base = kv[1]
 		case "epoch":
-			info.Epoch, err = strconv.ParseUint(kv[1], 10, 64)
+			info.epoch, err = strconv.ParseUint(kv[1], 10, 64)
 			if err != nil {
 				log.Printf("Warning: cannot parse epoch value '%s'\n", kv[1])
 			}
@@ -186,6 +189,20 @@ func readFilePkgInfo(r io.Reader) (*Package, error) {
 	}
 	if err = scanner.Err(); err != nil {
 		return nil, err
+	}
+
+	// The Version field must include the epoch value. If it already has one,
+	// we compare and take the maximum value.
+	if info.epoch > 0 {
+		if i := strings.IndexByte(info.Version, ':'); i != -1 {
+			e, err := strconv.Atoi(info.Version[:i])
+			if err != nil {
+				return nil, errors.New("unable to read epoch from version")
+			}
+			info.epoch = max(info.epoch, e)
+			info.Version = info.Version[i+1:]
+		}
+		info.Version = fmt.Sprintf("%d:%s", info.epoch, info.Version)
 	}
 
 	return &info, nil
