@@ -5,7 +5,7 @@
 package pacman
 
 import (
-	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -102,7 +102,7 @@ func ReadMatchingNames(dirpath string, pkgnames []string, ch chan<- error) []*Pa
 		matches, err := filepath.Glob(filepath.Join(dirpath, n+"-*.pkg.tar.*"))
 		if err != nil {
 			if ch != nil {
-				ch <- errors.New("cannot find package " + n)
+				ch <- fmt.Errorf("cannot find package '%s'", n)
 			}
 			continue
 		}

@@ -119,7 +119,6 @@ func compareVersions(v1, v2 string) int {
 	m, n := len(s1), len(s2)
 	z := min(m, n)
 
-	//fmt.Printf("cmpver: %s - %s: %v - %v\n", v1, v2, s1, s2)
 	for i := 0; i < z; i++ {
 		c := comparePart(s1[i], s2[i])
 		if c != 0 {
@@ -139,8 +138,6 @@ func comparePart(s1, s2 string) int {
 	for s1 != "" && s2 != "" {
 		p1, num1 := nextSection(&s1)
 		p2, num2 := nextSection(&s2)
-
-		//fmt.Printf("cmpsec: %s - %s: %v - %v\n", p1, p2, num1, num2)
 
 		if num1 != num2 {
 			if num1 {
@@ -188,7 +185,6 @@ func nextSection(a *string) (s string, num bool) {
 		}
 	}
 
-	//fmt.Printf("nxtsec: %s -> %s, %s\n", *a, (*a)[0:i], (*a)[i:])
 	s = (*a)[0:i]
 	*a = (*a)[i:]
 	return s, num

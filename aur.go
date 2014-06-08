@@ -6,7 +6,6 @@ package pacman
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -38,7 +37,9 @@ func generateURL(arg string) string {
 	return fmt.Sprintf(queryURL, url.QueryEscape(arg))
 }
 
-// ReadAUR reads package information from the Arch Linux User Repository online.
+// ReadAUR reads package information from the Arch Linux User Repository
+// online.  If the package cannot be found, but no unexpected error occurred,
+// then (nil, nil) is returned.
 //
 // Note that only a few fields in the resulting Package are actually filled in,
 // namely Origin, Name, Version, Description, URL, and License. This is all the
@@ -60,9 +61,9 @@ func ReadAUR(pkgname string) (*Package, error) {
 
 	if msg.ResultCount != 1 {
 		if msg.ResultCount > 1 {
-			return nil, errors.New("unexpected: too many packages in resultset")
+			return nil, fmt.Errorf("unexpected: too many packages (%d) in resultset", msg.ResultCount)
 		}
-		return nil, errors.New("package not found")
+		return nil, nil
 	}
 	info := msg.Results
 	pkg := Package{

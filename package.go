@@ -7,10 +7,8 @@ package pacman
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -169,14 +167,14 @@ func readFilePkgInfo(r io.Reader) (*Package, error) {
 		case "epoch":
 			epoch, err = strconv.Atoi(kv[1])
 			if err != nil {
-				log.Printf("Warning: cannot parse epoch value '%s'\n", kv[1])
+				return nil, fmt.Errorf("cannot parse epoch value '%s'", kv[1])
 			}
 		case "url":
 			info.URL = kv[1]
 		case "builddate":
 			n, err := strconv.ParseInt(kv[1], 10, 64)
 			if err != nil {
-				log.Printf("Warning: cannot parse build time '%s'\n", kv[1])
+				return nil, fmt.Errorf("cannot parse build time '%s'", kv[1])
 			}
 			info.BuildDate = time.Unix(n, 0)
 		case "packager":
@@ -184,7 +182,7 @@ func readFilePkgInfo(r io.Reader) (*Package, error) {
 		case "size":
 			info.Size, err = strconv.ParseUint(kv[1], 10, 64)
 			if err != nil {
-				log.Printf("Warning: cannot parse size value '%s'\n", kv[1])
+				return nil, fmt.Errorf("cannot parse size value '%s'", kv[1])
 			}
 		case "arch":
 			info.Arch = kv[1]
@@ -211,7 +209,7 @@ func readFilePkgInfo(r io.Reader) (*Package, error) {
 		case "group":
 			info.Groups = append(info.Groups, kv[1])
 		default:
-			log.Printf("Warning: unknown field '%s' in .PKGINFO\n", kv[0])
+			return nil, fmt.Errorf("unknown field '%s' in .PKGINFO", kv[0])
 		}
 	}
 	if err = scanner.Err(); err != nil {
@@ -224,7 +222,7 @@ func readFilePkgInfo(r io.Reader) (*Package, error) {
 		if i := strings.IndexByte(info.Version, ':'); i != -1 {
 			e, err := strconv.Atoi(info.Version[:i])
 			if err != nil {
-				return nil, errors.New("unable to read epoch from version")
+				return nil, fmt.Errorf("unable to read epoch from version '%s'", info.Version)
 			}
 			epoch = max(epoch, e)
 			info.Version = info.Version[i+1:]
