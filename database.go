@@ -7,10 +7,8 @@ package pacman
 import (
 	"archive/tar"
 	"bufio"
-	"errors"
 	"fmt"
 	"io"
-	"log"
 	"path"
 	"strconv"
 	"strings"
@@ -44,7 +42,7 @@ func ReadDatabase(dbpath string) ([]*Package, error) {
 	for hdr != nil {
 		fi := hdr.FileInfo()
 		if !fi.IsDir() {
-			return nil, errors.New(fmt.Sprintf("unexpected file '%s'", hdr.Name))
+			return nil, fmt.Errorf("unexpected file '%s'", hdr.Name)
 		}
 
 		pr := util.DirReader(tr, &hdr)
@@ -95,7 +93,7 @@ func readDatabasePkgInfo(r io.Reader, dbpath string) (*Package, error) {
 		case "builddate":
 			n, err := strconv.ParseInt(line, 10, 64)
 			if err != nil {
-				log.Printf("Warning: cannot parse build time '%s'\n", line)
+				return nil, fmt.Errorf("cannot parse build time '%s'\n", line)
 			}
 			info.BuildDate = time.Unix(n, 0)
 		case "packager":
@@ -103,7 +101,7 @@ func readDatabasePkgInfo(r io.Reader, dbpath string) (*Package, error) {
 		case "csize":
 			info.Size, err = strconv.ParseUint(line, 10, 64)
 			if err != nil {
-				log.Printf("Warning: cannot parse size value '%s'\n", line)
+				return nil, fmt.Errorf("cannot parse size value '%s'\n", line)
 			}
 		case "arch":
 			info.Arch = line
@@ -131,7 +129,7 @@ func readDatabasePkgInfo(r io.Reader, dbpath string) (*Package, error) {
 			// We ignore these fields for now...
 			continue
 		default:
-			log.Printf("Warning: unknown field '%s' in database entry\n", state)
+			return nil, fmt.Errorf("unknown field '%s' in database entry\n", state)
 		}
 	}
 	if err = scanner.Err(); err != nil {
