@@ -19,11 +19,7 @@ import (
 //
 //	ch := make(chan error)
 //	go func() {
-//		for {
-//			err, open := <-ch
-//			if !open {
-//				break
-//			}
+//		for err := range ch {
 //			fmt.Println("error:", err)
 //		}
 //	}()
@@ -31,7 +27,8 @@ import (
 //	close(ch)
 //
 // Because if you don't, the program will probably run into a deadlock when
-// there is an error.
+// there is an error. Note that ReadDir does not close the channel, you have to
+// do that yourself.
 func ReadDir(dirpath string, ch chan<- error) []*Package {
 	var pkgs []*Package
 
