@@ -6,7 +6,11 @@ package pacman
 
 import "errors"
 
-func ReadAUR(pkgname string) ([]*Package, error) {
+func ReadAUR(pkgname string) (*Package, error) {
 	//https://aur.archlinux.org/rpc.php?type=info&arg=dropbox
+	return nil, errors.New("not implemented")
+}
+
+func SearchAUR(match string) ([]*Package, error) {
 	return nil, errors.New("not implemented")
 }
