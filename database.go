@@ -63,8 +63,8 @@ func ReadDatabase(dbpath string) ([]*Package, error) {
 }
 
 func readDatabasePkgInfo(r io.Reader, dbpath string) (*Package, error) {
-	var info Package
 	var err error
+	info := Package{Origin: DatabaseOrigin}
 
 	del := "%"
 	state := ""

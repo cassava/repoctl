@@ -18,10 +18,44 @@ import (
 	"github.com/goulash/util"
 )
 
+// PackageOrigin exists to document which fields in the Package type can be
+// expected to be filled with data. Note that some fields may be blank
+// because there is nothing to specify, such as MakeDepends.
+type PackageOrigin int
+
+const (
+	// UnknownOrigin specifies unknown origin. No assumption may be made as
+	// to what fields are filled.
+	UnknownOrigin PackageOrigin = iota
+
+	// FileOrigin specifies package file origin. All fields are filled in as
+	// available.
+	FileOrigin
+
+	// DatabaseOrigin specifies database origin. All fields are filled in as
+	// available.
+	DatabaseOrigin
+
+	// AUROrigin specifies AUR search origin. Only the following fields are
+	// touched:
+	//
+	// 	Name
+	// 	Version
+	// 	Description
+	// 	URL
+	// 	License
+	AUROrigin
+)
+
 // The Package datatype represents all the information that encompasses a Pacman
 // package, including the filename of the package.
+//
+// Note: While we could include information from the database or an AUR search,
+// we have decided against it for now. If you feel that this is important,
+// please contact us.
 type Package struct {
 	Filename string
+	Origin   PackageOrigin
 
 	Name            string    // pkgname
 	Version         string    // pkgver
@@ -43,8 +77,6 @@ type Package struct {
 	MakeDepends     []string  // makedepend
 	CheckDepends    []string  // checkdepend
 	MakeOptions     []string  // makepkgopt
-
-	epoch uint64 // epoch
 }
 
 // OlderThan returns true if pkg's version is older than alt's.
@@ -62,15 +94,6 @@ func (pkg *Package) NewerThan(alt *Package) bool {
 // CompareVersion compares the versions of two packages, taking the Epoch
 // value into account.
 func (pkg *Package) CompareVersion(alt *Package) int {
-	// If the Epoch values are different, the package with the higher Epoch
-	// value is always more recent.
-	if pkg.Epoch != alt.Epoch {
-		if pkg.Epoch < alt.Epoch {
-			return -1
-		}
-		return 1
-	}
-
 	return VerCmp(pkg.Version, alt.Version)
 }
 
@@ -106,6 +129,7 @@ func ReadPackage(filename string) (*Package, error) {
 	}
 
 	info.Filename = filename
+	info.Origin = FileOrigin
 	return info, nil
 }
 
@@ -115,8 +139,11 @@ func ReadPackage(filename string) (*Package, error) {
 // HasPackageFormat on a path string before using this function on it.
 // Even if you don't, nothing bad should happen, but just in case.
 func readFilePkgInfo(r io.Reader) (*Package, error) {
-	var info Package
-	var err error
+	var (
+		info  Package
+		err   error
+		epoch int
+	)
 
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
@@ -140,7 +167,7 @@ func readFilePkgInfo(r io.Reader) (*Package, error) {
 		case "pkgbase":
 			info.Base = kv[1]
 		case "epoch":
-			info.epoch, err = strconv.ParseUint(kv[1], 10, 64)
+			epoch, err = strconv.Atoi(kv[1])
 			if err != nil {
 				log.Printf("Warning: cannot parse epoch value '%s'\n", kv[1])
 			}
@@ -193,16 +220,16 @@ func readFilePkgInfo(r io.Reader) (*Package, error) {
 
 	// The Version field must include the epoch value. If it already has one,
 	// we compare and take the maximum value.
-	if info.epoch > 0 {
+	if epoch > 0 {
 		if i := strings.IndexByte(info.Version, ':'); i != -1 {
 			e, err := strconv.Atoi(info.Version[:i])
 			if err != nil {
 				return nil, errors.New("unable to read epoch from version")
 			}
-			info.epoch = max(info.epoch, e)
+			epoch = max(epoch, e)
 			info.Version = info.Version[i+1:]
 		}
-		info.Version = fmt.Sprintf("%d:%s", info.epoch, info.Version)
+		info.Version = fmt.Sprintf("%d:%s", epoch, info.Version)
 	}
 
 	return &info, nil
