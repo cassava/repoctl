@@ -84,6 +84,7 @@ func List(c *Config) error {
 	return nil
 }
 
+// Status prints a thorough status of the current repository.
 func Status(c *Config) error {
 	pkgs, old := pacman.SplitOld(getRepoPkgs(c))
 	db, missed := getDatabasePkgs(c)
@@ -128,13 +129,23 @@ func Status(c *Config) error {
 	}
 
 	{
+		names := make([]string, len(pkgs))
+		for i, p := range pkgs {
+			names[i] = p.Name
+		}
+		ch := make(chan error)
+		go handleErrors("warning: %s\n", ch)
+		aur := pacman.ConcurrentlyReadAUR(names, 16, ch)
+		close(ch)
+
 		var updates []string
 		for _, p := range pkgs {
-			aurp, err := pacman.ReadAUR(p.Name)
-			if err != nil {
-				c.inform(fmt.Sprintf("error searching for %s: %s", p.Name, err))
-			} else if aurp.NewerThan(p) {
-				updates = append(updates, p.Name)
+			if ap, ok := aur[p.Name]; ok {
+				if ap != nil && ap.NewerThan(p) {
+					updates = append(updates, p.Name)
+				} else if ap == nil {
+					updates = append(updates, fmt.Sprintf("-%s-", p.Name))
+				}
 			}
 		}
 
