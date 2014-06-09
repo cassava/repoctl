@@ -11,9 +11,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
 
-	"github.com/goulash/pr"
+	"github.com/goulash/pacman"
 )
 
 const (
@@ -23,49 +22,10 @@ const (
 
 var implErr error = errors.New("unimplemented functionality")
 
-// List displays all the packages available for the database.
-// Note that they don't need to be registered with the database.
-func List(c *Config) error {
-	pkgs := GetAllPackages(c.RepoPath)
-	updated, old := SplitOldPackages(pkgs)
-
-	// Find out how many old duplicates each package has.
-	dups := make(map[string]int)
-	for _, p := range old {
-		dups[p.Name]++
-	}
-
-	// Create a list.
-	var pkgnames []string
-	for _, p := range updated {
-		name := p.Name
-		if c.Versioned {
-			name += fmt.Sprintf(" %s", p.Version)
-		}
-		if c.Duplicates && dups[p.Name] > 0 {
-			name += fmt.Sprintf(" [%v]", dups[p.Name])
-		}
-		pkgnames = append(pkgnames, name)
-	}
-	// While GetAllPackages
-	sort.Strings(pkgnames)
-
-	// Print packages to stdout
-	if c.Columnated {
-		pr.PrintFlex(pkgnames)
-	} else {
-		for _, pkg := range pkgnames {
-			fmt.Println(pkg)
-		}
-	}
-
-	return nil
-}
-
 // Add finds the newest packages given in pkgs and adds them, removing the old
 // packages.
 func Add(c *Config) error {
-	pkgs := GetAllMatchingPackages(c.RepoPath, c.Args)
+	pkgs := pacman.ReadMatchingNames(c.RepoPath, c.Args, nil)
 	return updatePackages(c, pkgs)
 }
 
@@ -74,41 +34,27 @@ func Remove(c *Config) error {
 }
 
 func Update(c *Config) error {
-	pkgs := GetAllPackages(c.RepoPath)
-
-	if !c.UpdateByAge {
-		return updatePackages(c, pkgs)
-	}
-
 	return implErr
 }
 
-func Sync(c *Config) error {
-	return implErr
-}
+func updatePackages(c *Config, pkgs []*pacman.Package) error {
+	updated, old := pacman.SplitOld(pkgs)
 
-func updatePackages(c *Config, pkgs []*Package) error {
-	updated, old := SplitOldPackages(pkgs)
-
-	if c.Confirm {
+	if c.Interactive {
 		fmt.Println("The following packages will be added to the database:")
 		return implErr
 	}
 	addPackages(c, updated)
 
-	if c.Delete {
-		if c.Confirm {
-			fmt.Println("The following outdated packages will be deleted:")
-			return implErr
-		}
-		for _, p := range old {
-			if c.Verbose {
-				fmt.Printf("removing %s...", p.Filename)
-			}
-			err := os.Remove(p.Filename)
-			if err != nil {
-				fmt.Printf("error:", err)
-			}
+	if c.Interactive {
+		fmt.Println("The following outdated packages will be deleted:")
+		return implErr
+	}
+	for _, p := range old {
+		c.inform(fmt.Sprintf("removing %s...", p.Filename))
+		err := os.Remove(p.Filename)
+		if err != nil {
+			fmt.Printf("error:", err)
 		}
 	}
 
@@ -116,7 +62,7 @@ func updatePackages(c *Config, pkgs []*Package) error {
 }
 
 // addPackages adds all the packages listed from the database.
-func addPackages(c *Config, pkgs []*Package) error {
+func addPackages(c *Config, pkgs []*pacman.Package) error {
 	dbpath := filepath.Join(c.RepoPath, c.Database)
 	args := joinArgs(c.AddParameters, dbpath, extractFilenames(pkgs))
 
@@ -125,7 +71,7 @@ func addPackages(c *Config, pkgs []*Package) error {
 }
 
 // removePackage removes all the packages listed from the database.
-func removePackages(c *Config, pkgs []*Package) error {
+func removePackages(c *Config, pkgs []*pacman.Package) error {
 	dbpath := filepath.Join(c.RepoPath, c.Database)
 	args := joinArgs(c.RemoveParameters, dbpath, extractFilenames(pkgs))
 
@@ -134,7 +80,7 @@ func removePackages(c *Config, pkgs []*Package) error {
 }
 
 // extractFilenames maps the filenames of the packages into an array.
-func extractFilenames(pkgs []*Package) []string {
+func extractFilenames(pkgs []*pacman.Package) []string {
 	names := make([]string, len(pkgs))
 	for i := range names {
 		names[i] = pkgs[i].Filename

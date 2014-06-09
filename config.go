@@ -7,6 +7,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	flag "github.com/ogier/pflag"
 )
@@ -14,7 +15,7 @@ import (
 const (
 	progName    = "repoctl"
 	progVersion = "1.9.9"
-	progDate    = "26. May 2014"
+	progDate    = "6. June 2014"
 
 	configPath = "~/.repo.conf"
 )
@@ -38,33 +39,31 @@ type Config struct {
 	RemoveParameters []string
 
 	// Verbose causes more information to be printed than usual.
-	// Default is false.
 	Verbose bool
 
-	// Columnated causes packages to be printed in columns.
-	// Default is true.
-	Columnated bool
+	// OnePerLine causes packages to be printed each on its own line.
+	OnePerLine bool
 	// Versioned causes packages to be printed with version information.
-	// Default is false.
 	Versioned bool
-	// Duplicates causes the number of outdated packages to be printed along
-	// with the packages.
-	// Default is false.
+	// Mode can be either "count", "filter", or "mark" (which is the default
+	// if no match is found.
+	Mode string
+	// Pending marks packages that need to be added to the database,
+	// as well as packages that are in the database but are not available.
+	Pending bool
+	// Duplicates marks the number of obsolete packages for each package.
 	Duplicates bool
+	// Installed marks whether packages are locally installed or not.
+	Installed bool
+	// Synchronize marks which packages have newer versions on AUR.
+	Synchronize bool
 
-	// Confirm requires confirmation before deleting and changing the
+	// Interactive requires confirmation before deleting and changing the
 	// repository database.
-	// Default is false.
-	Confirm bool
-	// Delete causes older packages to be deleted if there is a newer one.
-	// Default is true.
-	Delete bool
-	// UpdateByAge causes the update function to only consider the modification
-	// times of the packages in reference to the database. Newer packages are
-	// added to the database; older aren't. This is faster than a more thorough
-	// update, but may miss some packages in certain situations.
-	// Default is false.
-	UpdateByAge bool
+	Interactive bool
+	// Backup causes older packages to be backed up rather than deleted.
+	// For this, the files are given the suffix ".bak".
+	Backup bool
 
 	// Arguments contains the argumetns given on the commandline.
 	Args []string
@@ -75,16 +74,69 @@ type Action func(*Config) error
 
 // actions is a map from names to action functions.
 var actions map[string]Action = map[string]Action{
-	"list":        List,
-	"ls":          List,
-	"update":      Update,
-	"add":         Add,
-	"remove":      Remove,
-	"rm":          Remove,
-	"synchronize": Sync,
-	"sync":        Sync,
-	"help":        Usage,
-	"usage":       Usage,
+	"list":   List,
+	"ls":     List,
+	"update": Update,
+	"add":    Add,
+	"remove": Remove,
+	"rm":     Remove,
+	"status": Status,
+	"help":   Usage,
+	"usage":  Usage,
+}
+
+// Usage prints the help message for the program.
+func Usage(*Config) error {
+	fmt.Printf("%s %s (%s)\n", progName, progVersion, progDate)
+	fmt.Print(`
+Manage local pacman repositories.
+
+Commands available:
+  list             List packages that belong to the managed repository.
+  ls               Options available are:
+                    -1 --one-a-line show each item on its own line
+                    -v --versions   show package versions along with name
+                    -p --pending    mark pending changes to the database
+                    -d --duplicates mark packages with duplicate package files
+                    -l --installed  mark packages that are locally installed
+                    -u --outdated   mark packages that are newer in AUR
+                    -a --all        same as -1vdlu
+
+  add <pkgname>    Add the latest package(s) with <pkgname> to the database
+                   and delete all obsolete package files.
+
+  remove <pkgname> Remove the package(s) with <pkgname> from the database and
+  rm               delete all the corresponding package files.
+
+  update           Automatically scan the repository for changes and update
+                   by changing the database and deleting obsolete package files.
+
+  reset            Reset the repository database by removing it and adding all
+                   up-to-date packages while deleting obsolete package files.
+
+                   Options available to add, remove, update, and reset are:
+                    -i --interactive  ask before doing anything destructive
+                    -b --backup       backup obsolete package files instead of
+                                      deleting; packages are put into backup/
+
+  status           Show pending changes to the database and packages that
+                   can be updated.
+
+  help             Show the usage for repoctl. Synonym for
+  usage             repoctl --help
+
+NOTE: In all of these cases, <pkgname> is the name of the package, without
+anything else. For example: pacman, and not pacman-3.5.3-1-i686.pkg.tar.xz
+
+General options available are:
+ -h --help      show this usage message
+    --verbose   show more information than necessary
+ -c --config    configuration file to load settings from
+    --repo      path to repository, such as "/srv/abs"
+    --db        database filename, such as "atlas.db.tar.gz"
+`)
+
+	return nil
 }
 
 // NewConfig creates a minimal configuration.
@@ -92,10 +144,6 @@ func NewConfig(repoPath, db string) *Config {
 	return &Config{
 		RepoPath: repoPath,
 		Database: db,
-
-		// Set the default values as documented in Config.
-		Columnated: true,
-		Delete:     true,
 	}
 }
 
@@ -108,24 +156,44 @@ func NewConfigFromFile(path string) (conf *Config, err error) {
 //
 // TODO: Implement Config file reading and merging
 func NewConfigFromFlags() (conf *Config, cmd Action, err error) {
+	var allListOptions bool
+	var showHelp bool
 	conf = &Config{}
 
 	flag.StringVarP(&conf.ConfigFile, "config", "c", configPath, "configuration file to load settings from")
-	flag.StringVar(&conf.RepoPath, "repo", "/srv/abs", "the path to where the packages and database reside")
-	flag.StringVar(&conf.Database, "db", "atlas.db.tar.gz", "the name of the database")
+	flag.StringVar(&conf.RepoPath, "repo", "/srv/abs", "path to repository")
+	flag.StringVar(&conf.Database, "db", "atlas.db.tar.gz", "database filename")
 
-	flag.BoolVarP(&conf.Verbose, "verbose", "v", false, "print more information")
+	flag.BoolVar(&conf.Verbose, "verbose", false, "show more information than necessary")
+	flag.BoolVarP(&showHelp, "help", "h", false, "show this usage message")
 
-	flag.BoolVarP(&conf.Columnated, "columns", "s", true, "print packages in columns like ls")
-	flag.BoolVarP(&conf.Versioned, "versioned", "V", false, "print the version of each package when listing")
-	flag.BoolVarP(&conf.Duplicates, "duplicates", "d", false, "mark the number of duplicate (outdated) packages")
+	// List options
+	flag.BoolVarP(&conf.OnePerLine, "one-a-line", "1", false, "show each item on its own line")
+	flag.BoolVarP(&conf.Versioned, "versioned", "v", false, "show package versions along with name")
+	flag.BoolVarP(&conf.Pending, "pending", "p", false, "mark pending changes to the database")
+	flag.BoolVarP(&conf.Duplicates, "duplicates", "d", false, "mark packages with duplicate package files")
+	flag.BoolVarP(&conf.Installed, "installed", "l", false, "mark packages that are locally installed")
+	flag.BoolVarP(&conf.Synchronize, "outdated", "u", false, "mark packages that are newer in AUR")
+	flag.BoolVarP(&allListOptions, "all", "a", false, "all information; same as -vpdlo")
 
-	flag.BoolVarP(&conf.Confirm, "confirm", "i", false, "confirm before deleting and changing the repo db")
-	flag.BoolVarP(&conf.Delete, "delete", "r", true, "delete outdated packages")
-	flag.BoolVarP(&conf.UpdateByAge, "fast-update", "f", false, "determine which packages to update by age")
+	flag.BoolVarP(&conf.Interactive, "interactive", "i", false, "ask before doing anything destructive")
+	flag.BoolVarP(&conf.Backup, "backup", "b", false, "backup obsolete package files instead of deleting")
 
 	flag.Usage = func() { Usage(nil) }
 	flag.Parse()
+
+	if showHelp {
+		return nil, Usage, nil
+	}
+	if allListOptions {
+		conf.OnePerLine = true
+		conf.Versioned = true
+		conf.Pending = true
+		conf.Duplicates = true
+		conf.Installed = true
+		conf.Synchronize = true
+	}
+
 	if len(flag.Args()) == 0 {
 		return nil, Usage, errors.New("no action specified on command line")
 	}
@@ -138,34 +206,12 @@ func NewConfigFromFlags() (conf *Config, cmd Action, err error) {
 	return conf, cmd, nil
 }
 
-// Usage prints the help message for the program.
-// TODO: Print option usage too!
-func Usage(*Config) error {
-	fmt.Printf("%s %s (%s)\n", progName, progVersion, progDate)
-	fmt.Print(`
-Manage local pacman repositories.
-
-Commands available:
-  add <pkgname>    Add the package(s) with <pkgname> to the database by
-                   finding in the same directory of the database the latest
-                   file for that package (by file modification date),
-                   deleting the others, and updating the database.
-  list             List all the packages that are currently available.
-  (ls)             Note that this has nothing to do with the database.
-  remove <pkgname> Remove the package with <pkgname> from the database, by
-  (rm)             removing its entry from the database and deleting the files
-                   that belong to it.
-  update           Same as add, except scan and add changed packages.
-  synchronize      Compare packages in the database to AUR for new versions.
-  (sync)
-
-NOTE: In all of these cases, <pkgname> is the name of the package, without
-anything else. For example: pacman, and not pacman-3.5.3-1-i686.pkg.tar.xz
-
-Options:
-`)
-	flag.PrintDefaults()
-	fmt.Println()
-
-	return nil
+func (c *Config) inform(v interface{}) {
+	if c.Verbose {
+		if e, ok := v.(error); ok {
+			fmt.Fprintf(os.Stderr, "warning: %s\n", e)
+		} else {
+			fmt.Fprintln(os.Stderr, v)
+		}
+	}
 }
