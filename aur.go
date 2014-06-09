@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"time"
+	"sync"
 )
 
 type aurResponse struct {
@@ -24,10 +24,10 @@ type aurPkgInfo struct {
 	Description    string
 	URL            string
 	NumVotes       int
-	OutofDate      bool
+	OutOfDate      int
 	Maintainer     string
-	FirstSubmitted time.Time
-	LastModified   time.Time
+	FirstSubmitted uint64
+	LastModified   uint64
 	License        string
 	URLPath        string
 }
@@ -55,16 +55,11 @@ func ReadAUR(pkgname string) (*Package, error) {
 	var msg aurResponse
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&msg)
-	if err != nil {
-		return nil, err
-	}
-
-	if msg.ResultCount != 1 {
-		if msg.ResultCount > 1 {
-			return nil, fmt.Errorf("unexpected: too many packages (%d) in resultset", msg.ResultCount)
-		}
+	if err != nil || msg.ResultCount != 1 {
+		// If there is an error at this stage, treat it like 'not found'.
 		return nil, nil
 	}
+
 	info := msg.Results
 	pkg := Package{
 		Origin:      AUROrigin,
@@ -76,4 +71,45 @@ func ReadAUR(pkgname string) (*Package, error) {
 	}
 
 	return &pkg, nil
+}
+
+func ConcurrentlyReadAUR(pkgnames []string, n int, ch chan<- error) map[string]*Package {
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	jobs := make(chan string)
+	pkgs := make(map[string]*Package, len(pkgnames))
+
+	jobber := func() {
+		for j := range jobs {
+			p, err := ReadAUR(j)
+			if err != nil {
+				if ch != nil {
+					ch <- err
+				}
+				continue
+			}
+
+			mu.Lock()
+			pkgs[j] = p
+			mu.Unlock()
+		}
+		wg.Done()
+	}
+
+	// Start n concurrent job takers
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go jobber()
+	}
+
+	// Start a producer of jobs
+	go func() {
+		for _, q := range pkgnames {
+			jobs <- q
+		}
+		close(jobs)
+	}()
+
+	wg.Wait()
+	return pkgs
 }
