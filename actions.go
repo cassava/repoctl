@@ -6,86 +6,263 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/goulash/pacman"
+	"github.com/goulash/util"
 )
 
 const (
 	sysRepoAdd    = "/usr/bin/repo-add"
 	sysRepoRemove = "/usr/bin/repo-remove"
-)
 
-var implErr error = errors.New("unimplemented functionality")
+	backupDir = "backup/"
+)
 
 // Add finds the newest packages given in pkgs and adds them, removing the old
 // packages.
 func Add(c *Config) error {
 	pkgs := pacman.ReadMatchingNames(c.RepoPath, c.Args, nil)
-	return updatePackages(c, pkgs)
-}
-
-func Remove(c *Config) error {
-	return implErr
-}
-
-func Update(c *Config) error {
-	return implErr
-}
-
-func updatePackages(c *Config, pkgs []*pacman.Package) error {
-	updated, old := pacman.SplitOld(pkgs)
+	pkgs, outdated := pacman.SplitOld(pkgs)
+	db, _ := getDatabasePkgs(path.Join(c.RepoPath, c.Database))
+	pending := filterPending(pkgs, db)
 
 	if c.Interactive {
-		fmt.Println("The following packages will be added to the database:")
-		return implErr
+		backup := "Delete following files:"
+		if c.Backup {
+			backup = "Back following files up:"
+		}
+		proceed := confirmAll(
+			[][]string{
+				mapPkgs(pending, pkgNameVersion(db)),
+				mapPkgs(outdated, pkgBasename),
+			},
+			[]string{
+				"Add following entries to database:",
+				backup,
+			},
+			c.Columnate)
+		if !proceed {
+			return nil
+		}
 	}
-	addPackages(c, updated)
 
-	if c.Interactive {
-		fmt.Println("The following outdated packages will be deleted:")
-		return implErr
-	}
-	for _, p := range old {
-		c.inform(fmt.Sprintf("removing %s...", p.Filename))
-		err := os.Remove(p.Filename)
+	var err error
+	if len(pending) > 0 {
+		err = addPkgs(c, mapPkgs(pending, pkgFilename))
 		if err != nil {
-			fmt.Printf("error:", err)
+			return err
+		}
+	}
+	if len(outdated) > 0 {
+		filenames := mapPkgs(outdated, pkgFilename)
+		if c.Backup {
+			err = backupPkgs(c, filenames)
+		} else {
+			err = deletePkgs(c, filenames)
+		}
+		if err != nil {
+			return err
 		}
 	}
 
 	return nil
 }
 
-// addPackages adds all the packages listed from the database.
-func addPackages(c *Config, pkgs []*pacman.Package) error {
+func Remove(c *Config) error {
+	pkgs := pacman.ReadMatchingNames(c.RepoPath, c.Args, nil)
+	db, _ := getDatabasePkgs(path.Join(c.RepoPath, c.Database))
+
+	rmmap := make(map[string]bool)
+	for _, p := range pkgs {
+		rmmap[p.Name] = true
+	}
+	dbpkgs := make([]string, 0, len(rmmap))
+	for k := range rmmap {
+		if _, ok := db[k]; ok {
+			dbpkgs = append(dbpkgs, k)
+		}
+	}
+
+	if c.Interactive {
+		backup := "Delete following files:"
+		if c.Backup {
+			backup = "Back following files up:"
+		}
+		proceed := confirmAll(
+			[][]string{
+				dbpkgs,
+				mapPkgs(pkgs, pkgBasename),
+			},
+			[]string{
+				"Remove following entries from database:",
+				backup,
+			},
+			c.Columnate)
+		if !proceed {
+			return nil
+		}
+	}
+
+	var err error
+	if len(dbpkgs) > 0 {
+		err = removePkgs(c, dbpkgs)
+		if err != nil {
+			return err
+		}
+	}
+	if len(pkgs) > 0 {
+		files := mapPkgs(pkgs, pkgFilename)
+		if c.Backup {
+			err = backupPkgs(c, files)
+		} else {
+			err = deletePkgs(c, files)
+		}
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func Update(c *Config) error {
+	pkgs, outdated := getRepoPkgs(c.RepoPath)
+	db, missed := getDatabasePkgs(path.Join(c.RepoPath, c.Database))
+	pending := filterPending(pkgs, db)
+
+	if c.Interactive {
+		backup := "Delete following files:"
+		if c.Backup {
+			backup = "Back following files up:"
+		}
+		proceed := confirmAll(
+			[][]string{
+				missed,
+				mapPkgs(pending, pkgNameVersion(db)),
+				mapPkgs(outdated, pkgBasename),
+			},
+			[]string{
+				"Remove following entries from database:",
+				"Update following entries in database:",
+				backup,
+			},
+			c.Columnate)
+		if !proceed {
+			return nil
+		}
+	}
+
+	var err error
+	if len(missed) > 0 {
+		err = removePkgs(c, missed)
+		if err != nil {
+			return err
+		}
+	}
+	if len(pending) > 0 {
+		err = addPkgs(c, mapPkgs(pending, pkgFilename))
+		if err != nil {
+			return err
+		}
+	}
+	if len(outdated) > 0 {
+		filenames := mapPkgs(outdated, pkgFilename)
+		if c.Backup {
+			err = backupPkgs(c, filenames)
+		} else {
+			err = deletePkgs(c, filenames)
+		}
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// addPkgs adds all the packages listed from the database.
+func addPkgs(c *Config, pkgfiles []string) error {
 	dbpath := filepath.Join(c.RepoPath, c.Database)
-	args := joinArgs(c.AddParameters, dbpath, extractFilenames(pkgs))
+	args := joinArgs(c.AddParameters, dbpath, pkgfiles)
+
+	if c.Verbose {
+		forallPrintf("adding package to database: %s\n", pkgfiles)
+	}
 
 	cmd := exec.Command(sysRepoAdd, args...)
 	return runStderr(cmd)
 }
 
-// removePackage removes all the packages listed from the database.
-func removePackages(c *Config, pkgs []*pacman.Package) error {
+// removePkgs removes all the packages listed from the database.
+func removePkgs(c *Config, pkgnames []string) error {
 	dbpath := filepath.Join(c.RepoPath, c.Database)
-	args := joinArgs(c.RemoveParameters, dbpath, extractFilenames(pkgs))
+	args := joinArgs(c.RemoveParameters, dbpath, pkgnames)
+
+	if c.Verbose {
+		forallPrintf("removing package from database: %s\n", pkgnames)
+	}
 
 	cmd := exec.Command(sysRepoRemove, args...)
 	return runStderr(cmd)
 }
 
-// extractFilenames maps the filenames of the packages into an array.
-func extractFilenames(pkgs []*pacman.Package) []string {
-	names := make([]string, len(pkgs))
-	for i := range names {
-		names[i] = pkgs[i].Filename
+// deletePkgs deletes the given files.
+func deletePkgs(c *Config, pkgfiles []string) error {
+	for _, p := range pkgfiles {
+		if c.Verbose {
+			fmt.Println("deleting package file:", p)
+		}
+		err := os.Remove(p)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %s\n", err)
+		}
 	}
-	return names
+
+	return nil
+}
+
+// backupPkgs backs up the given files.
+func backupPkgs(c *Config, pkgfiles []string) error {
+	backup := path.Join(c.RepoPath, backupDir)
+	ex, err := util.DirExists(backup)
+	if err != nil {
+		return err
+	} else if !ex {
+		if c.Verbose {
+			fmt.Println("creating backup directory:", backup)
+		}
+		err = os.Mkdir(backup, os.ModePerm)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, p := range pkgfiles {
+		dest := path.Join(backup, fmt.Sprintf("%s.bak", p))
+		src := path.Join(c.RepoPath, p)
+		if c.Verbose {
+			fmt.Println("backing up file:", p)
+		}
+		err = os.Rename(src, dest)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %s\n", err)
+		}
+	}
+
+	return nil
+}
+
+// forallPrintf prints for each item according to the format.
+func forallPrintf(format string, set []string) {
+	for _, s := range set {
+		fmt.Printf(format, s)
+	}
 }
 
 // joinArgs joins strings and arrays of strings together into one array.
@@ -132,4 +309,42 @@ func runStderr(cmd *exec.Cmd) error {
 	}
 
 	return nil
+}
+
+func pkgNameVersion(db map[string]*pacman.Package) func(*pacman.Package) string {
+	return func(p *pacman.Package) string {
+		dp, ok := db[p.Name]
+		if ok {
+			return fmt.Sprintf("%s %s -> %s", p.Name, dp.Version, p.Version)
+		}
+		return fmt.Sprintf("%s -> %s", p.Name, p.Version)
+	}
+}
+
+// confirmAll prints all the headings, items, and then returns the user's decision.
+func confirmAll(sets [][]string, hs []string, cols bool) bool {
+	nothing := true
+	for i, s := range sets {
+		if len(s) > 0 {
+			printSet(s, hs[i], cols)
+			nothing = false
+		}
+	}
+	if nothing {
+		return false
+	}
+	fmt.Println()
+	return confirm()
+}
+
+// confirm gets the user's decision.
+func confirm() bool {
+	fmt.Print("Proceed? [Yn] ")
+	r := bufio.NewReader(os.Stdin)
+	line, err := r.ReadString('\n')
+	if err != nil {
+		return false
+	}
+	line = strings.TrimSpace(strings.ToLower(line))
+	return !(line == "no" || line == "n")
 }

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 
 	flag "github.com/ogier/pflag"
 )
@@ -15,7 +16,7 @@ import (
 const (
 	progName    = "repoctl"
 	progVersion = "1.9.9"
-	progDate    = "6. June 2014"
+	progDate    = "10. June 2014"
 
 	configPath = "~/.repo.conf"
 )
@@ -40,9 +41,9 @@ type Config struct {
 
 	// Verbose causes more information to be printed than usual.
 	Verbose bool
+	// Columnate causes items to be printed in columns rather than lines.
+	Columnate bool
 
-	// OnePerLine causes packages to be printed each on its own line.
-	OnePerLine bool
 	// Versioned causes packages to be printed with version information.
 	Versioned bool
 	// Mode can be either "count", "filter", or "mark" (which is the default
@@ -92,15 +93,26 @@ func Usage(*Config) error {
 Manage local pacman repositories.
 
 Commands available:
+
   list             List packages that belong to the managed repository.
   ls               Options available are:
-                    -1 --one-a-line show each item on its own line
                     -v --versions   show package versions along with name
-                    -p --pending    mark pending changes to the database
                     -d --duplicates mark packages with duplicate package files
+                    -p --pending    mark pending changes to the database
                     -l --installed  mark packages that are locally installed
                     -u --outdated   mark packages that are newer in AUR
-                    -a --all        same as -1vdlu
+                    -a --all        same as -vpdlu
+
+  status [filter]  Show pending changes to the database and packages that can
+                   be updated. Status can be narrowed down by one or more of
+                   the following filters; each can be optionally prefixed by
+                   an exclamation mark ! to negate the filter.
+                   Filters available are:
+                    duplicates      files to be deleted or backed up
+                    pending         packages to be added/removed from database
+                    installed       packages locally installed
+                    missing         packages not found in AUR
+                    outdated        packages with newer versions in AUR
 
   add <pkgname>    Add the latest package(s) with <pkgname> to the database
                    and delete all obsolete package files.
@@ -119,9 +131,6 @@ Commands available:
                     -b --backup       backup obsolete package files instead of
                                       deleting; packages are put into backup/
 
-  status           Show pending changes to the database and packages that
-                   can be updated.
-
   help             Show the usage for repoctl. Synonym for
   usage             repoctl --help
 
@@ -129,11 +138,13 @@ NOTE: In all of these cases, <pkgname> is the name of the package, without
 anything else. For example: pacman, and not pacman-3.5.3-1-i686.pkg.tar.xz
 
 General options available are:
+
  -h --help      show this usage message
     --verbose   show more information than necessary
+ -s --columns   show items in columns rather than lines
  -c --config    configuration file to load settings from
-    --repo      path to repository, such as "/srv/abs"
-    --db        database filename, such as "atlas.db.tar.gz"
+    --repo      path to repository and database, such as
+                "/srv/abs/atlas.db.tar.gz"
 `)
 
 	return nil
@@ -158,17 +169,17 @@ func NewConfigFromFile(path string) (conf *Config, err error) {
 func NewConfigFromFlags() (conf *Config, cmd Action, err error) {
 	var allListOptions bool
 	var showHelp bool
+	var repoPath string
 	conf = &Config{}
 
 	flag.StringVarP(&conf.ConfigFile, "config", "c", configPath, "configuration file to load settings from")
-	flag.StringVar(&conf.RepoPath, "repo", "/srv/abs", "path to repository")
-	flag.StringVar(&conf.Database, "db", "atlas.db.tar.gz", "database filename")
+	flag.StringVar(&repoPath, "repo", "/srv/abs/atlas.db.tar.gz", "path to repository and database")
 
+	flag.BoolVarP(&conf.Columnate, "columns", "s", false, "show items in columns rather than lines")
 	flag.BoolVar(&conf.Verbose, "verbose", false, "show more information than necessary")
 	flag.BoolVarP(&showHelp, "help", "h", false, "show this usage message")
 
 	// List options
-	flag.BoolVarP(&conf.OnePerLine, "one-a-line", "1", false, "show each item on its own line")
 	flag.BoolVarP(&conf.Versioned, "versioned", "v", false, "show package versions along with name")
 	flag.BoolVarP(&conf.Pending, "pending", "p", false, "mark pending changes to the database")
 	flag.BoolVarP(&conf.Duplicates, "duplicates", "d", false, "mark packages with duplicate package files")
@@ -186,7 +197,6 @@ func NewConfigFromFlags() (conf *Config, cmd Action, err error) {
 		return nil, Usage, nil
 	}
 	if allListOptions {
-		conf.OnePerLine = true
 		conf.Versioned = true
 		conf.Pending = true
 		conf.Duplicates = true
@@ -194,6 +204,8 @@ func NewConfigFromFlags() (conf *Config, cmd Action, err error) {
 		conf.Synchronize = true
 	}
 
+	conf.RepoPath = path.Dir(repoPath)
+	conf.Database = path.Base(repoPath)
 	if len(flag.Args()) == 0 {
 		return nil, Usage, errors.New("no action specified on command line")
 	}
