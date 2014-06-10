@@ -6,7 +6,6 @@ package main
 
 import (
 	"fmt"
-	"path"
 	"strings"
 )
 
@@ -23,10 +22,10 @@ func Status(c *Config) error {
 }
 
 func status(c *Config) error {
-	pkgs, outdated := getRepoPkgs(c.RepoPath)
-	db, missed := getDatabasePkgs(path.Join(c.RepoPath, c.Database))
+	pkgs, outdated := getRepoPkgs(c.path)
+	db, missed := getDatabasePkgs(c.Repository)
 
-	name := c.Database[:strings.IndexByte(c.Database, '.')]
+	name := c.database[:strings.IndexByte(c.database, '.')]
 	fmt.Printf("On repo %s\n", name)
 
 	// We assume that there is nothing to do, and if there is,

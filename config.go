@@ -28,12 +28,12 @@ type Config struct {
 	// configuration was loaded from, otherwise it is empty.
 	ConfigFile string
 
-	// RepoPath is the path to where all the package files and the database
-	// reside. It doesn't matter whether it ends in a "/" or not.
-	RepoPath string
-	// Database stores the name of the repository database. This is the file
-	// that is usually has the ".db.tar.gz" suffix.
-	Database string
+	// Repository is the absolute path to the database. We assume that this is
+	// also where the packages are. The variables database and path are constructed
+	// from this.
+	Repository string
+	database   string
+	path       string
 	// AddParameters are parameters to add to the repo-add command line.
 	AddParameters []string
 	// RemoveParameters are parameters to add to the repo-remove command line.
@@ -151,10 +151,11 @@ General options available are:
 }
 
 // NewConfig creates a minimal configuration.
-func NewConfig(repoPath, db string) *Config {
+func NewConfig(repo string) *Config {
 	return &Config{
-		RepoPath: repoPath,
-		Database: db,
+		Repository: repo,
+		path:       path.Dir(repo),
+		database:   path.Base(repo),
 	}
 }
 
@@ -169,11 +170,10 @@ func NewConfigFromFile(path string) (conf *Config, err error) {
 func NewConfigFromFlags() (conf *Config, cmd Action, err error) {
 	var allListOptions bool
 	var showHelp bool
-	var repoPath string
 	conf = &Config{}
 
 	flag.StringVarP(&conf.ConfigFile, "config", "c", configPath, "configuration file to load settings from")
-	flag.StringVar(&repoPath, "repo", "/srv/abs/atlas.db.tar.gz", "path to repository and database")
+	flag.StringVar(&conf.Repository, "repo", "/srv/abs/atlas.db.tar.gz", "path to repository and database")
 
 	flag.BoolVarP(&conf.Columnate, "columns", "s", false, "show items in columns rather than lines")
 	flag.BoolVar(&conf.Verbose, "verbose", false, "show more information than necessary")
@@ -204,8 +204,8 @@ func NewConfigFromFlags() (conf *Config, cmd Action, err error) {
 		conf.Synchronize = true
 	}
 
-	conf.RepoPath = path.Dir(repoPath)
-	conf.Database = path.Base(repoPath)
+	conf.path = path.Dir(conf.Repository)
+	conf.database = path.Base(conf.Repository)
 	if len(flag.Args()) == 0 {
 		return nil, Usage, errors.New("no action specified on command line")
 	}

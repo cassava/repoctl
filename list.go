@@ -7,7 +7,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"path"
 
 	"github.com/goulash/pacman"
 )
@@ -24,9 +23,9 @@ func List(c *Config) error {
 		dups   map[string]int
 		aur    map[string]*pacman.Package
 	)
-	pkgs, old := getRepoPkgs(c.RepoPath)
+	pkgs, old := getRepoPkgs(c.path)
 	if c.Pending {
-		db, missed = getDatabasePkgs(path.Join(c.RepoPath, c.Database))
+		db, missed = getDatabasePkgs(c.Repository)
 	}
 	if c.Duplicates {
 		dups = make(map[string]int)

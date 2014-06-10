@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/goulash/pacman"
@@ -27,9 +26,9 @@ const (
 // Add finds the newest packages given in pkgs and adds them, removing the old
 // packages.
 func Add(c *Config) error {
-	pkgs := pacman.ReadMatchingNames(c.RepoPath, c.Args, nil)
+	pkgs := pacman.ReadMatchingNames(c.path, c.Args, nil)
 	pkgs, outdated := pacman.SplitOld(pkgs)
-	db, _ := getDatabasePkgs(path.Join(c.RepoPath, c.Database))
+	db, _ := getDatabasePkgs(c.Repository)
 	pending := filterPending(pkgs, db)
 
 	if c.Interactive {
@@ -75,8 +74,8 @@ func Add(c *Config) error {
 }
 
 func Remove(c *Config) error {
-	pkgs := pacman.ReadMatchingNames(c.RepoPath, c.Args, nil)
-	db, _ := getDatabasePkgs(path.Join(c.RepoPath, c.Database))
+	pkgs := pacman.ReadMatchingNames(c.path, c.Args, nil)
+	db, _ := getDatabasePkgs(c.Repository)
 
 	rmmap := make(map[string]bool)
 	for _, p := range pkgs {
@@ -132,8 +131,8 @@ func Remove(c *Config) error {
 }
 
 func Update(c *Config) error {
-	pkgs, outdated := getRepoPkgs(c.RepoPath)
-	db, missed := getDatabasePkgs(path.Join(c.RepoPath, c.Database))
+	pkgs, outdated := getRepoPkgs(c.path)
+	db, missed := getDatabasePkgs(c.Repository)
 	pending := filterPending(pkgs, db)
 
 	if c.Interactive {
@@ -188,8 +187,7 @@ func Update(c *Config) error {
 
 // addPkgs adds all the packages listed from the database.
 func addPkgs(c *Config, pkgfiles []string) error {
-	dbpath := filepath.Join(c.RepoPath, c.Database)
-	args := joinArgs(c.AddParameters, dbpath, pkgfiles)
+	args := joinArgs(c.AddParameters, c.Repository, pkgfiles)
 
 	if c.Verbose {
 		forallPrintf("adding package to database: %s\n", pkgfiles)
@@ -201,8 +199,7 @@ func addPkgs(c *Config, pkgfiles []string) error {
 
 // removePkgs removes all the packages listed from the database.
 func removePkgs(c *Config, pkgnames []string) error {
-	dbpath := filepath.Join(c.RepoPath, c.Database)
-	args := joinArgs(c.RemoveParameters, dbpath, pkgnames)
+	args := joinArgs(c.RemoveParameters, c.Repository, pkgnames)
 
 	if c.Verbose {
 		forallPrintf("removing package from database: %s\n", pkgnames)
@@ -229,7 +226,7 @@ func deletePkgs(c *Config, pkgfiles []string) error {
 
 // backupPkgs backs up the given files.
 func backupPkgs(c *Config, pkgfiles []string) error {
-	backup := path.Join(c.RepoPath, backupDir)
+	backup := path.Join(c.path, backupDir)
 	ex, err := util.DirExists(backup)
 	if err != nil {
 		return err
@@ -245,7 +242,7 @@ func backupPkgs(c *Config, pkgfiles []string) error {
 
 	for _, p := range pkgfiles {
 		dest := path.Join(backup, fmt.Sprintf("%s.bak", p))
-		src := path.Join(c.RepoPath, p)
+		src := path.Join(c.path, p)
 		if c.Verbose {
 			fmt.Println("backing up file:", p)
 		}
