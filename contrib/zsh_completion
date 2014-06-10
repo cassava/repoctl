@@ -1,16 +1,17 @@
-#compdef repo
+#compdef repoctl
 
-local config repo_dir packages repo_commands
+local config repo repo_dir packages repo_commands
 
-repo_commands=(
-    add:"add package(s) to the database"
-    list:"list packages available in database directory"
-    remove:"remove and delete package(s) from the database"
-    sync:"compare local database packages to those in AUR"
-    update:"scan and automatically add packages to the database"
+repoctl_commands=(
+    add:"add and update package(s) in the repository"
+    help:"show the usage message for repoctl"
+    list:"list packages available in the repository"
+    remove:"remove and delete package(s) from the repository"
+    status:"show current status of the repository"
+    update:"automatically update repository"
 )
 
-_describe -t command "repo commands" repo_commands
+_describe -t command "repoctl commands" repoctl_commands
 
 # This completion example relies on the .repo.conf configuration file
 # in the home directory. So don't run this completion file at all if
@@ -20,7 +21,8 @@ if [ $(id -u) -ne 0 ]; then
     config=$HOME/.repo.conf
     if [ -f $config ]; then
         # Do not trust the config file, try to get the value ourself
-        repo_dir=$(cat $config | grep repo_dir | sed -r 's/^repo_dir *= *([^"]+) *$/\1/')        
+        repo=$(cat $config | grep repo_dir | sed -r 's/^repository *= *([^"]+) *$/\1/')
+        repo_dir=$(dirname "$repo")
 
         # For some reason the first element gets dropped, so we add a dummy
         packages=(dummy $(ls -1 $repo_dir | sed -r -e '/^.*\.db(\.(old|tar\..+))?$/d' -e "s/^(.*?)-.+-[0-9]+-(any|i686|x86_64).pkg.tar.(gz|bz2|xz)$/\1/" | uniq | tr '\n' ' '))

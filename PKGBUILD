@@ -1,14 +1,14 @@
 # Maintainer: Ben Morgan <neembi@gmail.com>
 pkgname=repoctl
-pkgver=2.0.0
+pkgver=1.9.9
 pkgrel=1
 pkgdesc="A supplement to repo-add and repo-remove which simplifies managing local repositories"
-arch=(i686 x86_64)
+arch=('i686' 'x86_64')
 url="https://github.com/cassava/repoctl"
 license=('MIT')
-depends=(pacman)
-makedepends=(go)
-replaces=(repo-keep)
+depends=('pacman')
+makedepends=('go')
+replaces=('repo-keep')
 source=(https://github.com/downloads/cassava/$pkgname/$pkgname-$pkgver.tar.gz)
 
 build() {
