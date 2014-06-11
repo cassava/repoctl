@@ -189,7 +189,7 @@ func Update(c *Config) error {
 func addPkgs(c *Config, pkgfiles []string) error {
 	args := joinArgs(c.AddParameters, c.Repository, pkgfiles)
 
-	if c.Verbose {
+	if !c.Quiet {
 		forallPrintf("adding package to database: %s\n", pkgfiles)
 	}
 
@@ -201,7 +201,7 @@ func addPkgs(c *Config, pkgfiles []string) error {
 func removePkgs(c *Config, pkgnames []string) error {
 	args := joinArgs(c.RemoveParameters, c.Repository, pkgnames)
 
-	if c.Verbose {
+	if !c.Quiet {
 		forallPrintf("removing package from database: %s\n", pkgnames)
 	}
 
@@ -212,7 +212,7 @@ func removePkgs(c *Config, pkgnames []string) error {
 // deletePkgs deletes the given files.
 func deletePkgs(c *Config, pkgfiles []string) error {
 	for _, p := range pkgfiles {
-		if c.Verbose {
+		if !c.Quiet {
 			fmt.Println("deleting package file:", p)
 		}
 		err := os.Remove(p)
@@ -231,7 +231,7 @@ func backupPkgs(c *Config, pkgfiles []string) error {
 	if err != nil {
 		return err
 	} else if !ex {
-		if c.Verbose {
+		if !c.Quiet {
 			fmt.Println("creating backup directory:", backup)
 		}
 		err = os.Mkdir(backup, os.ModePerm)
@@ -243,7 +243,7 @@ func backupPkgs(c *Config, pkgfiles []string) error {
 	for _, p := range pkgfiles {
 		dest := path.Join(backup, fmt.Sprintf("%s.bak", p))
 		src := path.Join(c.path, p)
-		if c.Verbose {
+		if !c.Quiet {
 			fmt.Println("backing up file:", p)
 		}
 		err = os.Rename(src, dest)

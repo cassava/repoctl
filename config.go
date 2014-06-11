@@ -39,8 +39,8 @@ type Config struct {
 	// RemoveParameters are parameters to add to the repo-remove command line.
 	RemoveParameters []string
 
-	// Verbose causes more information to be printed than usual.
-	Verbose bool
+	// Quiet causes less information to be printed than usual.
+	Quiet bool
 	// Columnate causes items to be printed in columns rather than lines.
 	Columnate bool
 
@@ -140,7 +140,7 @@ anything else. For example: pacman, and not pacman-3.5.3-1-i686.pkg.tar.xz
 General options available are:
 
  -h --help      show this usage message
-    --verbose   show more information than necessary
+ -q --quiet     only show information when absolutely necessary
  -s --columns   show items in columns rather than lines
  -c --config    configuration file to load settings from
     --repo      path to repository and database, such as
@@ -176,7 +176,7 @@ func NewConfigFromFlags() (conf *Config, cmd Action, err error) {
 	flag.StringVar(&conf.Repository, "repo", "/srv/abs/atlas.db.tar.gz", "path to repository and database")
 
 	flag.BoolVarP(&conf.Columnate, "columns", "s", false, "show items in columns rather than lines")
-	flag.BoolVar(&conf.Verbose, "verbose", false, "show more information than necessary")
+	flag.BoolVar(&conf.Quiet, "quiet", false, "show minimal amount of information")
 	flag.BoolVarP(&showHelp, "help", "h", false, "show this usage message")
 
 	// List options
@@ -219,7 +219,7 @@ func NewConfigFromFlags() (conf *Config, cmd Action, err error) {
 }
 
 func (c *Config) inform(v interface{}) {
-	if c.Verbose {
+	if !c.Quiet {
 		if e, ok := v.(error); ok {
 			fmt.Fprintf(os.Stderr, "warning: %s\n", e)
 		} else {
