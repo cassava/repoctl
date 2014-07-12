@@ -73,6 +73,23 @@ func ReadAUR(pkgname string) (*Package, error) {
 	return &pkg, nil
 }
 
+// ConcurrentlyReadAUR reads the pkgnames using n goroutines.
+//
+// Errors are passed through the channel if the channel is not nil, otherwise
+// they are ignored. Make sure you handle the errors right away, like so:
+//
+//	ch := make(chan error)
+//	go func() {
+//		for err := range ch {
+//			fmt.Println("error:", err)
+//		}
+//	}()
+//	pkgs := pacman.ConcurrentlyReadAUR(pkgs, n, ch)
+//	close(ch)
+//
+// Because if you don't, the program will probably run into a deadlock when
+// there is an error. Note that ConcurrentlyReadAUR does not close the channel,
+// you have to do that yourself.
 func ConcurrentlyReadAUR(pkgnames []string, n int, ch chan<- error) map[string]*Package {
 	var wg sync.WaitGroup
 	var mu sync.Mutex
