@@ -1,6 +1,6 @@
 # Maintainer: Ben Morgan <neembi@gmail.com>
 pkgname=repoctl
-pkgver=1.9.9
+pkgver=0.10
 pkgrel=1
 pkgdesc="A supplement to repo-add and repo-remove which simplifies managing local repositories"
 arch=('i686' 'x86_64')

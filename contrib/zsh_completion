@@ -4,6 +4,7 @@ local config repo repo_dir packages repo_commands
 
 repoctl_commands=(
     add:"add and update package(s) in the repository"
+    filter:"filter packages by certain criteria"
     help:"show the usage message for repoctl"
     list:"list packages available in the repository"
     remove:"remove and delete package(s) from the repository"
