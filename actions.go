@@ -26,10 +26,11 @@ const (
 // Add finds the newest packages given in pkgs and adds them, removing the old
 // packages.
 func Add(c *Config) error {
-	pkgs := pacman.ReadMatchingNames(c.path, c.Args, nil)
+	// TODO: handle the errors here correctly!
+	pkgs, _ := pacman.ReadMatchingNames(c.path, c.Args, nil)
 	pkgs, outdated := pacman.SplitOld(pkgs)
 	db, _ := getDatabasePkgs(c.Repository)
-	pending := filterPending(pkgs, db)
+	pending := filterPkgs(pkgs, pendingFilter(db))
 
 	if c.Interactive {
 		backup := "Delete following files:"
@@ -74,7 +75,8 @@ func Add(c *Config) error {
 }
 
 func Remove(c *Config) error {
-	pkgs := pacman.ReadMatchingNames(c.path, c.Args, nil)
+	// TODO: handle the errors here correctly!
+	pkgs, _ := pacman.ReadMatchingNames(c.path, c.Args, nil)
 	db, _ := getDatabasePkgs(c.Repository)
 
 	rmmap := make(map[string]bool)
@@ -133,7 +135,7 @@ func Remove(c *Config) error {
 func Update(c *Config) error {
 	pkgs, outdated := getRepoPkgs(c.path)
 	db, missed := getDatabasePkgs(c.Repository)
-	pending := filterPending(pkgs, db)
+	pending := filterPkgs(pkgs, pendingFilter(db))
 
 	if c.Interactive {
 		backup := "Delete following files:"

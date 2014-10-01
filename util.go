@@ -18,10 +18,11 @@ import (
 // getRepoPkgs retrieves the most up-to-date packages from the repository path,
 // and returns all older packages in outdated.
 func getRepoPkgs(repopath string) (pkgs []*pacman.Package, outdated []*pacman.Package) {
-	ch := make(chan error)
-	go handleErrors("warning: %s\n", ch)
-	dirPkgs := pacman.ReadDir(repopath, ch)
-	close(ch)
+	// TODO: handle errors here!
+	dirPkgs, _ := pacman.ReadDir(repopath, func(err error) error {
+		fmt.Fprintln(os.Stderr, "error:", err)
+		return nil
+	})
 	return pacman.SplitOld(dirPkgs)
 }
 
@@ -71,26 +72,61 @@ func handleErrors(format string, ch <-chan error) {
 	}
 }
 
-// filterPending returns all packages pending addition to the database.
-func filterPending(pkgs []*pacman.Package, db map[string]*pacman.Package) (pending []*pacman.Package) {
+type filterFunc func(*pacman.Package) bool
+
+func filterPkgs(pkgs []*pacman.Package, f filterFunc) []*pacman.Package {
+	filtered := make([]*pacman.Package, 0, len(pkgs))
 	for _, p := range pkgs {
-		dbp, ok := db[p.Name]
-		if !ok || dbp.OlderThan(p) {
-			pending = append(pending, p)
+		if f(p) {
+			filtered = append(filtered, p)
 		}
 	}
-	return pending
+	return filtered
 }
 
-// filterUpdates returns all packages with updates in AUR.
-func filterUpdates(pkgs []*pacman.Package, aur map[string]*pacman.Package) (updates []*pacman.Package) {
-	for _, p := range pkgs {
-		ap, ok := aur[p.Name]
-		if ok && ap.NewerThan(p) {
-			updates = append(updates, p)
+func intersectsListFilter(list []string) filterFunc {
+	if len(list) < 3 {
+		return func(pkg *pacman.Package) bool {
+			for _, p := range list {
+				if pkg.Name == p {
+					return true
+				}
+			}
+			return false
 		}
 	}
-	return updates
+
+	set := make(map[string]bool)
+	for _, p := range list {
+		set[p] = true
+	}
+	return intersectsFilter(set)
+}
+
+func intersectsFilter(set map[string]bool) filterFunc {
+	return func(pkg *pacman.Package) bool {
+		return set[pkg.Name]
+	}
+}
+
+func pendingFilter(db map[string]*pacman.Package) filterFunc {
+	return func(pkg *pacman.Package) bool {
+		dbp, ok := db[pkg.Name]
+		if !ok || dbp.OlderThan(pkg) {
+			return true
+		}
+		return false
+	}
+}
+
+func outdatedFilter(aur map[string]*pacman.Package) filterFunc {
+	return func(pkg *pacman.Package) bool {
+		ap, ok := aur[pkg.Name]
+		if ok && ap.NewerThan(pkg) {
+			return true
+		}
+		return false
+	}
 }
 
 // mapPkgs maps Packages to some string characteristic of a Package.
@@ -115,16 +151,20 @@ func pkgName(p *pacman.Package) string {
 }
 
 // printSet prints a set of items and optionally a header.
-func printSet(set []string, h string, cols bool) {
-	sort.Strings(set)
+func printSet(list []string, h string, cols bool) {
+	sort.Strings(list)
 	if h != "" {
 		fmt.Printf("\n%s\n", h)
 	}
 	if cols {
-		pr.PrintFlex(set)
-	} else {
-		for _, j := range set {
+		pr.PrintFlex(list)
+	} else if h != "" {
+		for _, j := range list {
 			fmt.Println(" ", j)
+		}
+	} else {
+		for _, j := range list {
+			fmt.Println(j)
 		}
 	}
 }

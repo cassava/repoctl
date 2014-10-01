@@ -10,9 +10,10 @@ import (
 )
 
 func main() {
-	conf, cmd, err := NewConfigFromFlags()
+	conf, cmd, err := ReadConfig()
 	if err != nil {
-		fmt.Println("Error:", err, "\n")
+		fmt.Println("Error:", err)
+		fmt.Println()
 		Usage(nil)
 		os.Exit(1)
 	}

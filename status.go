@@ -6,7 +6,10 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strings"
+
+	"github.com/goulash/pacman"
 )
 
 // Status prints a thorough status of the current repository.
@@ -18,7 +21,67 @@ import (
 // 	outdated        packages with newer versions in AUR
 // 	missing         packages not found in AUR
 func Status(c *Config) error {
+	if len(c.Args) > 0 {
+		return filter(c)
+	}
 	return status(c)
+}
+
+func filter(c *Config) error {
+	pkgs, outdated := getRepoPkgs(c.path)
+
+	var (
+		readDB  bool
+		readAUR bool
+
+		db          map[string]*pacman.Package
+		missed      []string
+		aur         map[string]*pacman.Package
+		unavailable []string
+
+		getDB = func() map[string]*pacman.Package {
+			if !readDB {
+				db, missed = getDatabasePkgs(c.Repository)
+				readDB = true
+			}
+			return db
+		}
+
+		getAUR = func() map[string]*pacman.Package {
+			if !readAUR {
+				aur, unavailable = getAURPkgs(mapPkgs(pkgs, pkgName))
+				readAUR = true
+			}
+			return aur
+		}
+
+		getAURUnavailable = func() []string {
+			if !readAUR {
+				getAUR()
+			}
+			return unavailable
+		}
+	)
+
+	for _, f := range c.Args {
+		switch f {
+		case "duplicates":
+			pkgs = filterPkgs(pkgs, intersectsListFilter(mapPkgs(outdated, pkgFilename)))
+		case "pending":
+			pkgs = filterPkgs(pkgs, pendingFilter(getDB()))
+		case "installed":
+			fmt.Fprintln(os.Stderr, "filter installed has not been implemented yet!")
+		case "outdated":
+			pkgs = filterPkgs(pkgs, outdatedFilter(getAUR()))
+		case "missing":
+			pkgs = filterPkgs(pkgs, intersectsListFilter(getAURUnavailable()))
+		default:
+			fmt.Fprintf(os.Stderr, "Unknown filter '%s'!", f)
+		}
+	}
+
+	printSet(mapPkgs(pkgs, pkgName), "", c.Columnate)
+	return nil
 }
 
 func status(c *Config) error {
@@ -42,7 +105,7 @@ func status(c *Config) error {
 		nothing = false
 	}
 
-	pending := filterPending(pkgs, db)
+	pending := filterPkgs(pkgs, pendingFilter(db))
 	if len(pending) > 0 {
 		printSet(mapPkgs(pending, pkgName), "Database entries pending addition:", c.Columnate)
 		nothing = false
@@ -54,7 +117,7 @@ func status(c *Config) error {
 		nothing = false
 	}
 
-	updates := filterUpdates(pkgs, aur)
+	updates := filterPkgs(pkgs, outdatedFilter(aur))
 	if len(updates) > 0 {
 		printSet(mapPkgs(updates, pkgName), "Packages with updates in AUR:", c.Columnate)
 		nothing = false

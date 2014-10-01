@@ -10,6 +10,8 @@ import (
 	"os"
 	"path"
 
+	//	"github.com/goulash/target"
+	"github.com/goulash/util"
 	flag "github.com/ogier/pflag"
 )
 
@@ -18,8 +20,16 @@ const (
 	progVersion = "1.9.9"
 	progDate    = "10. June 2014"
 
-	configPath = "~/.repo.conf"
+	defaultRepo = "/srv/abs/atlas.db.tar.gz"
 )
+
+var defaultConfigPath = path.Join(os.Getenv("HOME"), ".repo.conf")
+
+type IniConfig struct {
+	Repo     string   `target:repo,required`
+	AddParam []string `target:add_params`
+	RmParam  []string `target:rm_params`
+}
 
 // Config contains all the configuration flags, variables, and arguments that
 // are needed for the various actions.
@@ -66,7 +76,7 @@ type Config struct {
 	// For this, the files are given the suffix ".bak".
 	Backup bool
 
-	// Arguments contains the argumetns given on the commandline.
+	// Arguments contains the arguments given on the commandline.
 	Args []string
 }
 
@@ -159,21 +169,33 @@ func NewConfig(repo string) *Config {
 	}
 }
 
-// NewConfigFromFile reads a configuration from a file.
-func NewConfigFromFile(path string) (conf *Config, err error) {
-	return nil, nil
+func readIniInto(path string, conf *Config) error {
+	/*
+		ini := &IniConfig{}
+		err := target.ReadFile(path, ini)
+		if err != nil {
+			return err
+		}
+
+		if conf.Repository == "" {
+			conf.Repository = ini.Repo
+		}
+		conf.AddParameters = ini.AddParam
+		conf.RemoveParameters = ini.RmParam
+		return nil
+	*/
+
+	return nil
 }
 
-// NewConfigFromFlags reads a configuration from the command line arguments.
-//
-// TODO: Implement Config file reading and merging
-func NewConfigFromFlags() (conf *Config, cmd Action, err error) {
+// ReadConfig reads a configuration from the command line arguments.
+func ReadConfig() (conf *Config, cmd Action, err error) {
 	var allListOptions bool
 	var showHelp bool
 	conf = &Config{}
 
-	flag.StringVarP(&conf.ConfigFile, "config", "c", configPath, "configuration file to load settings from")
-	flag.StringVar(&conf.Repository, "repo", "/srv/abs/atlas.db.tar.gz", "path to repository and database")
+	flag.StringVarP(&conf.ConfigFile, "config", "c", defaultConfigPath, "configuration file to load settings from")
+	flag.StringVar(&conf.Repository, "repo", "", "path to repository and database")
 
 	flag.BoolVarP(&conf.Columnate, "columns", "s", false, "show items in columns rather than lines")
 	flag.BoolVar(&conf.Quiet, "quiet", false, "show minimal amount of information")
@@ -196,6 +218,27 @@ func NewConfigFromFlags() (conf *Config, cmd Action, err error) {
 	if showHelp {
 		return nil, Usage, nil
 	}
+
+	// Reading config file and constructing path and database parts
+	if ex, _ := util.FileExists(conf.ConfigFile); ex {
+		err := readIniInto(conf.ConfigFile, conf)
+		if err != nil {
+			return nil, nil, err
+		}
+	} else {
+		fmt.Fprintf(os.Stderr, "Warning: missing config file %q.\n", conf.ConfigFile)
+	}
+
+	if conf.Repository == "" {
+		fmt.Fprintf(os.Stderr, "Warning: missing repository, using %q.\n", defaultRepo)
+		conf.Repository = defaultRepo
+	}
+	conf.path = path.Dir(conf.Repository)
+	conf.database = path.Base(conf.Repository)
+	if len(flag.Args()) == 0 {
+		return nil, Usage, errors.New("no action specified on command line")
+	}
+
 	if allListOptions {
 		conf.Versioned = true
 		conf.Pending = true
@@ -204,11 +247,6 @@ func NewConfigFromFlags() (conf *Config, cmd Action, err error) {
 		conf.Synchronize = true
 	}
 
-	conf.path = path.Dir(conf.Repository)
-	conf.database = path.Base(conf.Repository)
-	if len(flag.Args()) == 0 {
-		return nil, Usage, errors.New("no action specified on command line")
-	}
 	conf.Args = flag.Args()[1:]
 	cmd, ok := actions[flag.Arg(0)]
 	if !ok {
