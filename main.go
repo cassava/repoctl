@@ -17,8 +17,8 @@ import (
 
 const (
 	progName    = "repoctl"
-	progVersion = "1.9.9"
-	progDate    = "10. June 2014"
+	progVersion = "0.10"
+	progDate    = "1. October 2014"
 
 	defaultRepo = "/srv/abs/atlas.db.tar.gz"
 )
