@@ -43,7 +43,7 @@ is mostly used in the following way (see the Tips section for more):
 
 
 ### Configuration File Example
-The configuration file is located at `~/.repo.conf`, and is in the
+The configuration file is located at `~/.repoctl.conf`, and is in the
 [TOML](https://github.com/toml-lang/toml) format:
 
     # repo is the full path to the repository that will be managed by repoctl.

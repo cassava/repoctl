@@ -20,13 +20,12 @@ func Filter(c *Config) error {
 		readAUR bool
 
 		db          map[string]*pacman.Package
-		missed      []string
 		aur         map[string]*pacman.Package
 		unavailable []string
 
 		getDB = func() map[string]*pacman.Package {
 			if !readDB {
-				db, missed = getDatabasePkgs(c.Repository)
+				db, _ = getDatabasePkgs(c.Repository)
 				readDB = true
 			}
 			return db

@@ -10,7 +10,6 @@ import (
 	"os"
 	"path"
 
-	"github.com/BurntSushi/toml"
 	"github.com/goulash/util"
 	flag "github.com/ogier/pflag"
 )
@@ -19,17 +18,9 @@ const (
 	progName    = "repoctl"
 	progVersion = "0.10"
 	progDate    = "1. October 2014"
-
-	defaultRepo = "/srv/abs/atlas.db.tar.gz"
 )
 
-var defaultConfigPath = path.Join(os.Getenv("HOME"), ".repo.conf")
-
-type IniConfig struct {
-	Repo     string   `toml:"repo"`
-	AddParam []string `toml:"add_params"`
-	RmParam  []string `toml:"rm_params"`
-}
+var defaultConfigPath = path.Join(os.Getenv("HOME"), ".repoctl.conf")
 
 // Config contains all the configuration flags, variables, and arguments that
 // are needed for the various actions.
@@ -172,22 +163,6 @@ func NewConfig(repo string) *Config {
 	}
 }
 
-func readIniInto(path string, conf *Config) error {
-	var ini IniConfig
-	_, err := toml.DecodeFile(path, &ini)
-	if err != nil {
-		return err
-	}
-
-	if conf.Repository == "" {
-		conf.Repository = ini.Repo
-	}
-	conf.AddParameters = ini.AddParam
-	conf.RemoveParameters = ini.RmParam
-
-	return nil
-}
-
 // ReadConfig reads a configuration from the command line arguments.
 func ReadConfig() (conf *Config, cmd Action, err error) {
 	var allListOptions bool
@@ -217,28 +192,33 @@ func ReadConfig() (conf *Config, cmd Action, err error) {
 
 	if showHelp {
 		return nil, Usage, nil
-	}
-
-	// Reading config file and constructing path and database parts
-	if ex, _ := util.FileExists(conf.ConfigFile); ex {
-		err := readIniInto(conf.ConfigFile, conf)
-		if err != nil {
-			return nil, nil, err
-		}
-	} else {
-		fmt.Fprintf(os.Stderr, "Warning: missing config file %q.\n", conf.ConfigFile)
-	}
-
-	if conf.Repository == "" {
-		fmt.Fprintf(os.Stderr, "Warning: missing repository, using %q.\n", defaultRepo)
-		conf.Repository = defaultRepo
-	}
-	conf.path = path.Dir(conf.Repository)
-	conf.database = path.Base(conf.Repository)
-	if len(flag.Args()) == 0 {
+	} else if len(flag.Args()) == 0 {
 		return nil, Usage, errors.New("no action specified on command line")
 	}
 
+	// Read config file.
+	if ex, _ := util.FileExists(conf.ConfigFile); ex {
+		rc, err := ReadRepoConfig(conf.ConfigFile)
+		if err != nil {
+			return nil, nil, err
+		}
+		rc.MergeIntoConfig(conf)
+	} else {
+		fmt.Fprintf(os.Stderr, "Warning: creating missing config file %q.\n", conf.ConfigFile)
+		rp := "/srv/abs/atlas.db.tar.gz"
+		if conf.Repository != "" {
+			rp = conf.Repository
+		}
+		RepoConfig{Repo: rp}.WriteDefault(conf.ConfigFile)
+	}
+
+	// Fail if we still don't have repository information.
+	if conf.Repository == "" {
+		return nil, nil, fmt.Errorf("missing repository information; set in %q!", conf.ConfigFile)
+	}
+
+	conf.path = path.Dir(conf.Repository)
+	conf.database = path.Base(conf.Repository)
 	if allListOptions {
 		conf.Versioned = true
 		conf.Pending = true
@@ -246,7 +226,6 @@ func ReadConfig() (conf *Config, cmd Action, err error) {
 		conf.Installed = true
 		conf.Synchronize = true
 	}
-
 	conf.Args = flag.Args()[1:]
 	cmd, ok := actions[flag.Arg(0)]
 	if !ok {
