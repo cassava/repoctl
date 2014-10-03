@@ -72,63 +72,6 @@ func handleErrors(format string, ch <-chan error) {
 	}
 }
 
-type filterFunc func(*pacman.Package) bool
-
-func filterPkgs(pkgs []*pacman.Package, f filterFunc) []*pacman.Package {
-	filtered := make([]*pacman.Package, 0, len(pkgs))
-	for _, p := range pkgs {
-		if f(p) {
-			filtered = append(filtered, p)
-		}
-	}
-	return filtered
-}
-
-func intersectsListFilter(list []string) filterFunc {
-	if len(list) < 3 {
-		return func(pkg *pacman.Package) bool {
-			for _, p := range list {
-				if pkg.Name == p {
-					return true
-				}
-			}
-			return false
-		}
-	}
-
-	set := make(map[string]bool)
-	for _, p := range list {
-		set[p] = true
-	}
-	return intersectsFilter(set)
-}
-
-func intersectsFilter(set map[string]bool) filterFunc {
-	return func(pkg *pacman.Package) bool {
-		return set[pkg.Name]
-	}
-}
-
-func pendingFilter(db map[string]*pacman.Package) filterFunc {
-	return func(pkg *pacman.Package) bool {
-		dbp, ok := db[pkg.Name]
-		if !ok || dbp.OlderThan(pkg) {
-			return true
-		}
-		return false
-	}
-}
-
-func outdatedFilter(aur map[string]*pacman.Package) filterFunc {
-	return func(pkg *pacman.Package) bool {
-		ap, ok := aur[pkg.Name]
-		if ok && ap.NewerThan(pkg) {
-			return true
-		}
-		return false
-	}
-}
-
 // mapPkgs maps Packages to some string characteristic of a Package.
 func mapPkgs(pkgs []*pacman.Package, f func(*pacman.Package) string) []string {
 	results := make([]string, len(pkgs))
