@@ -68,6 +68,13 @@ func List(c *Config) error {
 				} else {
 					buf.WriteString(" <!>")
 				}
+			} else if ap.OlderThan(p) {
+				if c.Versioned {
+					buf.WriteString(" <- ")
+					buf.WriteString(ap.Version)
+				} else {
+					buf.WriteString(" <*>")
+				}
 			}
 		}
 		if c.Duplicates && dups[p.Name] > 0 {

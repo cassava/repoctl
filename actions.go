@@ -30,7 +30,7 @@ func Add(c *Config) error {
 	pkgs, _ := pacman.ReadMatchingNames(c.path, c.Args, nil)
 	pkgs, outdated := pacman.SplitOld(pkgs)
 	db, _ := getDatabasePkgs(c.Repository)
-	pending := filterPkgs(pkgs, pendingFilter(db))
+	pending := filterPkgs(pkgs, dbPendingFilter(db))
 
 	if c.Interactive {
 		backup := "Delete following files:"
@@ -135,7 +135,7 @@ func Remove(c *Config) error {
 func Update(c *Config) error {
 	pkgs, outdated := getRepoPkgs(c.path)
 	db, missed := getDatabasePkgs(c.Repository)
-	pending := filterPkgs(pkgs, pendingFilter(db))
+	pending := filterPkgs(pkgs, dbPendingFilter(db))
 
 	if c.Interactive {
 		backup := "Delete following files:"

@@ -31,7 +31,7 @@ func Status(c *Config) error {
 		nothing = false
 	}
 
-	pending := filterPkgs(pkgs, pendingFilter(db))
+	pending := filterPkgs(pkgs, dbPendingFilter(db))
 	if len(pending) > 0 {
 		printSet(mapPkgs(pending, pkgName), "Database entries pending addition:", c.Columnate)
 		nothing = false
@@ -43,7 +43,7 @@ func Status(c *Config) error {
 		nothing = false
 	}
 
-	updates := filterPkgs(pkgs, outdatedFilter(aur))
+	updates := filterPkgs(pkgs, aurNewerFilter(aur))
 	if len(updates) > 0 {
 		printSet(mapPkgs(updates, pkgName), "Packages with updates in AUR:", c.Columnate)
 		nothing = false

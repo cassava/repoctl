@@ -16,9 +16,26 @@ import (
 
 const (
 	progName    = "repoctl"
-	progVersion = "0.10"
-	progDate    = "1. October 2014"
+	progVersion = "0.11beta"
+	progDate    = "3. October 2014"
 )
+
+// Action is the type that all action functions need to satisfy.
+type Action func(*Config) error
+
+// actions is a map from names to action functions.
+var actions map[string]Action = map[string]Action{
+	"list":   List,
+	"ls":     List,
+	"update": Update,
+	"add":    Add,
+	"remove": Remove,
+	"rm":     Remove,
+	"status": Status,
+	"filter": Filter,
+	"help":   Usage,
+	"usage":  Usage,
+}
 
 var defaultConfigPath = path.Join(os.Getenv("HOME"), ".repoctl.conf")
 
@@ -71,26 +88,9 @@ type Config struct {
 	Args []string
 }
 
-// Action is the type that all action functions need to satisfy.
-type Action func(*Config) error
-
-// actions is a map from names to action functions.
-var actions map[string]Action = map[string]Action{
-	"list":   List,
-	"ls":     List,
-	"update": Update,
-	"add":    Add,
-	"remove": Remove,
-	"rm":     Remove,
-	"status": Status,
-	"filter": Filter,
-	"help":   Usage,
-	"usage":  Usage,
-}
-
 // Usage prints the help message for the program.
 func Usage(*Config) error {
-	fmt.Printf("%s %s (%s)\n", progName, progVersion, progDate)
+	fmt.Printf("%s %s (%s)", progName, progVersion, progDate)
 	fmt.Print(`
 Manage local pacman repositories.
 
@@ -105,15 +105,8 @@ Commands available:
                     -u --outdated   mark packages that are newer in AUR
                     -a --all        same as -vpdlu
 
-  filter <crit...> Filter list of packages by one or more criteria; each can
-                   optionally be prefixed by an exclamation mark ! to negate
-                   the filter.
-                   Filters available are:
-                    duplicates      files to be deleted or backed up
-                    pending         packages to be added/removed from database
-                    outdated        packages with newer versions in AUR
-                    missing         packages not found in AUR
-                    local           packages locally installed
+  filter <crit...> Filter list of packages by one or more criteria;
+				   run without any criteria for help.
 
   status           Show pending changes to the database and packages that can
                    be updated.
@@ -152,15 +145,6 @@ General options available are:
 `)
 
 	return nil
-}
-
-// NewConfig creates a minimal configuration.
-func NewConfig(repo string) *Config {
-	return &Config{
-		Repository: repo,
-		path:       path.Dir(repo),
-		database:   path.Base(repo),
-	}
 }
 
 // ReadConfig reads a configuration from the command line arguments.
@@ -233,16 +217,6 @@ func ReadConfig() (conf *Config, cmd Action, err error) {
 	}
 
 	return conf, cmd, nil
-}
-
-func (c *Config) inform(v interface{}) {
-	if !c.Quiet {
-		if e, ok := v.(error); ok {
-			fmt.Fprintf(os.Stderr, "warning: %s\n", e)
-		} else {
-			fmt.Fprintln(os.Stderr, v)
-		}
-	}
 }
 
 func main() {
