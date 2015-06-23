@@ -99,12 +99,13 @@ func (pkg *Package) CompareVersion(alt *Package) int {
 // format that we can do anything with.
 //
 // Currently, only the following formats are supported:
+//  .pkg.tar
 //	.pkg.tar.xz
 //	.pkg.tar.gz
 //	.pkg.tar.bz2
 //
 func HasPackageFormat(filename string) bool {
-	for _, ext := range []string{".pkg.tar.xz", ".pkg.tar.gz", ".pkg.tar.bz2"} {
+	for _, ext := range []string{".pkg.tar", ".pkg.tar.xz", ".pkg.tar.gz", ".pkg.tar.bz2"} {
 		if strings.HasSuffix(filename, ext) {
 			return true
 		}
