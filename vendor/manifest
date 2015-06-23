@@ -1,0 +1,35 @@
+{
+	"version": 0,
+	"dependencies": [
+		{
+			"importpath": "github.com/BurntSushi/toml",
+			"repository": "https://github.com/BurntSushi/toml",
+			"revision": "056c9bc7be7190eaa7715723883caffa5f8fa3e4",
+			"branch": "master"
+		},
+		{
+			"importpath": "gopkg.in/ogier/pflag.v0",
+			"repository": "https://gopkg.in/ogier/pflag.v0",
+			"revision": "32a05c62658bd1d7c7e75cbc8195de5d585fde0f",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/goulash/utils",
+			"repository": "https://github.com/goulash/utils",
+			"revision": "2f61c649df2533748c59c895637e18d4248fdc8f",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/goulash/pr",
+			"repository": "https://github.com/goulash/pr",
+			"revision": "353c0171dd20ef32002adee89a2c7943c867884a",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/goulash/pacman",
+			"repository": "https://github.com/goulash/pacman",
+			"revision": "bd44e6e9dfd93c4316d923a81bd19607e23537bb",
+			"branch": "master"
+		}
+	]
+}
