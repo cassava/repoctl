@@ -11,13 +11,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/goulash/util"
+	"github.com/goulash/osutil"
 )
 
 const errLimit = 15
 
 func TestVerCmp(t *testing.T) {
-	data, err := util.NewDecompressor("testdata/vercmp.dat.xz")
+	data, err := osutil.NewDecompressor("testdata/vercmp.dat.xz")
 	if err != nil {
 		t.Fatalf("cannot open 'testdata/testdata.dat.xz': %s", err)
 	}

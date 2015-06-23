@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/goulash/util"
+	"github.com/goulash/osutil"
 )
 
 // HasDatabaseFormat returns true if the filename matches a pacman package
@@ -29,7 +29,7 @@ func HasDatabaseFormat(filename string) bool {
 
 // ReadDatabase reads all the packages from a database file.
 func ReadDatabase(dbpath string) ([]*Package, error) {
-	dr, err := util.NewDecompressor(dbpath)
+	dr, err := osutil.NewDecompressor(dbpath)
 	if err != nil {
 		return nil, err
 	}
@@ -45,10 +45,10 @@ func ReadDatabase(dbpath string) ([]*Package, error) {
 			return nil, fmt.Errorf("unexpected file '%s'", hdr.Name)
 		}
 
-		pr := util.DirReader(tr, &hdr)
+		pr := osutil.DirReader(tr, &hdr)
 		pkg, err := readDatabasePkgInfo(pr, dbpath)
 		if err != nil {
-			if err == util.EOA {
+			if err == osutil.EOA {
 				break
 			}
 			return nil, err

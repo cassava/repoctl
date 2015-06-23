@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/goulash/util"
+	"github.com/goulash/osutil"
 )
 
 // PackageOrigin exists to document which fields in the Package type can be
@@ -116,7 +116,7 @@ func HasPackageFormat(filename string) bool {
 // ReadPackage reads the package information from a pacman package
 // and returns it in the Package datatype.
 func ReadPackage(filename string) (*Package, error) {
-	bs, err := util.ReadFileFromArchive(filename, ".PKGINFO")
+	bs, err := osutil.ReadFileFromArchive(filename, ".PKGINFO")
 	if err != nil {
 		return nil, err
 	}
