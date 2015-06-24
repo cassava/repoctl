@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/goulash/util"
+	"github.com/goulash/osutil"
 )
 
 // PackageOrigin exists to document which fields in the Package type can be
@@ -99,12 +99,13 @@ func (pkg *Package) CompareVersion(alt *Package) int {
 // format that we can do anything with.
 //
 // Currently, only the following formats are supported:
+//  .pkg.tar
 //	.pkg.tar.xz
 //	.pkg.tar.gz
 //	.pkg.tar.bz2
 //
 func HasPackageFormat(filename string) bool {
-	for _, ext := range []string{".pkg.tar.xz", ".pkg.tar.gz", ".pkg.tar.bz2"} {
+	for _, ext := range []string{".pkg.tar", ".pkg.tar.xz", ".pkg.tar.gz", ".pkg.tar.bz2"} {
 		if strings.HasSuffix(filename, ext) {
 			return true
 		}
@@ -115,7 +116,7 @@ func HasPackageFormat(filename string) bool {
 // ReadPackage reads the package information from a pacman package
 // and returns it in the Package datatype.
 func ReadPackage(filename string) (*Package, error) {
-	bs, err := util.ReadFileFromArchive(filename, ".PKGINFO")
+	bs, err := osutil.ReadFileFromArchive(filename, ".PKGINFO")
 	if err != nil {
 		return nil, err
 	}

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package util_test
+package osutil_test
 
 import (
 	"archive/tar"
@@ -12,7 +12,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/goulash/util"
+	"github.com/goulash/osutil"
 )
 
 func ExampleDirReader() {
@@ -41,10 +41,10 @@ func ExampleDirReader() {
 		}
 
 		fmt.Println(hdr.Name)
-		r := util.DirReader(tr, &hdr)
+		r := osutil.DirReader(tr, &hdr)
 		err = printPrefixed(r, "\t")
 		if err != nil {
-			if err == util.EOA {
+			if err == osutil.EOA {
 				break
 			}
 			die(err)

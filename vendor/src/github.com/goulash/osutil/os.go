@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package util
+package osutil
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ func Exists(path string) (ex bool, err error) {
 	return ex, err
 }
 
-// FileExists returns exists = true if the file exists and is not
+// FileExists returns ex = true if the file exists and is not
 // a directory, and returns err != nil if any other error occured (such as
 // permission denied).
 func FileExists(path string) (ex bool, err error) {
@@ -30,7 +30,7 @@ func FileExists(path string) (ex bool, err error) {
 	return ex, err
 }
 
-// DirExists returns exists = true if the file exists and is
+// DirExists returns ex = true if the file exists and is
 // a directory, and returns err != nil if any other error occured (such as
 // permission denied).
 func DirExists(path string) (ex bool, err error) {

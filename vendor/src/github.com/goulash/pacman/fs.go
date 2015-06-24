@@ -14,38 +14,28 @@ import (
 // ReadDir reads all the packages it finds in a directory, recursing into
 // subdirectories.
 //
-// Errors are passed through the channel if the channel is not nil, otherwise
-// they are ignored. Make sure you handle the errors right away, like so:
+// Errors are passed to errHandler if errHandler is not nil. If errHandler
+// returns an error, then the function aborts and returns the already read
+// packages and the error.
 //
-//	ch := make(chan error)
-//	go func() {
-//		for err := range ch {
-//			fmt.Println("error:", err)
-//		}
-//	}()
-//	pkgs := ReadDir(dirpath, ch)
-//	close(ch)
+// Example:
 //
-// Because if you don't, the program will probably run into a deadlock when
-// there is an error. Note that ReadDir does not close the channel, you have to
-// do that yourself.
-func ReadDir(dirpath string, ch chan<- error) []*Package {
+//	// Our errHandler never returns an error, so neither does ReadDir.
+//	pkgs := ReadDir(dirpath, func(err error) error {
+//		fmt.Println("error:", err)
+//		return nil
+//	})
+//
+func ReadDir(dirpath string, errHandler func(error) error) ([]*Package, error) {
 	var pkgs []*Package
-
-	filepath.Walk(dirpath, func(filename string, info os.FileInfo, err error) error {
-		if err != nil {
-			if ch != nil {
-				ch <- err
-			}
-			return nil
+	err := filepath.Walk(dirpath, func(filename string, info os.FileInfo, err error) error {
+		if err != nil && errHandler != nil {
+			return errHandler(err)
 		}
 		if !info.Mode().IsDir() && HasPackageFormat(filename) {
 			p, err := ReadPackage(filename)
-			if err != nil {
-				if ch != nil {
-					ch <- err
-				}
-				return nil
+			if err != nil && errHandler != nil {
+				return errHandler(err)
 			}
 
 			pkgs = append(pkgs, p)
@@ -54,30 +44,23 @@ func ReadDir(dirpath string, ch chan<- error) []*Package {
 		return nil
 	})
 
-	return pkgs
+	return pkgs, err
 }
 
 // ReadMatchingName reads all packages with the given name in a directory,
 // recursing into subdirectories.
 //
 // Error handling is managed in the same way as in ReadDir.
-func ReadMatchingName(dirpath, pkgname string, ch chan<- error) []*Package {
+func ReadMatchingName(dirpath, pkgname string, errHandler func(error) error) ([]*Package, error) {
 	var pkgs []*Package
-
-	filepath.Walk(dirpath, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			if ch != nil {
-				ch <- err
-			}
-			return nil
+	err := filepath.Walk(dirpath, func(path string, info os.FileInfo, err error) error {
+		if err != nil && errHandler != nil {
+			return errHandler(err)
 		}
 		if !info.Mode().IsDir() && strings.HasPrefix(path, pkgname) && HasPackageFormat(path) {
 			p, err := ReadPackage(path)
-			if err != nil {
-				if ch != nil {
-					ch <- err
-				}
-				return nil
+			if err != nil && errHandler != nil {
+				return errHandler(err)
 			}
 
 			if p.Name == pkgname {
@@ -88,30 +71,33 @@ func ReadMatchingName(dirpath, pkgname string, ch chan<- error) []*Package {
 		return nil
 	})
 
-	return pkgs
+	return pkgs, err
 }
 
 // ReadMatchingNames reads all packages with one of the given names in a directory,
 // at the moment it does not recurse into subdirectories.
 //
 // Error handling is managed the same as in ReadDir.
-func ReadMatchingNames(dirpath string, pkgnames []string, ch chan<- error) []*Package {
+func ReadMatchingNames(dirpath string, pkgnames []string, errHandler func(error) error) ([]*Package, error) {
 	var pkgs []*Package
+	var err error
 
 	for _, n := range pkgnames {
-		matches, err := filepath.Glob(filepath.Join(dirpath, n+"-*.pkg.tar.*"))
-		if err != nil {
-			if ch != nil {
-				ch <- fmt.Errorf("cannot find package '%s'", n)
+		var matches []string
+		matches, err = filepath.Glob(filepath.Join(dirpath, n+"-*.pkg.tar.*"))
+		if err != nil && errHandler != nil {
+			err = errHandler(fmt.Errorf("cannot find package '%s'", n))
+			if err != nil {
+				break
 			}
 			continue
 		}
-
 		for _, fp := range matches {
 			p, err := ReadPackage(fp)
-			if err != nil {
-				if ch != nil {
-					ch <- err
+			if err != nil && errHandler != nil {
+				err = errHandler(err)
+				if err != nil {
+					break
 				}
 				continue
 			}
@@ -122,5 +108,5 @@ func ReadMatchingNames(dirpath string, pkgnames []string, ch chan<- error) []*Pa
 		}
 	}
 
-	return pkgs
+	return pkgs, err
 }

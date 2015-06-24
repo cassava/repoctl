@@ -14,12 +14,6 @@
 			"branch": "master"
 		},
 		{
-			"importpath": "github.com/goulash/utils",
-			"repository": "https://github.com/goulash/utils",
-			"revision": "2f61c649df2533748c59c895637e18d4248fdc8f",
-			"branch": "master"
-		},
-		{
 			"importpath": "github.com/goulash/pr",
 			"repository": "https://github.com/goulash/pr",
 			"revision": "353c0171dd20ef32002adee89a2c7943c867884a",
@@ -28,7 +22,19 @@
 		{
 			"importpath": "github.com/goulash/pacman",
 			"repository": "https://github.com/goulash/pacman",
-			"revision": "bd44e6e9dfd93c4316d923a81bd19607e23537bb",
+			"revision": "0f284a0bdf9252ff9917e72e91e4590d696b2887",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/goulash/osutil",
+			"repository": "https://github.com/goulash/osutil",
+			"revision": "9da30616d670bd21001f9dea5d0014a0e8a19e8b",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/remyoudompheng/go-liblzma",
+			"repository": "https://github.com/remyoudompheng/go-liblzma",
+			"revision": "e592d11004fad5273ee038602d775382a6dffeec",
 			"branch": "master"
 		}
 	]
