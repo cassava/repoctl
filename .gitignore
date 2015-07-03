@@ -1,3 +1,2 @@
-repoctl
-pkg
-bin
+pkg/
+bin/
