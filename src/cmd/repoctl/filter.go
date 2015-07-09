@@ -12,6 +12,9 @@ import (
 	"os"
 	"strings"
 
+	// gb packages
+	"shortry"
+
 	"github.com/goulash/pacman"
 )
 
@@ -21,16 +24,13 @@ func FilterUsage() {
 Filter packages through a set of criteria combined in an AND fashion,
 which can be prefixed with an exclamation mark to negate the effect.
 
-Each filter belongs to a category, such as "aur", which can be omited
-if the identifier is unambiguous.
-
 It is only necessary to provide enough characters so that the identifier
-is unambiguous; e.g. "aur.newer" can be "a.newer", "a.n", "newer", or "n".
-(Not implemented yet.)
+is unambiguous; e.g. "aur.newer" can be "a.newer", "a.n", or "a".
+Omissions occur can occur in hierarchical fashion.
 
 Filters available are:
 
-	db.missing			packages to be removed from the database
+    db.missing          packages to be removed from the database
     db.pending          packages to be added to the database
     file.dupes          packages with files to be deleted or backed up
     aur.newer           packages with newer versions in AUR
@@ -39,6 +39,24 @@ Filters available are:
     local.installed     packages that are installed on localhost
     local.upgradable    packages that can be upgraded on localhost
 `)
+}
+
+var shor = shortry.New(map[string]interface{}{
+	"db.missing":        nil,
+	"db.pending":        nil,
+	"file.dupes":        nil,
+	"aur.newer":         nil,
+	"aur.missing":       nil,
+	"aur.older":         nil,
+	"local.installed":   nil,
+	"local.upgradable":  nil,
+	"local.upgradeable": nil,
+})
+
+func filterDie(msg string) {
+	fmt.Fprintln(os.Stderr, msg, "\n")
+	FilterUsage()
+	os.Exit(1)
 }
 
 // Filter prints package names that are filtered by the specified filters.
@@ -103,6 +121,15 @@ nextFilter:
 			negate = true
 		}
 
+		f := shor.Matches(fltr)
+		if len(f) == 0 {
+			filterDie(fmt.Sprintf("Error: unknown filter %q", fltr))
+		} else if len(f) > 1 {
+			filterDie(fmt.Sprintf("Error: ambiguous filter %q matches %v", fltr, f))
+		} else {
+			fltr = f[0]
+		}
+
 		var ff filterFunc
 		switch fltr {
 		case "db.missing":
@@ -127,13 +154,11 @@ nextFilter:
 		case "aur.missing":
 			ff = intersectsListFilter(getAURUnavailable())
 		case "local.installed":
-			fmt.Fprintln(os.Stderr, `Error: filter "local.installed" is not implemented!`)
-			continue nextFilter
+			filterDie(`Error: filter "local.installed" is not implemented!`)
 		case "local.upgradable", "local.upgradeable":
-			fmt.Fprintln(os.Stderr, `Error: filter "local.upgradable" is not implemented!`)
+			filterDie(`Error: filter "local.upgradable" is not implemented!`)
 		default:
-			fmt.Fprintf(os.Stderr, "Error: unknown filter %q!", ff)
-			continue nextFilter
+			filterDie(fmt.Sprintf("Error: unknown filter %q", fltr))
 		}
 		if negate {
 			ff = negateFilter(ff)
