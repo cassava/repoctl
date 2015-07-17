@@ -191,11 +191,13 @@ func ReadConfig() (conf *Config, cmd Action, err error) {
 	}
 
 	// Read config file.
+	var isDefault bool
 	if ex, _ := osutil.FileExists(conf.ConfigFile); ex {
 		rc, err := ReadRepoConfig(conf.ConfigFile)
 		if err != nil {
 			return nil, nil, err
 		}
+		isDefault = rc.Default
 		rc.MergeIntoConfig(conf)
 	} else {
 		fmt.Fprintf(os.Stderr, "Warning: creating missing config file %q.\n", conf.ConfigFile)
@@ -206,7 +208,10 @@ func ReadConfig() (conf *Config, cmd Action, err error) {
 		RepoConfig{Repo: rp}.WriteDefault(conf.ConfigFile)
 	}
 
-	// Fail if we still don't have repository information.
+	// Fail if we still don't have repository information, or if config file has not been updated.
+	if isDefault {
+		return nil, nil, fmt.Errorf("please edit configuration file %q before running repoctl", conf.ConfigFile)
+	}
 	if conf.Repository == "" {
 		return nil, nil, fmt.Errorf("missing repository information; set in %q!", conf.ConfigFile)
 	}

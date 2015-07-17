@@ -19,6 +19,9 @@ var repoConfigTmpl = template.Must(template.New("repoctl").Parse(`# repoctl conf
 # same folder.
 repo = "{{ .Repo }}"
 
+# Remove the following line when you are done editing this file.
+default = true
+
 # add_params is the set of parameters that will be passed to repo-add
 # when it is called. Specify one time for each parameter.
 #add_params = []
@@ -37,6 +40,8 @@ type RepoConfig struct {
 	AddParam  []string `toml:"add_params"`
 	RmParam   []string `toml:"rm_params"`
 	IgnoreAUR []string `toml:"ignore_aur"`
+
+	Default bool `toml:"default"`
 }
 
 func ReadRepoConfig(path string) (*RepoConfig, error) {
