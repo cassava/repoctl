@@ -18,7 +18,9 @@ import (
 // getRepoPkgs retrieves the most up-to-date packages from the repository path,
 // and returns all older packages in outdated.
 func getRepoPkgs(repopath string) (pkgs []*pacman.Package, outdated []*pacman.Package) {
-	// TODO: handle errors here!
+	// TODO/FUTURE: Handle errors in a more intelligent fashion. If a single package could not
+	// be read, it's not the end of the world. If the entire path could not be read, then
+	// there isn't much point continuing. How do you figure the difference out though?
 	dirPkgs, _ := pacman.ReadDir(repopath, func(err error) error {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		return nil
