@@ -1,4 +1,5 @@
 # Maintainer: Ben Morgan <neembi@gmail.com>
+# vim: set ts=2 sw=2:
 pkgname=repoctl
 pkgver=0.12
 pkgrel=1
@@ -8,12 +9,15 @@ url="https://github.com/cassava/repoctl"
 license=('MIT')
 depends=('pacman')
 makedepends=('go')
-replaces=('repo-keep')
 source=(https://github.com/downloads/cassava/$pkgname/$pkgname-$pkgver.tar.gz)
 
 build() {
+  # Get and build the builder.
+  mkdir ${srcdir}/go
+  GOPATH=${srcdir}/go go get github.com/constabulary/gb/...
+
   cd $srcdir/$pkgname-$pkgver
-  go build
+  ${srcdir}/go/bin/gb build
 }
 
 package() {

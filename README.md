@@ -69,12 +69,9 @@ this:
     $ repoctl update
       [...]
 
-There is thus no copying of package files involved.
+Here is something that I do a lot:
 
-Here is something that I do a lot (except I have a script for the second
-command):
-
-    $ cower -dd $(repoctl filter outdated)
+    $ cower -dd $(repoctl filter aur.newer)
       [...]
     $ for dir in *; do cd $dir; makepkg -cs; cd ..; rm -rf $dir; done
       [...]

@@ -1,6 +1,23 @@
 Repoctl Releases
 ================
 
+## Version 0.12 (17 July 2015)
+This marks the first release where gb is used to build the project. That means
+that all the dependencies for this project (apart from gb itself) are contained
+within the project. Other changes are:
+
+  - New: simple shortcutting filter commands is now possible. Instead of
+    `aur.new` you can write `a.n`. At the moment, both parts are required.
+  - New: library `shortry` to implement some of shortcutting behavior.
+  - New: filter `db.missing` shows packages in local database which do not have
+    respective files. These are candidates for deletion.
+  - New: filter command can negate filters.
+  - New: default configuration is written if there is no configuration. If
+    default configuration is not edited, repoctl refuses to run.
+
+There are probably many more changes, but at the moment I can't be bothered to
+hunt them all down.
+
 ## Version 0.11 (18 December 2014)
 
   - New: The configuration file learned the field `ignore_aur`, which affects
