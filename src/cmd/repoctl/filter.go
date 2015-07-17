@@ -41,18 +41,6 @@ Filters available are:
 `)
 }
 
-var shor = shortry.New(map[string]interface{}{
-	"db.missing":        nil,
-	"db.pending":        nil,
-	"file.dupes":        nil,
-	"aur.newer":         nil,
-	"aur.missing":       nil,
-	"aur.older":         nil,
-	"local.installed":   nil,
-	"local.upgradable":  nil,
-	"local.upgradeable": nil,
-})
-
 func filterDie(msg string) {
 	fmt.Fprintln(os.Stderr, msg, "\n")
 	FilterUsage()
@@ -61,10 +49,14 @@ func filterDie(msg string) {
 
 // Filter prints package names that are filtered by the specified filters.
 func Filter(c *Config) error {
-	// TODO: pkgs only contains real packages. This is a problem later
-	// when for example db.pending does not show missing packages.
 	pkgs, outdated := getRepoPkgs(c.path)
 
+	// This function looks huge, but the actual body is pretty small.
+	// We define a lot of anonymous functions to do the work for us.
+	//
+	// getDB, getMissing, getAUR, and getAURUnavailable reduce the number
+	// of times packages are read to once. The functions essentially cache
+	// the result and return the cached result if it exists.
 	var (
 		readDB  bool
 		readAUR bool
@@ -106,6 +98,45 @@ func Filter(c *Config) error {
 			}
 			return unavailable
 		}
+
+		// shor finds a filterFunc that will filter the packages in the correct way.
+		// The package shortry lets us match "d.m" to "db.missing" for example.
+		shor = shortry.New(map[string]interface{}{
+			"db.missing": func(negate bool) filterFunc {
+				// This is a special case. Normally we don't print packages
+				// that are in the database but do not exist. Sometimes we
+				// want to see them though.
+				if !negate && !mergeDB {
+					m := getMissing()
+					pkgs = make([]*pacman.Package, len(m))
+					copy(pkgs, m)
+				}
+				return nil
+			},
+			"db.pending": func(_ bool) filterFunc {
+				return dbPendingFilter(getDB())
+			},
+			"file.dupes": func(_ bool) filterFunc {
+				return intersectsListFilter(mapPkgs(outdated, pkgFilename))
+			},
+			"aur.newer": func(_ bool) filterFunc {
+				return aurNewerFilter(getAUR())
+			},
+			"aur.missing": func(_ bool) filterFunc {
+				return intersectsListFilter(getAURUnavailable())
+			},
+			"aur.older": func(_ bool) filterFunc {
+				return aurOlderFilter(getAUR())
+			},
+			"local.installed": func(_ bool) filterFunc {
+				filterDie(`Error: filter "local.installed" is not implemented!`)
+				return nil
+			},
+			"local.upgradable": func(_ bool) filterFunc {
+				filterDie(`Error: filter "local.upgradable" is not implemented!`)
+				return nil
+			},
+		})
 	)
 
 	if len(c.Args) == 0 {
@@ -113,7 +144,6 @@ func Filter(c *Config) error {
 		return nil
 	}
 
-nextFilter:
 	for _, fltr := range c.Args {
 		var negate bool
 		if strings.HasPrefix(fltr, "!") {
@@ -121,49 +151,24 @@ nextFilter:
 			negate = true
 		}
 
-		f := shor.Matches(fltr)
-		if len(f) == 0 {
-			filterDie(fmt.Sprintf("Error: unknown filter %q", fltr))
-		} else if len(f) > 1 {
-			filterDie(fmt.Sprintf("Error: ambiguous filter %q matches %v", fltr, f))
-		} else {
-			fltr = f[0]
+		f, err := shor.Get(fltr)
+		if err != nil {
+			if err == shortry.ErrNotExists {
+				filterDie(fmt.Sprintf("Error: unknown filter %q", fltr))
+			} else if err == shortry.ErrAmbiguous {
+				filterDie(fmt.Sprintf("Error: ambiguous filter %q matches %v", fltr, shor.Matches(fltr)))
+			} else {
+				panic("unknown error!")
+			}
 		}
 
-		var ff filterFunc
-		switch fltr {
-		case "db.missing":
-			// This is a special case. Normally we don't print packages
-			// that are in the database but do not exist. Sometimes we
-			// want to see them though.
-			if negate || mergeDB {
-				continue nextFilter
-			}
-			m := getMissing()
-			pkgs = make([]*pacman.Package, len(m))
-			copy(pkgs, m)
+		ff := f.(func(bool) filterFunc)(negate)
+		if ff == nil {
 			continue
-		case "db.pending":
-			ff = dbPendingFilter(getDB())
-		case "file.dupes":
-			ff = intersectsListFilter(mapPkgs(outdated, pkgFilename))
-		case "aur.newer":
-			ff = aurNewerFilter(getAUR())
-		case "aur.older":
-			ff = aurOlderFilter(getAUR())
-		case "aur.missing":
-			ff = intersectsListFilter(getAURUnavailable())
-		case "local.installed":
-			filterDie(`Error: filter "local.installed" is not implemented!`)
-		case "local.upgradable", "local.upgradeable":
-			filterDie(`Error: filter "local.upgradable" is not implemented!`)
-		default:
-			filterDie(fmt.Sprintf("Error: unknown filter %q", fltr))
 		}
 		if negate {
 			ff = negateFilter(ff)
 		}
-
 		pkgs = filterPkgs(pkgs, ff)
 	}
 

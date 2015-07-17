@@ -37,7 +37,7 @@ func New(m map[string]interface{}) *Shortry {
 	}
 }
 
-// Get a key, if you can.
+// Get value for key, if possible.
 func (s *Shortry) Get(key string) (interface{}, error) {
 	m := s.Matches(key)
 	if len(m) == 0 {
@@ -48,8 +48,14 @@ func (s *Shortry) Get(key string) (interface{}, error) {
 	return s.kv[m[0]], nil
 }
 
+// Get values for all keys given, in order.
 func (s *Shortry) GetAll(key string) []interface{} {
-	panic("implement me!")
+	list := make([]interface{}, 0)
+	ms := s.Matches(key)
+	for _, m := range ms {
+		list = append(list, s.kv[m])
+	}
+	return list
 }
 
 // Exists returns true if there exists a pattern that matches to key.
