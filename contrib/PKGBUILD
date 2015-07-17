@@ -10,25 +10,29 @@ license=('MIT')
 depends=('pacman')
 makedepends=('go')
 source=(https://github.com/cassava/repoctl/releases/download/v0.12/repoctl-0.12.tar.gz)
-md5sums=('fb530b967e00e5fe6727fd1b61208028')
 
 build() {
   # Get and build the builder.
-  mkdir ${srcdir}/go
-  GOPATH=${srcdir}/go go get github.com/constabulary/gb/...
+  gopath=${srcdir}/go
+  if [[ -d ${gopath} ]]; then
+    rm -rf ${gopath}
+  fi
+  mkdir ${gopath}
+  GOPATH=${gopath} go get github.com/constabulary/gb/...
 
   cd ${srcdir}/${pkgname}-${pkgver}
-  ${srcdir}/go/bin/gb build
+  ${gopath}/bin/gb build
 }
 
 package() {
   cd ${srcdir}/${pkgname}-${pkgver}
 
-  # Install repo program
+  # Install repoctl program
   mkdir -p ${pkgdir}/usr/bin
-  install -m755 repoctl ${pkgdir}/usr/bin/
+  install -m755 bin/repoctl ${pkgdir}/usr/bin/
 
   # Install other documentation
+  mkdir -p ${pkgdir}/usr/share/doc/repoctl
   install -m644 TODO.md README.md NEWS.md ${pkgdir}/usr/share/doc/repoctl/
 
   # Install completion files
