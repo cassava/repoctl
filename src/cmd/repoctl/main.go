@@ -16,8 +16,8 @@ import (
 
 const (
 	progName    = "repoctl"
-	progVersion = "0.11beta"
-	progDate    = "18 December 2014"
+	progVersion = "0.13"
+	progDate    = "19 July 2015"
 )
 
 // Action is the type that all action functions need to satisfy.

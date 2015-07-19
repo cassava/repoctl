@@ -1,6 +1,13 @@
 Repoctl Releases
 ================
 
+## Version 0.13 (19 July 2015)
+This release fixes a critical bug and updates a few other non-functional
+files.
+
+  - Bugfix: was not in correct directory when removing package files
+  - Update: Zsh completion understands reset command
+
 ## Version 0.12 (17 July 2015)
 This marks the first release where gb is used to build the project. That means
 that all the dependencies for this project (apart from gb itself) are contained

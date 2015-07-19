@@ -213,6 +213,7 @@ func removePkgs(c *Config, pkgnames []string) error {
 
 // deletePkgs deletes the given files.
 func deletePkgs(c *Config, pkgfiles []string) error {
+	os.Chdir(c.path)
 	for _, p := range pkgfiles {
 		if !c.Quiet {
 			fmt.Println("deleting package file:", p)
