@@ -2,12 +2,14 @@
 
 local config repo repo_dir packages repo_commands
 
+# TODO: add options and add filter criteria for filter command.
 repoctl_commands=(
     add:"add and update package(s) in the repository"
     filter:"filter packages by certain criteria"
     help:"show the usage message for repoctl"
     list:"list packages available in the repository"
     remove:"remove and delete package(s) from the repository"
+    reset:"reset repository database and add all packages"
     status:"show current status of the repository"
     update:"automatically update repository"
 )
@@ -18,7 +20,7 @@ _describe -t command "repoctl commands" repoctl_commands
 # in the home directory. So don't run this completion file at all if
 # we are running root, as this could be a security risk.
 if [ $(id -u) -ne 0 ]; then
-    # We need to source the repo-update config file to get the directory
+    # We need to source the repoctl config file to get the directory
     config=$HOME/.repo.conf
     if [ -f $config ]; then
         # Do not trust the config file, try to get the value ourself
@@ -26,7 +28,7 @@ if [ $(id -u) -ne 0 ]; then
         repo_dir=$(dirname "$repo")
 
         # For some reason the first element gets dropped, so we add a dummy
-        packages=(dummy $(ls -1 $repo_dir | sed -r -e '/^.*\.db(\.(old|tar\..+))?$/d' -e "s/^(.*?)-.+-[0-9]+-(any|i686|x86_64).pkg.tar.(gz|bz2|xz)$/\1/" | uniq | tr '\n' ' '))
+        packages=(dummy $(ls -1 $repo_dir | sed -r -e '/^.*\.db(\.(old|tar\..+))?$/d' -e "s/^(.*?)-.+-[0-9]+-(any|i686|x86_64).pkg.tar(.(gz|bz2|xz))?$/\1/" | uniq | tr '\n' ' '))
 
         compadd -d $packages
     fi
