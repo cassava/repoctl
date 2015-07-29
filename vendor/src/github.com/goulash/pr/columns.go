@@ -107,7 +107,8 @@ trial:
 
 		// Have we reached the limit yet?
 		padspace := padding * (len(cols) - 1)
-		if sum(span)+padspace > hspace {
+		// FIXME: the -padding should not be necessary!
+		if sum(span)+padspace > hspace-padding {
 			break trial
 		}
 

@@ -16,13 +16,13 @@
 		{
 			"importpath": "github.com/goulash/pr",
 			"repository": "https://github.com/goulash/pr",
-			"revision": "353c0171dd20ef32002adee89a2c7943c867884a",
+			"revision": "73c99d71552a4982ead5a6638f876d6d4ef884ec",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/goulash/pacman",
 			"repository": "https://github.com/goulash/pacman",
-			"revision": "0f284a0bdf9252ff9917e72e91e4590d696b2887",
+			"revision": "bdd862253b719e00b977798e029edeb2a77197f0",
 			"branch": "master"
 		},
 		{
