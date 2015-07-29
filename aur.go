@@ -51,9 +51,6 @@ type aurResponse struct {
 // AURPackage is the information that we can retrieve about a package that is
 // hosted on the Arch Linux User Repository (AUR), version 4.
 //
-// I am not entirely sure what the difference is between (ID, Name) and
-// (PackageBaseID, PackageBase).
-//
 // JSON Example:
 //
 //	{
@@ -83,7 +80,7 @@ type AURPackage struct {
 	Description    string
 	URL            string
 	NumVotes       int
-	OutOfDate      bool `json:",int"`
+	OutOfDate      int
 	Maintainer     string
 	FirstSubmitted uint64
 	LastModified   uint64
@@ -111,7 +108,7 @@ func (ap *AURPackage) Package() *Package {
 
 // DownloadURL returns the URL for downloading the PKGBUILD tarball.
 func (ap *AURPackage) DownloadURL() string {
-	return fmt.Sprintf("https://aur.archlinux.org%s", ap.URLPath)
+	return fmt.Sprintf("https://aur4.archlinux.org%s", ap.URLPath)
 }
 
 const (
