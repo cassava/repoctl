@@ -23,6 +23,12 @@ const (
 // Action is the type that all action functions need to satisfy.
 type Action func(*Config) error
 
+// debug is a global variable that controls whether functions
+// output debugging/unnecessary information.
+//
+// This isn't used at the moment.
+var debug bool
+
 // actions is a map from names to action functions.
 var actions map[string]Action = map[string]Action{
 	"list":   List,
@@ -114,7 +120,7 @@ Commands available:
                     -a --all        same as -vpdlu
 
   filter <crit...> Filter list of packages by one or more criteria;
-				   run without any criteria for help.
+                   run without any criteria for help.
 
   status           Show pending changes to the database and packages that can
                    be updated.

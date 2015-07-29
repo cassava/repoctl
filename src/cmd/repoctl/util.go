@@ -44,26 +44,26 @@ func getDatabasePkgs(dbpath string) (db map[string]*pacman.Package, missed []*pa
 	return db, missed
 }
 
-// getAURMap returns a map of the results of all the AUR searches pkgnames.
-func getAURMap(pkgnames []string) (aur map[string]*pacman.Package) {
-	ch := make(chan error)
-	go handleErrors("warning: %s\n", ch)
-	aur = pacman.ConcurrentlyReadAUR(pkgnames, 16, ch)
-	close(ch)
-	return aur
-}
-
 // getAURPkgs retrieves the packages listed from AUR.
 // Packages that are not found are stored in missed.
 func getAURPkgs(pkgnames []string) (aur map[string]*pacman.Package, missed []string) {
-	aur = getAURMap(pkgnames)
-	for k, v := range aur {
-		if v == nil {
-			missed = append(missed, k)
-			delete(aur, k)
+	aps, err := pacman.ReadAllAUR(pkgnames)
+	if err != nil {
+		if nf, ok := err.(*pacman.NotFoundError); ok {
+			if gDebug {
+				fmt.Fprintf(os.Stderr, "warning: %s.\n", err)
+			}
+			missed = nf.Names
+		} else {
+			fmt.Fprintf(os.Stderr, "error: %s.\n", err)
+			return nil, nil
 		}
 	}
 
+	aur = make(map[string]*pacman.Package)
+	for _, ap := range aps {
+		aur[ap.Name] = ap.Package()
+	}
 	return aur, missed
 }
 

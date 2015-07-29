@@ -34,7 +34,7 @@ func List(c *Config) error {
 		}
 	}
 	if c.Synchronize {
-		aur = getAURMap(mapPkgs(pkgs, pkgName))
+		aur, _ = getAURPkgs(mapPkgs(pkgs, pkgName))
 	}
 
 	// Create a list.
