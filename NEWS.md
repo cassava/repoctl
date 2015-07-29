@@ -1,6 +1,17 @@
 Repoctl Releases
 ================
 
+## Version 0.14 (-)
+This release changes the AUR lookup functionality to use AUR4 instead of AUR.
+When https://aur4.archlinux.org is the same as https://aur.archlinux.org, we
+will revert this change. Additionally, we add the command `down` for
+downloading PKGBUILD tarballs.
+
+  - New: repoctl learned command `down`
+  - Update: AUR retrieval has been improved
+  - Bugfix: license information correct (was BSD, is MIT)
+  - Bugfix: typographical errors
+
 ## Version 0.13 (19 July 2015)
 This release fixes a critical bug and updates a few other non-functional
 files.

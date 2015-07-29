@@ -16,8 +16,8 @@ import (
 
 const (
 	progName    = "repoctl"
-	progVersion = "0.13"
-	progDate    = "19 July 2015"
+	progVersion = "0.14"
+	progDate    = "29 July 2015"
 )
 
 // Action is the type that all action functions need to satisfy.
@@ -116,7 +116,7 @@ Commands available:
                     -d --duplicates mark packages with duplicate package files
                     -p --pending    mark pending changes to the database
                     -l --installed  mark packages that are locally installed
-                    -u --outdated   mark packages that are newer in AUR
+                    -o --outdated   mark packages that are newer in AUR
                     -a --all        same as -vpdlu
 
   filter <crit...> Filter list of packages by one or more criteria;
@@ -127,14 +127,6 @@ Commands available:
 
   add <pkgname>    Add the latest package(s) with <pkgname> to the database
                    and delete all obsolete package files.
-
-  downup <pkgname> Download and extract tarballs from AUR for given packages.
-                   Alternatively, all packages, or those with updates can be
-                   downloaded. The options below are additive, not exclusive.
-                    -u --updates    download tarballs for updates
-                    -a --all        download tarballs for all packages
-                    -n --no-extract do not extract the tarballs
-                    -t --rewrite    delete conflicting folders
 
   remove <pkgname> Remove the package(s) with <pkgname> from the database and
   rm               delete all the corresponding package files.
@@ -150,11 +142,20 @@ Commands available:
                     -b --backup       backup obsolete package files instead of
                                       deleting; packages are put into backup/
 
+  down <pkgname>   Download and extract tarballs from AUR for given packages.
+                   Alternatively, all packages, or those with updates can be
+                   downloaded. The options below are additive, not exclusive.
+                    -u --updates    download tarballs for updates
+                    -a --all        download tarballs for all packages
+                    -n --no-extract do not extract the tarballs
+                    -t --rewrite    delete conflicting folders
+
   help             Show the usage for repoctl. Synonym for
   usage             repoctl --help
 
 NOTE: In all of these cases, <pkgname> is the name of the package, without
 anything else. For example: pacman, and not pacman-3.5.3-1-i686.pkg.tar.xz
+Multiple packages are usually accepted, separated by spaces.
 
 General options available are:
 
@@ -189,7 +190,7 @@ func ReadConfig() (conf *Config, cmd Action, err error) {
 	flag.BoolVarP(&conf.Pending, "pending", "p", false, "mark pending changes to the database")
 	flag.BoolVarP(&conf.Duplicates, "duplicates", "d", false, "mark packages with duplicate package files")
 	flag.BoolVarP(&conf.Installed, "installed", "l", false, "mark packages that are locally installed")
-	flag.BoolVarP(&conf.Synchronize, "outdated", "u", false, "mark packages that are newer in AUR")
+	flag.BoolVarP(&conf.Synchronize, "outdated", "o", false, "mark packages that are newer in AUR")
 	flag.BoolVarP(&allListOptions, "all", "a", false, "all information; same as -vpdlo")
 
 	flag.BoolVarP(&conf.Interactive, "interactive", "i", false, "ask before doing anything destructive")
