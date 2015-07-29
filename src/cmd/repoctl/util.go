@@ -50,7 +50,7 @@ func getAURPkgs(pkgnames []string) (aur map[string]*pacman.Package, missed []str
 	aps, err := pacman.ReadAllAUR(pkgnames)
 	if err != nil {
 		if nf, ok := err.(*pacman.NotFoundError); ok {
-			if gDebug {
+			if debug {
 				fmt.Fprintf(os.Stderr, "warning: %s.\n", err)
 			}
 			missed = nf.Names
