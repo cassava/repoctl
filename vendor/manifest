@@ -36,6 +36,13 @@
 			"repository": "https://github.com/remyoudompheng/go-liblzma",
 			"revision": "e592d11004fad5273ee038602d775382a6dffeec",
 			"branch": "master"
+		},
+		{
+			"importpath": "golang.org/x/crypto/ssh/terminal",
+			"repository": "https://go.googlesource.com/crypto",
+			"revision": "56474dfd625f18739b46f075b138fd0133717491",
+			"branch": "master",
+			"path": "/ssh/terminal"
 		}
 	]
 }
