@@ -128,6 +128,14 @@ Commands available:
   add <pkgname>    Add the latest package(s) with <pkgname> to the database
                    and delete all obsolete package files.
 
+  downup <pkgname> Download and extract tarballs from AUR for given packages.
+                   Alternatively, all packages, or those with updates can be
+                   downloaded. The options below are additive, not exclusive.
+                    -u --updates    download tarballs for updates
+                    -a --all        download tarballs for all packages
+                    -n --no-extract do not extract the tarballs
+                    -t --rewrite    delete conflicting folders
+
   remove <pkgname> Remove the package(s) with <pkgname> from the database and
   rm               delete all the corresponding package files.
 
