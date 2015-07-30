@@ -2,13 +2,25 @@ Repoctl Releases
 ================
 
 ## Version 0.14 (-)
+This release rewrites repoctl to use the cobra library from spf13. Several
+new commands are defined: `down` and `reset`, as well as two commands being
+redefined `update` and `add`.
+
 This release changes the AUR lookup functionality to use AUR4 instead of AUR.
 When https://aur4.archlinux.org is the same as https://aur.archlinux.org, we
-will revert this change. Additionally, we add the command `down` for
-downloading PKGBUILD tarballs.
+will revert this change.
 
-  - New: repoctl learned command `down`
+  - New: repoctl learned command `down` with several flags. See the help
+    message for more information on this. In short, we can download and extract
+    tarballs for updated packages, all packages, and specified packages.
+  - New: repoctl learned command `reset`.
+  - Change: command `add` has completely different semantics. See the help.
+  - Change: command `update` inherited the semantics of the old `add` command
+    in addition to its current functionality.
+  - Change: short form of `--outdated` flag for list has been changed from
+    `-u` to `-o`
   - Update: AUR retrieval has been improved
+  - Update: using spf13/cobra as our commandline engine now
   - Bugfix: license information correct (was BSD, is MIT)
   - Bugfix: typographical errors
 
