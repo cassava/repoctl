@@ -16,12 +16,13 @@ import (
 	"shortry"
 
 	"github.com/goulash/pacman"
+	"github.com/spf13/cobra"
 )
 
-func FilterUsage() {
-	fmt.Println("repoctl filter <criteria...>")
-	fmt.Println(`
-Filter packages through a set of criteria combined in an AND fashion,
+var filterCmd = &cobra.Command{
+	Use:   "filter <criteria...>",
+	Short: "filter packages by one or more criteria",
+	Long: `Filter packages through a set of criteria combined in an AND fashion,
 which can be prefixed with an exclamation mark to negate the effect.
 
 It is only necessary to provide enough characters so that the identifier
@@ -38,7 +39,8 @@ Filters available are:
     aur.older           packages with older versions in AUR
     local.installed     packages that are installed on localhost
     local.upgradable    packages that can be upgraded on localhost
-`)
+`,
+	Run: filter,
 }
 
 func filterDie(msg string) {

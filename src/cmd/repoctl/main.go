@@ -11,36 +11,69 @@ import (
 	"path"
 
 	"github.com/goulash/osutil"
+	"github.com/spf13/cobra"
 	flag "gopkg.in/ogier/pflag.v0"
 )
 
-const (
-	progName    = "repoctl"
-	progVersion = "0.14"
-	progDate    = "29 July 2015"
+var RepoctlCmd = &cobra.Command{
+	Use:   "repoctl",
+	Short: "manage local Pacman repositories",
+	Long: `repoctl helps manage local Pacman repositories, and acts in particular as
+a supplement to the repo-add and repo-remove tools that come with Pacman.
+Whether compiling and installing from AUR every time is not what you want,
+or if you want to host your own repository, repoctl is right for you.
+
+Note that in all of these commands, the following terminology is used:
+
+    pkgname: is the name of the package, e.g. pacman
+    pkgfile: is the path to a package file, e.g. pacman-3.5.3-i686.pkg.tar.xz
+`,
+	Run: repoctl,
+}
+
+var (
+	Repository       string
+	AddParameters    []string
+	RemoveParameters []string
+	IgnoreAUR        map[string]bool
+	BackupDir        string
+	Backup           bool
+	Interactive      bool
+	Quiet            bool
+
+	// When Debug is specified, it presides over Quiet.
+	// This allows it to override a possible default value of Quiet.
+	Debug bool
 )
 
-// Action is the type that all action functions need to satisfy.
-type Action func(*Config) error
+func init() {
+	IgnoreAUR = make(map[string]bool)
 
-// debug is a global variable that controls whether functions
-// output debugging/unnecessary information.
-//
-// This isn't used at the moment.
-var debug bool
+	RepoctlCmd.PersistentFlags().StringVarP(&BackupDir, "backup-dir", "d", "backup", "backup directory relative to repository path")
+	RepoctlCmd.PersistentFlags().BoolVarP(&Backup, "backup", "b", false, "backup obsolete files instead of deleting")
+	RepoctlCmd.PersistentFlags().BoolVarP(&Interactive, "interactive", "i", false, "ask before doing anything destructive")
+	RepoctlCmd.PersistentFlags().BoolVarP(&Columnate, "columns", "s", false, "show items in columns rather than lines")
+	RepoctlCmd.PersistentFlags().BoolVarP(&Quiet, "quiet", "q", false, "show minimal amount of information")
+	RepoctlCmd.PersistentFlags().BoolVar(&Debug, "debug", false, "show unnecessary debugging information")
+}
 
-// actions is a map from names to action functions.
-var actions map[string]Action = map[string]Action{
-	"list":   List,
-	"ls":     List,
-	"update": Update,
-	"add":    Add,
-	"remove": Remove,
-	"rm":     Remove,
-	"status": Status,
-	"filter": Filter,
-	"help":   Usage,
-	"usage":  Usage,
+func init() {
+	RepoctlCmd.AddCommand(StatusCmd) // TODO
+	RepoctlCmd.AddCommand(ListCmd)   // TODO
+	RepoctlCmd.AddCommand(FilterCmd) // TODO
+	RepoctlCmd.AddCommand(NewCmd)    // TODO
+	RepoctlCmd.AddCommand(AddCmd)    // TODO
+	RepoctlCmd.AddCommand(RemoveCmd) // TODO
+	RepoctlCmd.AddCommand(UpdateCmd) // TODO
+	RepoctlCmd.AddCommand(ResetCmd)  // TODO
+	RepoctlCmd.AddCommand(DownCmd)   // TODO
+	RepoctlCmd.AddCommand(VersionCmd)
+	RepoctlCmd.AddCommand(HelpCmd) // TODO
+}
+
+// TODO: At this stage, the most important thing is to investigate how to use Viper in this project.
+func repoctl(cmd *cobra.Command, args []string) {
+	panic("not implemented")
 }
 
 var defaultConfigPath = path.Join(os.Getenv("HOME"), ".repoctl.conf")
@@ -181,8 +214,6 @@ func ReadConfig() (conf *Config, cmd Action, err error) {
 
 	// TODO: Implement --ignore=pkg1,pkg2,...
 
-	flag.BoolVarP(&conf.Columnate, "columns", "s", false, "show items in columns rather than lines")
-	flag.BoolVar(&conf.Quiet, "quiet", false, "show minimal amount of information")
 	flag.BoolVarP(&showHelp, "help", "h", false, "show this usage message")
 
 	// List options
