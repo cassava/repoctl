@@ -8,12 +8,6 @@
 			"branch": "master"
 		},
 		{
-			"importpath": "gopkg.in/ogier/pflag.v0",
-			"repository": "https://gopkg.in/ogier/pflag.v0",
-			"revision": "32a05c62658bd1d7c7e75cbc8195de5d585fde0f",
-			"branch": "master"
-		},
-		{
 			"importpath": "github.com/goulash/pr",
 			"repository": "https://github.com/goulash/pr",
 			"revision": "73c99d71552a4982ead5a6638f876d6d4ef884ec",
