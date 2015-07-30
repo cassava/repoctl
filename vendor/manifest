@@ -43,6 +43,18 @@
 			"revision": "56474dfd625f18739b46f075b138fd0133717491",
 			"branch": "master",
 			"path": "/ssh/terminal"
+		},
+		{
+			"importpath": "github.com/spf13/viper",
+			"repository": "https://github.com/spf13/viper",
+			"revision": "2abb1bebfde865b0bb6bb7ada5be63ec78527fa6",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/spf13/cobra",
+			"repository": "https://github.com/spf13/cobra",
+			"revision": "385fc87e4343efec233811d3d933509e8975d11a",
+			"branch": "master"
 		}
 	]
 }
