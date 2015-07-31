@@ -19,7 +19,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var filterCmd = &cobra.Command{
+var FilterCmd = &cobra.Command{
 	Use:   "filter <criteria...>",
 	Short: "filter packages by one or more criteria",
 	Long: `Filter packages through a set of criteria combined in an AND fashion,
@@ -40,18 +40,15 @@ Filters available are:
     local.installed     packages that are installed on localhost
     local.upgradable    packages that can be upgraded on localhost
 `,
-	Run: filter,
 }
 
-func filterDie(msg string) {
-	fmt.Fprintln(os.Stderr, msg, "\n")
-	FilterUsage()
-	os.Exit(1)
+func init() {
+	FilterCmd.Run = filter
 }
 
 // Filter prints package names that are filtered by the specified filters.
-func Filter(c *Config) error {
-	pkgs, outdated := getRepoPkgs(c.path)
+func filter(cmd *cobra.Command, args []string) {
+	pkgs, outdated := getRepoPkgs(Conf.repodir)
 
 	// This function looks huge, but the actual body is pretty small.
 	// We define a lot of anonymous functions to do the work for us.
@@ -71,7 +68,7 @@ func Filter(c *Config) error {
 
 		getDB = func() map[string]*pacman.Package {
 			if !readDB {
-				db, missed = getDatabasePkgs(c.Repository)
+				db, missed = getDatabasePkgs(Conf.Repository)
 				readDB = true
 			}
 			return db
@@ -79,7 +76,7 @@ func Filter(c *Config) error {
 
 		getMissing = func() []*pacman.Package {
 			if !readDB {
-				db, missed = getDatabasePkgs(c.Repository)
+				db, missed = getDatabasePkgs(Conf.Repository)
 				readDB = true
 			}
 			return missed
@@ -87,7 +84,7 @@ func Filter(c *Config) error {
 
 		getAUR = func() map[string]*pacman.Package {
 			if !readAUR {
-				nps := removeIgnored(c, pkgs)
+				nps := removeIgnored(pkgs)
 				aur, unavailable = getAURPkgs(mapPkgs(nps, pkgName))
 				readAUR = true
 			}
@@ -141,12 +138,12 @@ func Filter(c *Config) error {
 		})
 	)
 
-	if len(c.Args) == 0 {
-		FilterUsage()
-		return nil
+	if len(args) == 0 {
+		FilterCmd.Usage()
+		os.Exit(0)
 	}
 
-	for _, fltr := range c.Args {
+	for _, fltr := range args {
 		var negate bool
 		if strings.HasPrefix(fltr, "!") {
 			fltr = fltr[1:]
@@ -174,8 +171,13 @@ func Filter(c *Config) error {
 		pkgs = filterPkgs(pkgs, ff)
 	}
 
-	printSet(mapPkgs(pkgs, pkgName), "", c.Columnate)
-	return nil
+	printSet(mapPkgs(pkgs, pkgName), "", Conf.Columnate)
+}
+
+func filterDie(msg string) {
+	fmt.Fprintln(os.Stderr, msg, "\n")
+	FilterCmd.Usage()
+	os.Exit(1)
 }
 
 type filterFunc func(*pacman.Package) bool
@@ -251,14 +253,20 @@ func aurOlderFilter(aur map[string]*pacman.Package) filterFunc {
 	}
 }
 
-func removeIgnored(c *Config, pkgs []*pacman.Package) []*pacman.Package {
-	n := len(pkgs) - len(c.IgnoreAUR)
+func removeIgnored(pkgs []*pacman.Package) []*pacman.Package {
+	n := len(pkgs) - len(Conf.IgnoreAUR)
 	if n < 0 {
 		n = 0
 	}
+
+	aur := make(map[string]bool)
+	for _, k := range Conf.IgnoreAUR {
+		aur[k] = true
+	}
+
 	nps := make([]*pacman.Package, 0, n)
 	for _, p := range pkgs {
-		if !c.IgnoreAUR[p.Name] {
+		if !aur[p.Name] {
 			nps = append(nps, p)
 		}
 	}

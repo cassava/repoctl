@@ -19,7 +19,6 @@ var ListCmd = &cobra.Command{
 	Short:   "list packages that belong to the managed repository",
 	Long: `List packages that belong to the managed repository.
 Note that they don't need to be registered with the database.`,
-	Run: list,
 }
 
 var (
@@ -42,6 +41,8 @@ var (
 )
 
 func init() {
+	ListCmd.Run = list
+
 	ListCmd.Flags().BoolVarP(&listVersioned, "versioned", "v", false, "show package versions along with name")
 	ListCmd.Flags().BoolVarP(&listPending, "pending", "p", false, "mark pending changes to the database")
 	ListCmd.Flags().BoolVarP(&listDuplicates, "duplicates", "d", false, "mark packages with duplicate package files")
@@ -57,6 +58,14 @@ func list(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
+	if listAllOptions {
+		listVersioned = true
+		listPending = true
+		listDuplicates = true
+		listInstalled = true
+		listSynchronize = true
+	}
+
 	// Get packages in repo directory and database and find out duplicates.
 	// Depinding on the configuration, some of this might be unecessary work,
 	// so we have to declare the variabes here.
@@ -66,7 +75,7 @@ func list(cmd *cobra.Command, args []string) {
 		dups   map[string]int
 		aur    map[string]*pacman.Package
 	)
-	pkgs, old := getRepoPkgs(Conf.path)
+	pkgs, old := getRepoPkgs(Conf.repodir)
 	if listPending {
 		db, missed = getDatabasePkgs(Conf.Repository)
 	}

@@ -50,7 +50,7 @@ func getAURPkgs(pkgnames []string) (aur map[string]*pacman.Package, missed []str
 	aps, err := pacman.ReadAllAUR(pkgnames)
 	if err != nil {
 		if nf, ok := err.(*pacman.NotFoundError); ok {
-			if debug {
+			if Conf.Debug {
 				fmt.Fprintf(os.Stderr, "warning: %s.\n", err)
 			}
 			missed = nf.Names
@@ -118,7 +118,7 @@ func printSet(list []string, h string, cols bool) {
 // dieOnError prints error to stderr and dies if err != nil.
 func dieOnError(err error) {
 	if err != nil {
-		fmt.Fprintf("Error: %s.\n", err)
+		fmt.Fprintf(os.Stderr, "Error: %s.\n", err)
 		os.Exit(1)
 	}
 }

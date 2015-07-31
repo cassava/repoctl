@@ -47,7 +47,7 @@ func removePkgs(pkgnames []string) error {
 
 // deletePkgs deletes the given files.
 func deletePkgs(pkgfiles []string) error {
-	os.Chdir(Conf.path)
+	os.Chdir(Conf.repodir)
 	for _, p := range pkgfiles {
 		if !Conf.Quiet {
 			fmt.Println("deleting package file:", p)
@@ -65,7 +65,7 @@ func deletePkgs(pkgfiles []string) error {
 func backupPkgs(pkgfiles []string) error {
 	backup := Conf.BackupDir
 	if !path.IsAbs(Conf.BackupDir) {
-		backup = path.Join(Conf.path, Conf.BackupDir)
+		backup = path.Join(Conf.repodir, Conf.BackupDir)
 	}
 	ex, err := osutil.DirExists(backup)
 	if err != nil {
@@ -82,7 +82,7 @@ func backupPkgs(pkgfiles []string) error {
 
 	for _, p := range pkgfiles {
 		dest := path.Join(backup, fmt.Sprintf("%s.bak", p))
-		src := path.Join(Conf.path, p)
+		src := path.Join(Conf.repodir, p)
 		if !Conf.Quiet {
 			fmt.Println("backing up file:", p)
 		}

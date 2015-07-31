@@ -30,11 +30,11 @@ var (
 )
 
 func init() {
-	downCmd.Flags().BoolVarP(&downUpdates, "updates", "u", false, "download tarballs for all updates")
-	downCmd.Flags().BoolVarP(&downAll, "all", "a", false, "download tarballs for all packages in database")
-	downCmd.Flags().BoolVarP(&downNoExtract, "no-extract", "n", false, "do not extract the tarballs")
-	downCmd.Flags().BoolVarP(&downRewrite, "rewrite", "t", false, "delete conflicting folders")
-	downCmd.Flags().StringVarP(&downOutput, "output", "o", "", "output directory for tarballs")
+	DownCmd.Flags().BoolVarP(&downUpdates, "updates", "u", false, "download tarballs for all updates")
+	DownCmd.Flags().BoolVarP(&downAll, "all", "a", false, "download tarballs for all packages in database")
+	DownCmd.Flags().BoolVarP(&downNoExtract, "no-extract", "n", false, "do not extract the tarballs")
+	DownCmd.Flags().BoolVarP(&downRewrite, "rewrite", "t", false, "delete conflicting folders")
+	DownCmd.Flags().StringVarP(&downOutput, "output", "o", "", "output directory for tarballs")
 }
 
 func down(cmd *cobra.Command, args []string) {

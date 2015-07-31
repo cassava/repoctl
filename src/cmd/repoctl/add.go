@@ -5,6 +5,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/goulash/pacman"
 	"github.com/spf13/cobra"
 )
@@ -28,7 +30,7 @@ in a separate (specified) directory instead of being deleted.
 // does. The old behavior of add will be covered by update.
 func add(cmd *cobra.Command, args []string) {
 	// TODO: handle the errors here correctly!
-	pkgs, _ := pacman.ReadMatchingNames(Conf.path, args, nil)
+	pkgs, _ := pacman.ReadMatchingNames(Conf.repodir, args, nil)
 	pkgs, outdated := pacman.SplitOld(pkgs)
 	db, _ := getDatabasePkgs(Conf.Repository)
 	pending := filterPkgs(pkgs, dbPendingFilter(db))
@@ -49,16 +51,14 @@ func add(cmd *cobra.Command, args []string) {
 			},
 			Conf.Columnate)
 		if !proceed {
-			return nil
+			os.Exit(0)
 		}
 	}
 
 	var err error
 	if len(pending) > 0 {
 		err = addPkgs(mapPkgs(pending, pkgFilename))
-		if err != nil {
-			return err
-		}
+		dieOnError(err)
 	}
 	if len(outdated) > 0 {
 		filenames := mapPkgs(outdated, pkgFilename)
@@ -67,8 +67,6 @@ func add(cmd *cobra.Command, args []string) {
 		} else {
 			err = deletePkgs(filenames)
 		}
-		if err != nil {
-			return err
-		}
+		dieOnError(err)
 	}
 }

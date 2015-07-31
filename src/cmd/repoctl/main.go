@@ -14,8 +14,9 @@ import (
 var repoctlCmd = &cobra.Command{
 	Use:   "repoctl",
 	Short: "manage local Pacman repositories",
-	Long: `repoctl helps manage local Pacman repositories, and acts in particular as
+	Long: `Repoctl helps manage local Pacman repositories, and acts in particular as
 a supplement to the repo-add and repo-remove tools that come with Pacman.
+
 Whether compiling and installing from AUR every time is not what you want,
 or if you want to host your own repository, repoctl is right for you.
 
@@ -29,7 +30,7 @@ Note that in all of these commands, the following terminology is used:
 
 func addConfFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().BoolVarP(&Conf.Backup, "backup", "b", Conf.Backup, "backup obsolete files instead of deleting")
-	cmd.PersistentFlags().StringVarP(&Conf.BackupDir, "backup-dir", "d", Conf.BackupDir, "backup directory relative to repository path")
+	cmd.PersistentFlags().StringVarP(&Conf.BackupDir, "backup-dir", "B", Conf.BackupDir, "backup directory relative to repository path")
 	cmd.PersistentFlags().BoolVarP(&Conf.Columnate, "columns", "s", Conf.Columnate, "show items in columns rather than lines")
 	cmd.PersistentFlags().BoolVarP(&Conf.Interactive, "interactive", "i", Conf.Interactive, "ask before doing anything destructive")
 	cmd.PersistentFlags().BoolVarP(&Conf.Quiet, "quiet", "q", Conf.Quiet, "show minimal amount of information")

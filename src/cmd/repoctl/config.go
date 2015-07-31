@@ -19,25 +19,27 @@ import (
 )
 
 var (
-	ErrNoConfig   = errors.New("no configuration files found in path")
-	ErrUnsetHOME  = errors.New("HOME environment variable unset")
-	ErrRepoNotAbs = errors.New("repository path must be absolute")
-	ErrRepoUnset  = errors.New("repository path must be set in configuration")
+	ErrUnconfigured = errors.New("repoctl is an an unconfigured state")
+	ErrNoConfig     = errors.New("no configuration files found in path")
+	ErrUnsetHOME    = errors.New("HOME environment variable unset")
+	ErrRepoNotAbs   = errors.New("repository path must be absolute")
+	ErrRepoUnset    = errors.New("repository path must be set in configuration")
 )
 
 const configurationPostfix = "repoctl/config.toml"
 
-var configurationTmpl = template.Must(template.New("config").Parse(`# repoctl configuration
+var configurationTmpl = template.Must(template.New("config").Funcs(template.FuncMap{
+	"printt": printt,
+}).Parse(`# repoctl configuration
 {{ if .Unconfigured }}
 # When repoctl is unconfigured, nothing makes sense.
 # Remove this line when you are done, or set it to false.
 unconfigured = {{printt .Unconfigured}}
 {{ end }}
-
 # repo is the full path to the repository that will be managed by repoctl.
 # The packages that belong to the repository are assumed to lie in the
 # same folder.
-#repo = {{printt .Repo}}
+repo = {{printt .Repository}}
 
 # add_params is the set of parameters that will be passed to repo-add
 # when it is called. Specify one time for each parameter.
@@ -53,26 +55,24 @@ unconfigured = {{printt .Unconfigured}}
 
 # backup specifies whether package files should be backed up or deleted.
 # If it is set to false, then obsolete package files are deleted.
-#backup = {{printt .Backup}}
+backup = {{printt .Backup}}
 
 # backup_dir specifies which directory backups are stored in.
 # If a relative path is given, then 
-#backup_dir = {{printt .BackupDir}}
+backup_dir = {{printt .BackupDir}}
 
 # interactive specifies that repoctl should ask before doing anything
 # destructive.
-#interactive = {{printt .Interactive}}
+interactive = {{printt .Interactive}}
 
 # columnate specifies that listings should be in columns rather than
 # in lines. This only applies to the list command.
-#columnate = {{printt .Columnate}}
+columnate = {{printt .Columnate}}
 
 # quiet specifies whether repoctl should print more information or less.
 # I prefer to know what happens, but if you don't like it, you can change it.
-#quiet = {{printt .Quiet}}
-`)).Funcs(template.FuncMap{
-	"printt": printt,
-})
+quiet = {{printt .Quiet}}
+`))
 
 // Configuration doubles as configuration file format and the global configuration set.
 type Configuration struct {
@@ -124,7 +124,11 @@ func HomeConf() string {
 	if p := os.Getenv("REPOCTL_CONFIG"); p != "" {
 		return p
 	} else {
-		return xdgConfigHome(configurationPostfix)
+		home, err := xdgConfigHome(configurationPostfix)
+		if err != nil {
+			return ""
+		}
+		return home
 	}
 }
 
@@ -184,14 +188,14 @@ func (c *Configuration) WriteFile(filepath string) error {
 }
 
 func (c *Configuration) MergeFile(filepath string) error {
-	ex, err := osutil.FileExists(p)
+	ex, err := osutil.FileExists(filepath)
 	if err != nil {
 		return err
 	}
 	if !ex {
 		return ErrNoConfig
 	}
-	_, err := toml.DecodeFile(filepath, c)
+	_, err = toml.DecodeFile(filepath, c)
 	return err
 }
 
@@ -270,7 +274,7 @@ func (c *Configuration) MergeAll() error {
 
 	// Normally, the configuration file is loaded according to the XDG
 	// specification. This environment variable lets us override that.
-	confpath = os.Getenv("REPOCTL_CONFIG")
+	confpath := os.Getenv("REPOCTL_CONFIG")
 	if confpath != "" {
 		err = c.MergeFile(confpath)
 	} else {
@@ -286,7 +290,8 @@ func (c *Configuration) MergeAll() error {
 		c.Unconfigured = true
 		return err
 	}
-	return nil
+
+	return c.Initialize()
 }
 
 // printt returns a TOML representation of the value.
@@ -304,7 +309,7 @@ func printt(v interface{}) string {
 		var buf bytes.Buffer
 		buf.WriteRune('[')
 		for _, k := range obj[:len(obj)-1] {
-			buf.WriteString(fmt.Sprintf("%q", obj))
+			buf.WriteString(fmt.Sprintf("%q", k))
 			buf.WriteString(", ")
 		}
 		buf.WriteString(fmt.Sprintf("%q", obj[len(obj)-1]))

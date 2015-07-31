@@ -16,20 +16,27 @@ var StatusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "show pending changes and packages that can be updated",
 	Long:  `Show pending changes to the database and packages that can be updated.`,
-	Run:   status,
+}
+
+func init() {
+	StatusCmd.Run = status
 }
 
 // Status prints a thorough status of the current repository.
 func status(cmd *cobra.Command, args []string) {
+	if Conf.Unconfigured {
+		dieOnError(ErrUnconfigured)
+	}
+
 	if len(args) > 0 {
-		statusCmd.Usage()
+		StatusCmd.Usage()
 		os.Exit(1)
 	}
 
-	pkgs, outdated := getRepoPkgs(Conf.path)
+	pkgs, outdated := getRepoPkgs(Conf.repodir)
 	db, missed := getDatabasePkgs(Conf.Repository)
 
-	name := c.database[:strings.IndexByte(Conf.database, '.')]
+	name := Conf.database[:strings.IndexByte(Conf.database, '.')]
 	fmt.Printf("On repo %s\n", name)
 
 	// We assume that there is nothing to do, and if there is,
@@ -52,7 +59,7 @@ func status(cmd *cobra.Command, args []string) {
 		nothing = false
 	}
 
-	pkgs = removeIgnored(c, pkgs)
+	pkgs = removeIgnored(pkgs)
 
 	aur, unavailable := getAURPkgs(mapPkgs(pkgs, pkgName))
 	if len(unavailable) > 0 {
@@ -69,5 +76,4 @@ func status(cmd *cobra.Command, args []string) {
 	if nothing {
 		fmt.Println("Everything up-to-date.")
 	}
-	return nil
 }

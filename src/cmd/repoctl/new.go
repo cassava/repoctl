@@ -6,8 +6,11 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"os"
+	"path"
 
+	"github.com/goulash/osutil"
 	"github.com/spf13/cobra"
 )
 
@@ -24,8 +27,6 @@ var NewCmd = &cobra.Command{
 	Use:   "new [command] [flags]",
 	Short: "create a new repository or configuration file",
 	Long: `Create either a new repository or configuration file.
-If any critical parameters are missing, you will prompted for their values interactively.
-
 Paths will be created as necessary.
 `,
 }
@@ -79,10 +80,22 @@ func newConfig(cmd *cobra.Command, args []string) {
 	}
 
 	repo := args[0]
-	if !path.Abs(repo) {
+	if !path.IsAbs(repo) {
 		dieOnError(ErrRepoNotAbs)
 	}
 
+	dir := path.Dir(nConf)
+	if ex, _ := osutil.DirExists(dir); !ex {
+		if Conf.Debug {
+			fmt.Println("Creating directory structure", dir, "...")
+		}
+		err := os.MkdirAll(dir, os.ModePerm)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: %s.\n", err)
+		}
+	}
+
+	fmt.Println("writing new configuration file at", nConf, "...")
 	Conf.Repository = repo
 	Conf.Unconfigured = false
 	err := Conf.WriteFile(nConf)

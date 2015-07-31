@@ -19,11 +19,11 @@ deleting obsolete packages.`,
 }
 
 func update(cmd *cobra.Command, args []string) {
-	pkgs, outdated := getRepoPkgs(Conf.path)
+	pkgs, outdated := getRepoPkgs(Conf.repodir)
 	db, missed := getDatabasePkgs(Conf.Repository)
 	pending := filterPkgs(pkgs, dbPendingFilter(db))
 
-	if Interactive {
+	if Conf.Interactive {
 		info := "Delete following files:"
 		if Conf.Backup {
 			info = "Back following files up:"

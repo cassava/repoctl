@@ -5,6 +5,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/goulash/pacman"
 	"github.com/spf13/cobra"
 )
@@ -23,7 +25,7 @@ in a separate (specified) directory instead of being deleted.
 
 func remove(cmd *cobra.Command, args []string) {
 	// TODO: handle the errors here correctly!
-	pkgs, _ := pacman.ReadMatchingNames(Conf.path, args, nil)
+	pkgs, _ := pacman.ReadMatchingNames(Conf.repodir, args, nil)
 	db, _ := getDatabasePkgs(Conf.Repository)
 
 	rmmap := make(map[string]bool)
@@ -53,16 +55,14 @@ func remove(cmd *cobra.Command, args []string) {
 			},
 			Conf.Columnate)
 		if !proceed {
-			return nil
+			os.Exit(0)
 		}
 	}
 
 	var err error
 	if len(dbpkgs) > 0 {
 		err = removePkgs(dbpkgs)
-		if err != nil {
-			return err
-		}
+		dieOnError(err)
 	}
 	if len(pkgs) > 0 {
 		files := mapPkgs(pkgs, pkgFilename)
@@ -71,10 +71,6 @@ func remove(cmd *cobra.Command, args []string) {
 		} else {
 			err = deletePkgs(files)
 		}
-		if err != nil {
-			return err
-		}
+		dieOnError(err)
 	}
-
-	return nil
 }
