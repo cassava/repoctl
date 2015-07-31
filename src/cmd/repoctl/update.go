@@ -4,15 +4,29 @@
 
 package main
 
-func Update(c *Config) error {
-	pkgs, outdated := getRepoPkgs(c.path)
-	db, missed := getDatabasePkgs(c.Repository)
+import (
+	"os"
+
+	"github.com/spf13/cobra"
+)
+
+var UpdateCmd = &cobra.Command{
+	Use:   "update [pkgname...]",
+	Short: "update database in repository",
+	Long: `Update database in repository by adding pending packages and
+deleting obsolete packages.`,
+	Run: update,
+}
+
+func update(cmd *cobra.Command, args []string) {
+	pkgs, outdated := getRepoPkgs(Conf.path)
+	db, missed := getDatabasePkgs(Conf.Repository)
 	pending := filterPkgs(pkgs, dbPendingFilter(db))
 
 	if Interactive {
-		backup := "Delete following files:"
-		if Backup {
-			backup = "Back following files up:"
+		info := "Delete following files:"
+		if Conf.Backup {
+			info = "Back following files up:"
 		}
 		proceed := confirmAll(
 			[][]string{
@@ -23,38 +37,30 @@ func Update(c *Config) error {
 			[]string{
 				"Remove following entries from database:",
 				"Update following entries in database:",
-				backup,
+				info,
 			},
-			Columnate)
+			Conf.Columnate)
 		if !proceed {
-			return nil
+			os.Exit(0)
 		}
 	}
 
 	var err error
 	if len(missed) > 0 {
-		err = removePkgs(c, mapPkgs(missed, pkgName))
-		if err != nil {
-			return err
-		}
+		err = removePkgs(mapPkgs(missed, pkgName))
+		dieOnError(err)
 	}
 	if len(pending) > 0 {
-		err = addPkgs(c, mapPkgs(pending, pkgFilename))
-		if err != nil {
-			return err
-		}
+		err = addPkgs(mapPkgs(pending, pkgFilename))
+		dieOnError(err)
 	}
 	if len(outdated) > 0 {
 		filenames := mapPkgs(outdated, pkgBasename)
-		if c.Backup {
-			err = backupPkgs(c, filenames)
+		if Conf.Backup {
+			err = backupPkgs(filenames)
 		} else {
-			err = deletePkgs(c, filenames)
+			err = deletePkgs(filenames)
 		}
-		if err != nil {
-			return err
-		}
+		dieOnError(err)
 	}
-
-	return nil
 }

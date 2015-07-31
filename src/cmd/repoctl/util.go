@@ -114,3 +114,11 @@ func printSet(list []string, h string, cols bool) {
 		}
 	}
 }
+
+// dieOnError prints error to stderr and dies if err != nil.
+func dieOnError(err error) {
+	if err != nil {
+		fmt.Fprintf("Error: %s.\n", err)
+		os.Exit(1)
+	}
+}

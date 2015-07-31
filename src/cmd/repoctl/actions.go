@@ -22,10 +22,10 @@ const (
 )
 
 // addPkgs adds all the packages listed from the database.
-func addPkgs(c *Config, pkgfiles []string) error {
-	args := joinArgs(c.AddParameters, c.Repository, pkgfiles)
+func addPkgs(pkgfiles []string) error {
+	args := joinArgs(Conf.AddParameters, Conf.Repository, pkgfiles)
 
-	if !c.Quiet {
+	if !Conf.Quiet {
 		forallPrintf("adding package to database: %s\n", pkgfiles)
 	}
 
@@ -34,10 +34,10 @@ func addPkgs(c *Config, pkgfiles []string) error {
 }
 
 // removePkgs removes all the packages listed from the database.
-func removePkgs(c *Config, pkgnames []string) error {
-	args := joinArgs(c.RemoveParameters, c.Repository, pkgnames)
+func removePkgs(pkgnames []string) error {
+	args := joinArgs(Conf.RemoveParameters, Conf.Repository, pkgnames)
 
-	if !c.Quiet {
+	if !Conf.Quiet {
 		forallPrintf("removing package from database: %s\n", pkgnames)
 	}
 
@@ -46,10 +46,10 @@ func removePkgs(c *Config, pkgnames []string) error {
 }
 
 // deletePkgs deletes the given files.
-func deletePkgs(c *Config, pkgfiles []string) error {
-	os.Chdir(c.path)
+func deletePkgs(pkgfiles []string) error {
+	os.Chdir(Conf.path)
 	for _, p := range pkgfiles {
-		if !c.Quiet {
+		if !Conf.Quiet {
 			fmt.Println("deleting package file:", p)
 		}
 		err := os.Remove(p)
@@ -62,13 +62,16 @@ func deletePkgs(c *Config, pkgfiles []string) error {
 }
 
 // backupPkgs backs up the given files.
-func backupPkgs(c *Config, pkgfiles []string) error {
-	backup := path.Join(c.path, backupDir)
+func backupPkgs(pkgfiles []string) error {
+	backup := Conf.BackupDir
+	if !path.IsAbs(Conf.BackupDir) {
+		backup = path.Join(Conf.path, Conf.BackupDir)
+	}
 	ex, err := osutil.DirExists(backup)
 	if err != nil {
 		return err
 	} else if !ex {
-		if !c.Quiet {
+		if !Conf.Quiet {
 			fmt.Println("creating backup directory:", backup)
 		}
 		err = os.Mkdir(backup, os.ModePerm)
@@ -79,8 +82,8 @@ func backupPkgs(c *Config, pkgfiles []string) error {
 
 	for _, p := range pkgfiles {
 		dest := path.Join(backup, fmt.Sprintf("%s.bak", p))
-		src := path.Join(c.path, p)
-		if !c.Quiet {
+		src := path.Join(Conf.path, p)
+		if !Conf.Quiet {
 			fmt.Println("backing up file:", p)
 		}
 		err = os.Rename(src, dest)

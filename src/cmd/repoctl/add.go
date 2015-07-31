@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Ben Morgan. All rights reserved.
+// Copyright (Conf) 2015, Ben Morgan. All rights reserved.
 // Use of this source code is governed by an MIT license
 // that can be found in the LICENSE file.
 
@@ -23,23 +23,20 @@ in a separate (specified) directory instead of being deleted.
 	Run: add,
 }
 
-// FIXME: This will not compile, because we haven't fixed the global arguments
-// problem yet!
-//
-// Note that the semantics of this function have changed! I figured that add
+// FIXME: Note that the semantics of this function have changed! I figured that add
 // implies adding a (new) package file to the database, which is not what it
 // does. The old behavior of add will be covered by update.
 func add(cmd *cobra.Command, args []string) {
 	// TODO: handle the errors here correctly!
-	pkgs, _ := pacman.ReadMatchingNames(c.path, c.Args, nil)
+	pkgs, _ := pacman.ReadMatchingNames(Conf.path, args, nil)
 	pkgs, outdated := pacman.SplitOld(pkgs)
-	db, _ := getDatabasePkgs(c.Repository)
+	db, _ := getDatabasePkgs(Conf.Repository)
 	pending := filterPkgs(pkgs, dbPendingFilter(db))
 
-	if c.Interactive {
-		backup := "Delete following files:"
-		if c.Backup {
-			backup = "Back following files up:"
+	if Conf.Interactive {
+		info := "Delete following files:"
+		if Conf.Backup {
+			info = "Back following files up:"
 		}
 		proceed := confirmAll(
 			[][]string{
@@ -48,9 +45,9 @@ func add(cmd *cobra.Command, args []string) {
 			},
 			[]string{
 				"Add following entries to database:",
-				backup,
+				info,
 			},
-			c.Columnate)
+			Conf.Columnate)
 		if !proceed {
 			return nil
 		}
@@ -58,22 +55,20 @@ func add(cmd *cobra.Command, args []string) {
 
 	var err error
 	if len(pending) > 0 {
-		err = addPkgs(c, mapPkgs(pending, pkgFilename))
+		err = addPkgs(mapPkgs(pending, pkgFilename))
 		if err != nil {
 			return err
 		}
 	}
 	if len(outdated) > 0 {
 		filenames := mapPkgs(outdated, pkgFilename)
-		if c.Backup {
-			err = backupPkgs(c, filenames)
+		if Conf.Backup {
+			err = backupPkgs(filenames)
 		} else {
-			err = deletePkgs(c, filenames)
+			err = deletePkgs(filenames)
 		}
 		if err != nil {
 			return err
 		}
 	}
-
-	return nil
 }

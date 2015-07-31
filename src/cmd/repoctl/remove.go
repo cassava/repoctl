@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Ben Morgan. All rights reserved.
+// Copyright (Conf) 2015, Ben Morgan. All rights reserved.
 // Use of this source code is governed by an MIT license
 // that can be found in the LICENSE file.
 
@@ -23,8 +23,8 @@ in a separate (specified) directory instead of being deleted.
 
 func remove(cmd *cobra.Command, args []string) {
 	// TODO: handle the errors here correctly!
-	pkgs, _ := pacman.ReadMatchingNames(c.path, c.Args, nil)
-	db, _ := getDatabasePkgs(c.Repository)
+	pkgs, _ := pacman.ReadMatchingNames(Conf.path, args, nil)
+	db, _ := getDatabasePkgs(Conf.Repository)
 
 	rmmap := make(map[string]bool)
 	for _, p := range pkgs {
@@ -37,10 +37,10 @@ func remove(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if c.Interactive {
-		backup := "Delete following files:"
-		if c.Backup {
-			backup = "Back following files up:"
+	if Conf.Interactive {
+		info := "Delete following files:"
+		if Conf.Backup {
+			info = "Back following files up:"
 		}
 		proceed := confirmAll(
 			[][]string{
@@ -49,9 +49,9 @@ func remove(cmd *cobra.Command, args []string) {
 			},
 			[]string{
 				"Remove following entries from database:",
-				backup,
+				info,
 			},
-			c.Columnate)
+			Conf.Columnate)
 		if !proceed {
 			return nil
 		}
@@ -59,17 +59,17 @@ func remove(cmd *cobra.Command, args []string) {
 
 	var err error
 	if len(dbpkgs) > 0 {
-		err = removePkgs(c, dbpkgs)
+		err = removePkgs(dbpkgs)
 		if err != nil {
 			return err
 		}
 	}
 	if len(pkgs) > 0 {
 		files := mapPkgs(pkgs, pkgFilename)
-		if c.Backup {
-			err = backupPkgs(c, files)
+		if Conf.Backup {
+			err = backupPkgs(files)
 		} else {
-			err = deletePkgs(c, files)
+			err = deletePkgs(files)
 		}
 		if err != nil {
 			return err

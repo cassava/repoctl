@@ -6,15 +6,30 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strings"
+
+	"github.com/spf13/cobra"
 )
 
-// Status prints a thorough status of the current repository.
-func Status(c *Config) error {
-	pkgs, outdated := getRepoPkgs(c.path)
-	db, missed := getDatabasePkgs(c.Repository)
+var StatusCmd = &cobra.Command{
+	Use:   "status",
+	Short: "show pending changes and packages that can be updated",
+	Long:  `Show pending changes to the database and packages that can be updated.`,
+	Run:   status,
+}
 
-	name := c.database[:strings.IndexByte(c.database, '.')]
+// Status prints a thorough status of the current repository.
+func status(cmd *cobra.Command, args []string) {
+	if len(args) > 0 {
+		statusCmd.Usage()
+		os.Exit(1)
+	}
+
+	pkgs, outdated := getRepoPkgs(Conf.path)
+	db, missed := getDatabasePkgs(Conf.Repository)
+
+	name := c.database[:strings.IndexByte(Conf.database, '.')]
 	fmt.Printf("On repo %s\n", name)
 
 	// We assume that there is nothing to do, and if there is,
@@ -22,18 +37,18 @@ func Status(c *Config) error {
 	var nothing = true
 
 	if len(outdated) > 0 {
-		printSet(mapPkgs(outdated, pkgFilename), "Obsolete packages to be removed/backed up:", c.Columnate)
+		printSet(mapPkgs(outdated, pkgFilename), "Obsolete packages to be removed/backed up:", Conf.Columnate)
 		nothing = false
 	}
 
 	if len(missed) > 0 {
-		printSet(mapPkgs(missed, pkgName), "Database entries pending removal:", c.Columnate)
+		printSet(mapPkgs(missed, pkgName), "Database entries pending removal:", Conf.Columnate)
 		nothing = false
 	}
 
 	pending := filterPkgs(pkgs, dbPendingFilter(db))
 	if len(pending) > 0 {
-		printSet(mapPkgs(pending, pkgName), "Database entries pending addition:", c.Columnate)
+		printSet(mapPkgs(pending, pkgName), "Database entries pending addition:", Conf.Columnate)
 		nothing = false
 	}
 
@@ -41,13 +56,13 @@ func Status(c *Config) error {
 
 	aur, unavailable := getAURPkgs(mapPkgs(pkgs, pkgName))
 	if len(unavailable) > 0 {
-		printSet(unavailable, "Packages unavailable in AUR:", c.Columnate)
+		printSet(unavailable, "Packages unavailable in AUR:", Conf.Columnate)
 		nothing = false
 	}
 
 	updates := filterPkgs(pkgs, aurNewerFilter(aur))
 	if len(updates) > 0 {
-		printSet(mapPkgs(updates, pkgName), "Packages with updates in AUR:", c.Columnate)
+		printSet(mapPkgs(updates, pkgName), "Packages with updates in AUR:", Conf.Columnate)
 		nothing = false
 	}
 
