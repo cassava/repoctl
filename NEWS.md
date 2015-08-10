@@ -21,7 +21,7 @@ will revert this change.
     `-u` to `-o`
   - Update: AUR retrieval has been improved
   - Update: using spf13/cobra as our commandline engine now
-  - Bugfix: license information correct (was BSD, is MIT)
+  - Bugfix: license information correction (was BSD, is MIT)
   - Bugfix: typographical errors
 
 ## Version 0.13 (19 July 2015)

@@ -6,10 +6,6 @@ repoctl
 [cower](https://github.com/falconindy/cower) (or similar programs) for
 maintaining a local repository of AUR packages.
 
-The history of this project is (for me) interesting; *repoctl* is the
-successor to *repo-keep*, which is the successor to *repo-update*.
-The first was written in Bash, then in C, and finally this one in Go.
-
 The program *repoctl* is distributed under the MIT License (see `LICENSE`).
 
 ### Features
@@ -36,11 +32,8 @@ Once you have created a configuration file (just run `repoctl` and it will
 create one for you; you need to edit the config afterwards though), repo
 is mostly used in the following way (see the Tips section for more):
 
-    $ makepkg -c
+    $ repoctl down -u
       [...]
-    $ repoctl update
-      [...]
-
 
 ### Configuration File Example
 The configuration file is located at `~/.repoctl.conf`, and is in the
