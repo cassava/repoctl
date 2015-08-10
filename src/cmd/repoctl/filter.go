@@ -22,14 +22,17 @@ import (
 var FilterCmd = &cobra.Command{
 	Use:   "filter <criteria...>",
 	Short: "filter packages by one or more criteria",
-	Long: `Filter packages through a set of criteria combined in an AND fashion,
-which can be prefixed with an exclamation mark to negate the effect.
+	Long: `Filter packages through a set of criteria.
+    
+  The criteria are combined in an AND fashion, and each filter can be prefixed
+  with an exclamation mark "!" to negate the effect of the filter.
 
-It is only necessary to provide enough characters so that the identifier
-is unambiguous; e.g. "aur.newer" can be "a.newer", "a.n", or "a".
-Omissions occur can occur in hierarchical fashion.
+  It is only necessary to provide enough characters so that the identifier
+  of a filter is unambiguous; e.g. "aur.newer" can be "a.newer" or "a.n".
+  Omissions can occur in hierarchical fashion: "d" means "db.missing" and
+  "db.pending". Most of the time this makes no sense.
 
-Filters available are:
+  Filters available are:
 
     db.missing          packages to be removed from the database
     db.pending          packages to be added to the database
