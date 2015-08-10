@@ -26,8 +26,22 @@ var (
 var NewCmd = &cobra.Command{
 	Use:   "new [command] [flags]",
 	Short: "create a new repository or configuration file",
-	Long: `Create either a new repository or configuration file.
-Paths will be created as necessary.
+	Long: `Create a new repository or configuration file.
+
+  For repoctl to work, there must be at least one repository and one
+  configuration file. These can be created manually, or repoctl can
+  create them for you.
+
+  If you already have a repository, creating a new config is sufficient:
+
+    repoctl new config /path/to/repository
+
+  If you do not have a repository, you can create both repository and
+  configuration file in one step:
+
+    repoctl new repo /path/to/repository
+
+  See the respective commands for more information.
 `,
 }
 
@@ -46,9 +60,12 @@ func init() {
 
 var newRepoCmd = &cobra.Command{
 	Use:   "repo </path/to/repo/database>",
-	Short: "create a new repository",
-	Long:  `Create a new repository with configuration file.`,
-	Run:   newRepo,
+	Short: "create a new repository and configuration file",
+	Long: `Create a new repository with configuration file.
+    
+FIXME: This function still needs to be implemented.
+`,
+	Run: newRepo,
 }
 
 func newRepo(cmd *cobra.Command, args []string) {
@@ -58,14 +75,33 @@ func newRepo(cmd *cobra.Command, args []string) {
 var newConfigCmd = &cobra.Command{
 	Use:   "config </path/to/repo/database>",
 	Short: "create a new configuration file",
-	Long: `create a new configuration file.
+	Long: `Create a new initial configuration file.
 
-The path to the repository database need not exist, but it must be absolute.
+  The minimal configuration of repoctl is read from a configuration file,
+  which tells repoctl where your repositories are.
+  The absolute path to the repository database must be given as the only
+  argument.
 
-The configuration file will be created at $XDG_CONFIG_HOME/repoctl/config.toml.
-If neither $XDG_CONFIG_HOME nor $HOME are defined, then you need to tell us
-where you want the configuration file to be placed. Note that it won't be
-found automatically. You will have to set $REPOCTL_CONFIG.
+  There are several places that repoctl reads its configuration from.
+  If $REPOCTL_CONFIG is set, then only this path is loaded. Otherwise,
+  the following paths are checked for repoctl/config.toml:
+
+    1. All the paths in $XDG_CONFIG_DIRS, where a colon ":" acts as
+       the separator. If $XDG_CONFIG_DIRS is not set or empty, then
+       it defaults to /etc/xdg.
+    2. The path given by $XDG_CONFIG_HOME. If $XDG_CONFIG_HOME is not
+       set, it defaults to $HOME/.config.
+
+  In most systems then, repoctl will read:
+
+    /etc/xdg/repoctl/config.toml
+    /home/you/.config/repoctl/config.toml
+
+  The default location to create a repoctl configuration file is in your
+  $XDG_CONFIG_HOME directory.
+
+  When creating a configuration file, repoctl will overwrite any existing
+  files. You have been warned.
 `,
 	Run: newConfig,
 }

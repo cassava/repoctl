@@ -25,7 +25,6 @@ Note that in all of these commands, the following terminology is used:
     pkgname: is the name of the package, e.g. pacman
     pkgfile: is the path to a package file, e.g. pacman-3.5.3-i686.pkg.tar.xz
 `,
-	Run: repoctl,
 }
 
 func addConfFlags(cmd *cobra.Command) {
@@ -40,7 +39,7 @@ func addConfFlags(cmd *cobra.Command) {
 func addCommands(cmd *cobra.Command) {
 	cmd.AddCommand(StatusCmd)
 	cmd.AddCommand(ListCmd)
-	cmd.AddCommand(FilterCmd) // TODO
+	cmd.AddCommand(FilterCmd)
 	cmd.AddCommand(NewCmd)
 	cmd.AddCommand(AddCmd)
 	cmd.AddCommand(RemoveCmd)
@@ -48,17 +47,6 @@ func addCommands(cmd *cobra.Command) {
 	cmd.AddCommand(ResetCmd)
 	cmd.AddCommand(DownCmd)
 	cmd.AddCommand(VersionCmd)
-}
-
-// When repoctl is run without any arguments, it calls up status.
-// TODO: Decide whether this is a good idea, to call status.
-func repoctl(cmd *cobra.Command, args []string) {
-	if len(args) != 0 {
-		cmd.Usage()
-		os.Exit(1)
-	}
-
-	StatusCmd.Execute()
 }
 
 // main loads the configuration and executes the primary command.

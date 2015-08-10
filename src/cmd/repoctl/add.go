@@ -16,12 +16,14 @@ var AddCmd = &cobra.Command{
 	Aliases: []string{"copy"},
 	Short:   "copy and add packages to the database",
 	Long: `Add (and copy if necessary) the package file to the repository.
-All obsolete package files in the repository are deleted.
-If the backup option is given, obsolete package files are backed up
-in a separate (specified) directory instead of being deleted.
+
+  All obsolete package files in the repository are deleted.
+  If the backup option is given, obsolete package files are backed up
+  in a separate (specified) directory instead of being deleted.
 `,
-	Example: `Copy and add the fairsplit-1.0.pkg.tar.gz file to database:
-    repoctl add ./fairsplit-1.0.pkg.tar.gz`,
+	Example: `  repoctl add ./fairsplit-1.0.pkg.tar.gz
+  repoctl copy ./repoctl-0.14.pkg.tar.gz
+`,
 	Run: add,
 }
 
