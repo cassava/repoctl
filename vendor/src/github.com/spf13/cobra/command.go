@@ -255,8 +255,7 @@ Usage: {{if .Runnable}}
   {{ .CommandPath}} [command]{{end}}{{if gt .Aliases 0}}
 
 Aliases:
-  {{.NameAndAliases}}
-{{end}}{{if .HasExample}}
+  {{.NameAndAliases}}{{end}}{{if .HasExample}}
 
 Examples:
 {{ .Example }}{{end}}{{ if .HasNonHelpSubCommands}}
@@ -266,7 +265,6 @@ Available Commands: {{range .Commands}}{{if (not .IsHelpCommand)}}
 
 Flags:
 {{.LocalFlags.FlagUsages}}{{end}}{{ if .HasInheritedFlags}}
-
 Global Flags:
 {{.InheritedFlags.FlagUsages}}{{end}}{{if .HasHelpSubCommands}}
 
