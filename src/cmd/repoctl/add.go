@@ -17,9 +17,18 @@ var AddCmd = &cobra.Command{
 	Short:   "copy and add packages to the database",
 	Long: `Add (and copy if necessary) the package file to the repository.
 
-  All obsolete package files in the repository are deleted.
-  If the backup option is given, obsolete package files are backed up
-  in a separate (specified) directory instead of being deleted.
+  Similarly to the repo-add script, this command copies the package
+  file to the repository (if not already there) and adds the package to
+  the database.  Exactly this package is added to the database, this
+  allows you to downgrade a package in the repository.
+
+  Any other package files in the repository are deleted or backed up,
+  depending on whether the backup option is given. If the backup option
+  is given, the "obsolete" package files are moved to a backup
+  directory of choice.
+
+  Note: since version 0.14, the semantic meaning of this command has
+        changed. See the update command for the old behavior.
 `,
 	Example: `  repoctl add ./fairsplit-1.0.pkg.tar.gz
   repoctl copy ./repoctl-0.14.pkg.tar.gz

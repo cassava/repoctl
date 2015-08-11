@@ -9,8 +9,12 @@ import "github.com/spf13/cobra"
 var ResetCmd = &cobra.Command{
 	Use:   "reset",
 	Short: "recreate repository database",
-	Long:  "Delete the repository database and re-add all packages in repository.",
-	Run:   reset,
+	Long: `Delete the repository database and re-add all packages in repository.
+    
+  Essentially, this command deletes the repository database and
+  recreates it by running the update command.
+`,
+	Run: reset,
 }
 
 func reset(cmd *cobra.Command, args []string) {

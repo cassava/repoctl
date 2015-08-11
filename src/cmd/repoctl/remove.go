@@ -12,13 +12,15 @@ import (
 )
 
 var RemoveCmd = &cobra.Command{
-	Use:     "remove <pkgfile...>",
+	Use:     "remove <pkgname...>",
 	Aliases: []string{"rm"},
-	Short:   "remove and dele tepackages from the database",
-	Long: `Add (and copy if necessary) the package file to the repository.
-All obsolete package files in the repository are deleted.
-If the backup option is given, obsolete package files are backed up
-in a separate (specified) directory instead of being deleted.
+	Short:   "remove and delete packages from the database",
+	Long: `Remove and delete the package files from the repository.
+
+  This command removes the specified package from the repository
+  database, and deletes any associated package files, unless the backup
+  option is given, in which case the package files are moved to the
+  backup directory.
 `,
 	Run: remove,
 }
