@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/goulash/osutil"
 	"github.com/spf13/cobra"
@@ -65,11 +66,9 @@ var newRepoCmd = &cobra.Command{
     
 FIXME: This function still needs to be implemented.
 `,
-	Run: newRepo,
-}
-
-func newRepo(cmd *cobra.Command, args []string) {
-	panic("not implemented")
+	Run: func(cmd *cobra.Command, args []string) {
+		panic("not implemented")
+	},
 }
 
 var newConfigCmd = &cobra.Command{
@@ -77,10 +76,10 @@ var newConfigCmd = &cobra.Command{
 	Short: "create a new configuration file",
 	Long: `Create a new initial configuration file.
 
-  The minimal configuration of repoctl is read from a configuration file,
-  which tells repoctl where your repositories are.
-  The absolute path to the repository database must be given as the only
-  argument.
+  The minimal configuration of repoctl is read from a configuration
+  file, which tells repoctl where your repositories are. The absolute
+  path to the repository database must be given as the only argument.
+  If the suffix "db.tar.gz" is omitted, it is appended automatically.
 
   There are several places that repoctl reads its configuration from.
   If $REPOCTL_CONFIG is set, then only this path is loaded. Otherwise,
@@ -97,30 +96,41 @@ var newConfigCmd = &cobra.Command{
     /etc/xdg/repoctl/config.toml
     /home/you/.config/repoctl/config.toml
 
-  The default location to create a repoctl configuration file is in your
-  $XDG_CONFIG_HOME directory.
+  The default location to create a repoctl configuration file is in
+  your $XDG_CONFIG_HOME directory.
 
-  When creating a configuration file, repoctl will overwrite any existing
-  files. You have been warned.
+  When creating a configuration file, repoctl will overwrite any
+  existing files. You have been warned.
 `,
-	Run: newConfig,
+	Example: `  repoctl new config /srv/abs/atlas.db.tar.gz
+  repoctl new config /srv/abs/atlas
+  repoctl new config -c /etc/xdg/repoctl/config.toml /srv/abs/atlas
+  REPOCTL_CONFIG=/etc/repoctl.conf repoctl new config /srv/abs/atlas
+`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) != 1 {
+			cmd.Usage()
+			os.Exit(1)
+		}
+
+		err := NewConfig(nConf, args[0])
+		dieOnError(err)
+	},
 }
 
-func newConfig(cmd *cobra.Command, args []string) {
-	if nConf == "" {
-		dieOnError(ErrInvalidConfPath)
-	}
-	if len(args) != 1 {
-		cmd.Usage()
-		os.Exit(1)
+func NewConfig(confpath, repo string) error {
+	if confpath == "" {
+		return ErrInvalidConfPath
 	}
 
-	repo := args[0]
 	if !path.IsAbs(repo) {
-		dieOnError(ErrRepoNotAbs)
+		return ErrRepoNotAbs
+	}
+	if !strings.HasSuffix(repo, ".db.tar.gz") {
+		repo += ".db.tar.gz"
 	}
 
-	dir := path.Dir(nConf)
+	dir := path.Dir(confpath)
 	if ex, _ := osutil.DirExists(dir); !ex {
 		if Conf.Debug {
 			fmt.Println("Creating directory structure", dir, "...")
@@ -131,11 +141,8 @@ func newConfig(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	fmt.Println("writing new configuration file at", nConf, "...")
+	fmt.Println("writing new configuration file at", confpath, "...")
 	Conf.Repository = repo
 	Conf.Unconfigured = false
-	err := Conf.WriteFile(nConf)
-	if err != nil {
-		dieOnError(err)
-	}
+	return Conf.WriteFile(confpath)
 }
