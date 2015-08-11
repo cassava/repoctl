@@ -8,8 +8,6 @@
 package main
 
 import (
-	"fmt"
-	"os"
 	"strings"
 
 	// gb packages
@@ -19,18 +17,34 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var unknownFilterError = ErrorTmpl{
+	Short: `query {{sprintf "%q" .}} does not exist`,
+	Long: `You have specified a filter that does not exist.
+Run repoctl help filter for more information on which filters exist.`,
+}
+
+var ambiguousFilterError = ErrorTmpl{
+	Short: `query {{sprintf "%q" .Filter}} matches multiple filters`,
+	Long: `You have used a query that matches multiple filters:{{range .Matches}}
+  {{.}}
+{{end}}
+Please make your query unambiguous.`,
+}
+
 var FilterCmd = &cobra.Command{
 	Use:   "filter <criteria...>",
 	Short: "filter packages by one or more criteria",
 	Long: `Filter packages through a set of criteria.
     
-  The criteria are combined in an AND fashion, and each filter can be prefixed
-  with an exclamation mark "!" to negate the effect of the filter.
+  The criteria are combined in an AND fashion, and each filter can be
+  prefixed with an exclamation mark "!" to negate the effect of the
+  filter.
 
-  It is only necessary to provide enough characters so that the identifier
-  of a filter is unambiguous; e.g. "aur.newer" can be "a.newer" or "a.n".
-  Omissions can occur in hierarchical fashion: "d" means "db.missing" and
-  "db.pending". Most of the time this makes no sense.
+  It is only necessary to provide enough characters so that the
+  identifier of a filter is unambiguous; e.g. "aur.newer" can be
+  "a.newer" or "a.n". Omissions can occur in hierarchical fashion: "d"
+  means "db.missing" and "db.pending" (most of the time this makes no
+  sense however).
 
   Filters available are:
 
@@ -43,14 +57,18 @@ var FilterCmd = &cobra.Command{
     local.installed     packages that are installed on localhost
     local.upgradable    packages that can be upgraded on localhost
 `,
-}
-
-func init() {
-	FilterCmd.Run = filter
+	Example: `  repoctl filter aur.newer
+  repoctl filter aur.n file.d
+  repoctl filter a.n !f
+  repoctl filter a.n | cower -d`,
+	Run: func(cmd *cobra.Command, args []string) {
+		err := Filter(args)
+		dieOnError(err)
+	},
 }
 
 // Filter prints package names that are filtered by the specified filters.
-func filter(cmd *cobra.Command, args []string) {
+func Filter(args []string) error {
 	pkgs, outdated := getRepoPkgs(Conf.repodir)
 
 	// This function looks huge, but the actual body is pretty small.
@@ -141,11 +159,6 @@ func filter(cmd *cobra.Command, args []string) {
 		})
 	)
 
-	if len(args) == 0 {
-		FilterCmd.Usage()
-		os.Exit(0)
-	}
-
 	for _, fltr := range args {
 		var negate bool
 		if strings.HasPrefix(fltr, "!") {
@@ -156,11 +169,14 @@ func filter(cmd *cobra.Command, args []string) {
 		f, err := shor.Get(fltr)
 		if err != nil {
 			if err == shortry.ErrNotExists {
-				filterDie(fmt.Sprintf("Error: unknown filter %q", fltr))
+				return unknownFilterError.Instatiate(err, fltr)
 			} else if err == shortry.ErrAmbiguous {
-				filterDie(fmt.Sprintf("Error: ambiguous filter %q matches %v", fltr, shor.Matches(fltr)))
+				return ambiguousFilterError.Instantiate(err, struct {
+					Query   string
+					Matches []string
+				}{fltr, shor.Matches(fltr)})
 			} else {
-				panic("unknown error!")
+				panic("unknown error: " + err.Error())
 			}
 		}
 
@@ -175,12 +191,6 @@ func filter(cmd *cobra.Command, args []string) {
 	}
 
 	printSet(mapPkgs(pkgs, pkgName), "", Conf.Columnate)
-}
-
-func filterDie(msg string) {
-	fmt.Fprintln(os.Stderr, msg, "\n")
-	FilterCmd.Usage()
-	os.Exit(1)
 }
 
 type filterFunc func(*pacman.Package) bool
