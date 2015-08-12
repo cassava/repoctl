@@ -5,16 +5,19 @@
 package main
 
 import (
-	"os"
-
 	"github.com/goulash/pacman"
 	"github.com/spf13/cobra"
 )
 
+var movePackages bool
+
+func init() {
+	AddCmd.Flags().BoolVarP(&movePackages, "move", "m", false, "move packages into repository")
+}
+
 var AddCmd = &cobra.Command{
-	Use:     "add <pkgfile...>",
-	Aliases: []string{"copy"},
-	Short:   "copy and add packages to the database",
+	Use:   "add <pkgfile...>",
+	Short: "copy and add packages to the repository",
 	Long: `Add (and copy if necessary) the package file to the repository.
 
   Similarly to the repo-add script, this command copies the package
@@ -30,18 +33,27 @@ var AddCmd = &cobra.Command{
   Note: since version 0.14, the semantic meaning of this command has
         changed. See the update command for the old behavior.
 `,
-	Example: `  repoctl add ./fairsplit-1.0.pkg.tar.gz
-  repoctl copy ./repoctl-0.14.pkg.tar.gz
-`,
-	Run: add,
+	Example: `  repoctl add ./fairsplit-1.0.pkg.tar.gz`,
+	Run: func(cmd *cobra.Command, args []string) {
+		var err error
+		if movePackages {
+			err = Move(args)
+		} else {
+			err = Add(args)
+		}
+		dieOnError(err)
+	},
 }
 
-// FIXME: Note that the semantics of this function have changed! I figured that add
-// implies adding a (new) package file to the database, which is not what it
-// does. The old behavior of add will be covered by update.
-func add(cmd *cobra.Command, args []string) {
+// FIXME: implement me!
+func Move(pkgfiles []string) error {
+	return nil
+}
+
+// FIXME: the semantic of this function is wrong.
+func Add(pkgfiles []string) error {
 	// TODO: handle the errors here correctly!
-	pkgs, _ := pacman.ReadMatchingNames(Conf.repodir, args, nil)
+	pkgs, _ := pacman.ReadMatchingNames(Conf.repodir, pkgfiles, nil)
 	pkgs, outdated := pacman.SplitOld(pkgs)
 	db, _ := getDatabasePkgs(Conf.Repository)
 	pending := filterPkgs(pkgs, dbPendingFilter(db))
@@ -62,22 +74,26 @@ func add(cmd *cobra.Command, args []string) {
 			},
 			Conf.Columnate)
 		if !proceed {
-			os.Exit(0)
+			return nil
 		}
 	}
 
-	var err error
 	if len(pending) > 0 {
-		err = addPkgs(mapPkgs(pending, pkgFilename))
-		dieOnError(err)
+		err := addPkgs(mapPkgs(pending, pkgFilename))
+		if err != nil {
+			return err
+		}
 	}
 	if len(outdated) > 0 {
 		filenames := mapPkgs(outdated, pkgFilename)
+		var err error
 		if Conf.Backup {
 			err = backupPkgs(filenames)
 		} else {
 			err = deletePkgs(filenames)
 		}
-		dieOnError(err)
+		return err
 	}
+
+	return nil
 }
