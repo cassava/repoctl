@@ -8,6 +8,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 
 	// gb packages
@@ -16,20 +17,6 @@ import (
 	"github.com/goulash/pacman"
 	"github.com/spf13/cobra"
 )
-
-var unknownFilterError = ErrorTmpl{
-	Short: `query {{sprintf "%q" .}} does not exist`,
-	Long: `You have specified a filter that does not exist.
-Run repoctl help filter for more information on which filters exist.`,
-}
-
-var ambiguousFilterError = ErrorTmpl{
-	Short: `query {{sprintf "%q" .Filter}} matches multiple filters`,
-	Long: `You have used a query that matches multiple filters:{{range .Matches}}
-  {{.}}
-{{end}}
-Please make your query unambiguous.`,
-}
 
 var FilterCmd = &cobra.Command{
 	Use:   "filter <criteria...>",
@@ -54,20 +41,49 @@ var FilterCmd = &cobra.Command{
     aur.newer           packages with newer versions in AUR
     aur.missing         packages not found in AUR
     aur.older           packages with older versions in AUR
-    local.installed     packages that are installed on localhost
-    local.upgradable    packages that can be upgraded on localhost
+
+  Upcoming filters (not yet implemented):
+
+    local.installed     packages locally installed
+    local.newer         packages locally installed that are newer
+    local.older         packages locally installed that are older
 `,
 	Example: `  repoctl filter aur.newer
   repoctl filter aur.n file.d
   repoctl filter a.n !f
-  repoctl filter a.n | cower -d`,
+  repoctl filter a.n | cower -d
+  repoctl filter a.n l.i`,
 	Run: func(cmd *cobra.Command, args []string) {
 		err := Filter(args)
 		dieOnError(err)
 	},
 }
 
+type UnknownFilterError struct {
+	Query string
+}
+
+func (e UnknownFilterError) Error() string {
+	return fmt.Sprintf("query %q does not match any filters", e.Query)
+}
+
+type AmbiguousFilterError struct {
+	Query   string
+	Matches []string
+}
+
+func (e AmbiguousFilterError) Error() string {
+	return fmt.Sprintf("ambiguous query %q matches %v", e.Query, e.Matches)
+}
+
 // Filter prints package names that are filtered by the specified filters.
+//
+// If there are any problems, execution is stopped and an error is
+// returned. Possible errors are:
+//
+//  UnknownFilterError
+//  AmbiguousFilterError
+//
 func Filter(args []string) error {
 	pkgs, outdated := getRepoPkgs(Conf.repodir)
 
@@ -148,14 +164,6 @@ func Filter(args []string) error {
 			"aur.older": func(_ bool) filterFunc {
 				return aurOlderFilter(getAUR())
 			},
-			"local.installed": func(_ bool) filterFunc {
-				filterDie(`Error: filter "local.installed" is not implemented!`)
-				return nil
-			},
-			"local.upgradable": func(_ bool) filterFunc {
-				filterDie(`Error: filter "local.upgradable" is not implemented!`)
-				return nil
-			},
 		})
 	)
 
@@ -169,12 +177,9 @@ func Filter(args []string) error {
 		f, err := shor.Get(fltr)
 		if err != nil {
 			if err == shortry.ErrNotExists {
-				return unknownFilterError.Instatiate(err, fltr)
+				return UnknownFilterError{fltr}
 			} else if err == shortry.ErrAmbiguous {
-				return ambiguousFilterError.Instantiate(err, struct {
-					Query   string
-					Matches []string
-				}{fltr, shor.Matches(fltr)})
+				return AmbiguousFilterError{fltr, shor.Matches(fltr)}
 			} else {
 				panic("unknown error: " + err.Error())
 			}
@@ -191,6 +196,7 @@ func Filter(args []string) error {
 	}
 
 	printSet(mapPkgs(pkgs, pkgName), "", Conf.Columnate)
+	return nil
 }
 
 type filterFunc func(*pacman.Package) bool
