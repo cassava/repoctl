@@ -63,7 +63,7 @@ var newRepoCmd = &cobra.Command{
 	Use:   "repo </path/to/repo/database>",
 	Short: "create a new repository and configuration file",
 	Long: `Create a new repository with configuration file.
-    
+
 FIXME: This function still needs to be implemented.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -105,8 +105,7 @@ var newConfigCmd = &cobra.Command{
 	Example: `  repoctl new config /srv/abs/atlas.db.tar.gz
   repoctl new config /srv/abs/atlas
   repoctl new config -c /etc/xdg/repoctl/config.toml /srv/abs/atlas
-  REPOCTL_CONFIG=/etc/repoctl.conf repoctl new config /srv/abs/atlas
-`,
+  REPOCTL_CONFIG=/etc/repoctl.conf repoctl new config /srv/abs/atlas`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
 			cmd.Usage()
