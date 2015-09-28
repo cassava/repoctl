@@ -44,6 +44,33 @@ func isalpha(c byte) bool {
 	return 'a' <= c && c <= 'z'
 }
 
+func issubset(a, b []string) bool {
+	m := make(map[string]bool)
+	for _, k := range b {
+		m[k] = true
+	}
+	for _, k := range a {
+		if !m[k] {
+			return false
+		}
+	}
+	return true
+}
+
+func isequalset(a, b []string) bool {
+	if &a == &b || (len(a) == 0 && len(b) == 0) {
+		return true
+	}
+	return issubset(a, b) && issubset(b, a)
+}
+
+func isequallist(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	return isequalset(a, b)
+}
+
 // intcmp returns the comparison of two integers.
 func intcmp(a, b int) int {
 	if a < b {

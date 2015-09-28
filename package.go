@@ -1,4 +1,4 @@
-// Copyright (c) 2014, Ben Morgan. All rights reserved.
+// Copyright (c) 2015, Ben Morgan. All rights reserved.
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 
@@ -75,6 +75,86 @@ type Package struct {
 	MakeDepends     []string  // makedepend
 	CheckDepends    []string  // checkdepend
 	MakeOptions     []string  // makepkgopt
+}
+
+// Check if one package is the same as another.
+//
+// The equality comparisons for the []string attributes
+// are set comparisons.
+func (p *Package) Equal(a *Package) bool {
+	// If the pointer is the same, we are wasting time.
+	if p == a {
+		return true
+	}
+
+	if p.Filename != a.Filename {
+		return false
+	}
+	if p.Origin != a.Origin {
+		return false
+	}
+	if p.Name != a.Name {
+		return false
+	}
+	if p.Version != a.Version {
+		return false
+	}
+	if p.Description != a.Description {
+		return false
+	}
+	if p.Base != a.Base {
+		return false
+	}
+	if p.URL != a.URL {
+		return false
+	}
+	if p.BuildDate != a.BuildDate {
+		return false
+	}
+	if p.Packager != a.Packager {
+		return false
+	}
+	if p.Size != a.Size {
+		return false
+	}
+	if p.Arch != a.Arch {
+		return false
+	}
+	if p.License != a.License {
+		return false
+	}
+	if !isequalset(p.Backups, a.Backups) {
+		return false
+	}
+	if !isequalset(p.Replaces, a.Replaces) {
+		return false
+	}
+	if !isequalset(p.Provides, a.Provides) {
+		return false
+	}
+	if !isequalset(p.Conflicts, a.Conflicts) {
+		return false
+	}
+	if !isequalset(p.Groups, a.Groups) {
+		return false
+	}
+	if !isequalset(p.Depends, a.Depends) {
+		return false
+	}
+	if !isequalset(p.OptionalDepends, a.OptionalDepends) {
+		return false
+	}
+	if !isequalset(p.MakeDepends, a.MakeDepends) {
+		return false
+	}
+	if !isequalset(p.CheckDepends, a.CheckDepends) {
+		return false
+	}
+	if !isequalset(p.MakeOptions, a.MakeOptions) {
+		return false
+	}
+
+	return true
 }
 
 // OlderThan returns true if pkg's version is older than alt's.
