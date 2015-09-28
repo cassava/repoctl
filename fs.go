@@ -26,8 +26,8 @@ import (
 //		return nil
 //	})
 //
-func ReadDir(dirpath string, errHandler func(error) error) ([]*Package, error) {
-	var pkgs []*Package
+func ReadDir(dirpath string, errHandler func(error) error) (Packages, error) {
+	var pkgs Packages
 	err := filepath.Walk(dirpath, func(filename string, info os.FileInfo, err error) error {
 		if err != nil && errHandler != nil {
 			return errHandler(err)
@@ -51,8 +51,8 @@ func ReadDir(dirpath string, errHandler func(error) error) ([]*Package, error) {
 // recursing into subdirectories.
 //
 // Error handling is managed in the same way as in ReadDir.
-func ReadMatchingName(dirpath, pkgname string, errHandler func(error) error) ([]*Package, error) {
-	var pkgs []*Package
+func ReadMatchingName(dirpath, pkgname string, errHandler func(error) error) (Packages, error) {
+	var pkgs Packages
 	err := filepath.Walk(dirpath, func(path string, info os.FileInfo, err error) error {
 		if err != nil && errHandler != nil {
 			return errHandler(err)
@@ -78,8 +78,8 @@ func ReadMatchingName(dirpath, pkgname string, errHandler func(error) error) ([]
 // at the moment it does not recurse into subdirectories.
 //
 // Error handling is managed the same as in ReadDir.
-func ReadMatchingNames(dirpath string, pkgnames []string, errHandler func(error) error) ([]*Package, error) {
-	var pkgs []*Package
+func ReadMatchingNames(dirpath string, pkgnames []string, errHandler func(error) error) (Packages, error) {
+	var pkgs Packages
 	var err error
 
 	for _, n := range pkgnames {

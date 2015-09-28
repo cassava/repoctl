@@ -6,7 +6,7 @@ package pacman
 
 // SplitOld splits the input array into one containing the newest
 // packages and another containing the outdated packages.
-func SplitOld(pkgs []*Package) (updated []*Package, old []*Package) {
+func SplitOld(pkgs Packages) (updated Packages, old Packages) {
 	var m = make(map[string]*Package)
 
 	// Find out which packages are newest and put the others in the old array.
@@ -23,7 +23,7 @@ func SplitOld(pkgs []*Package) (updated []*Package, old []*Package) {
 	}
 
 	// Add the newest packages to the updated array and return.
-	updated = make([]*Package, 0, len(m))
+	updated = make(Packages, 0, len(m))
 	for _, v := range m {
 		updated = append(updated, v)
 	}

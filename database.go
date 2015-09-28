@@ -28,7 +28,7 @@ func HasDatabaseFormat(filename string) bool {
 }
 
 // ReadDatabase reads all the packages from a database file.
-func ReadDatabase(dbpath string) ([]*Package, error) {
+func ReadDatabase(dbpath string) (Packages, error) {
 	dr, err := osutil.NewDecompressor(dbpath)
 	if err != nil {
 		return nil, err
@@ -36,7 +36,7 @@ func ReadDatabase(dbpath string) ([]*Package, error) {
 	defer dr.Close()
 
 	tr := tar.NewReader(dr)
-	var pkgs []*Package
+	var pkgs Packages
 
 	hdr, err := tr.Next()
 	for hdr != nil {
