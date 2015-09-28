@@ -11,8 +11,9 @@ import (
 	"strings"
 )
 
-// ReadDir reads all the packages it finds in a directory, recursing into
-// subdirectories.
+// ReadDir reads all the packages it finds in a directory.
+//
+// Note: this function does not recurse into subdirectories.
 //
 // Errors are passed to errHandler if errHandler is not nil. If errHandler
 // returns an error, then the function aborts and returns the already read
@@ -32,6 +33,9 @@ func ReadDir(dirpath string, errHandler func(error) error) (Packages, error) {
 		if err != nil && errHandler != nil {
 			return errHandler(err)
 		}
+		if info.Mode().IsDir() {
+			return filepath.SkipDir
+		}
 		if !info.Mode().IsDir() && HasPackageFormat(filename) {
 			p, err := ReadPackage(filename)
 			if err != nil && errHandler != nil {
@@ -47,8 +51,9 @@ func ReadDir(dirpath string, errHandler func(error) error) (Packages, error) {
 	return pkgs, err
 }
 
-// ReadMatchingName reads all packages with the given name in a directory,
-// recursing into subdirectories.
+// ReadMatchingName reads all packages with the given name in a directory.
+//
+// Note: this function does not recurse into subdirectories.
 //
 // Error handling is managed in the same way as in ReadDir.
 func ReadMatchingName(dirpath, pkgname string, errHandler func(error) error) (Packages, error) {
@@ -56,6 +61,9 @@ func ReadMatchingName(dirpath, pkgname string, errHandler func(error) error) (Pa
 	err := filepath.Walk(dirpath, func(path string, info os.FileInfo, err error) error {
 		if err != nil && errHandler != nil {
 			return errHandler(err)
+		}
+		if info.Mode().IsDir() {
+			return filepath.SkipDir
 		}
 		if !info.Mode().IsDir() && strings.HasPrefix(path, pkgname) && HasPackageFormat(path) {
 			p, err := ReadPackage(path)
@@ -74,8 +82,9 @@ func ReadMatchingName(dirpath, pkgname string, errHandler func(error) error) (Pa
 	return pkgs, err
 }
 
-// ReadMatchingNames reads all packages with one of the given names in a directory,
-// at the moment it does not recurse into subdirectories.
+// ReadMatchingNames reads all packages with one of the given names in a directory.
+//
+// Note: this function does not recurse into subdirectories.
 //
 // Error handling is managed the same as in ReadDir.
 func ReadMatchingNames(dirpath string, pkgnames []string, errHandler func(error) error) (Packages, error) {
