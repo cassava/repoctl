@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2015, Ben Morgan. All rights reserved.
+// Copyright (c) 2015, Ben Morgan. All rights reserved.
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 
@@ -108,11 +108,11 @@ func (ap *AURPackage) Package() *Package {
 
 // DownloadURL returns the URL for downloading the PKGBUILD tarball.
 func (ap *AURPackage) DownloadURL() string {
-	return fmt.Sprintf("https://aur4.archlinux.org%s", ap.URLPath)
+	return fmt.Sprintf("https://aur.archlinux.org%s", ap.URLPath)
 }
 
 const (
-	apiURL = "https://aur4.archlinux.org/rpc.php?type=multiinfo&arg[]=%s"
+	apiURL = "https://aur.archlinux.org/rpc.php?type=multiinfo&arg[]=%s"
 	apiArg = "&arg[]="
 )
 
