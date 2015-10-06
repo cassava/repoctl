@@ -5,8 +5,6 @@
 package main
 
 import (
-	"os"
-
 	"github.com/goulash/pacman"
 	"github.com/spf13/cobra"
 )
@@ -22,12 +20,19 @@ var RemoveCmd = &cobra.Command{
   option is given, in which case the package files are moved to the
   backup directory.
 `,
-	Run: remove,
+	Run: func(cmd *cobra.Command, args []string) {
+		err := Remove(args)
+		dieOnError(err)
+	},
 }
 
-func remove(cmd *cobra.Command, args []string) {
+// Remove removes the specified packages from the repository database
+// and deletes any associated package files, unless the backup option
+// is given, in which case the package files are moved to the backup
+// directory.
+func Remove(pkgnames []string) error {
 	// TODO: handle the errors here correctly!
-	pkgs, _ := pacman.ReadMatchingNames(Conf.repodir, args, nil)
+	pkgs, _ := pacman.ReadMatchingNames(Conf.repodir, pkgnames, nil)
 	db, _ := getDatabasePkgs(Conf.Repository)
 
 	rmmap := make(map[string]bool)
@@ -57,14 +62,16 @@ func remove(cmd *cobra.Command, args []string) {
 			},
 			Conf.Columnate)
 		if !proceed {
-			os.Exit(0)
+			return nil
 		}
 	}
 
 	var err error
 	if len(dbpkgs) > 0 {
 		err = removePkgs(dbpkgs)
-		dieOnError(err)
+		if err != nil {
+			return err
+		}
 	}
 	if len(pkgs) > 0 {
 		files := mapPkgs(pkgs, pkgFilename)
@@ -73,6 +80,7 @@ func remove(cmd *cobra.Command, args []string) {
 		} else {
 			err = deletePkgs(files)
 		}
-		dieOnError(err)
+		return err
 	}
+	return nil
 }

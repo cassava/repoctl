@@ -5,7 +5,8 @@
 package main
 
 import (
-	"github.com/goulash/pacman"
+	"os"
+
 	"github.com/spf13/cobra"
 )
 
@@ -37,63 +38,10 @@ var AddCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error
 		if movePackages {
-			err = Move(args)
+			err = Repo.MoveAll(args, repo.PrinterEH(os.Stderr))
 		} else {
-			err = Add(args)
+			err = Repo.AddAll(args, repo.PrinterEH(os.Stderr))
 		}
 		dieOnError(err)
 	},
-}
-
-// FIXME: implement me!
-func Move(pkgfiles []string) error {
-	return nil
-}
-
-// FIXME: the semantic of this function is wrong.
-func Add(pkgfiles []string) error {
-	// TODO: handle the errors here correctly!
-	pkgs, _ := pacman.ReadMatchingNames(Conf.repodir, pkgfiles, nil)
-	pkgs, outdated := pacman.SplitOld(pkgs)
-	db, _ := getDatabasePkgs(Conf.Repository)
-	pending := filterPkgs(pkgs, dbPendingFilter(db))
-
-	if Conf.Interactive {
-		info := "Delete following files:"
-		if Conf.Backup {
-			info = "Back following files up:"
-		}
-		proceed := confirmAll(
-			[][]string{
-				mapPkgs(pending, pkgNameVersion(db)),
-				mapPkgs(outdated, pkgBasename),
-			},
-			[]string{
-				"Add following entries to database:",
-				info,
-			},
-			Conf.Columnate)
-		if !proceed {
-			return nil
-		}
-	}
-
-	if len(pending) > 0 {
-		err := addPkgs(mapPkgs(pending, pkgFilename))
-		if err != nil {
-			return err
-		}
-	}
-	if len(outdated) > 0 {
-		filenames := mapPkgs(outdated, pkgFilename)
-		var err error
-		if Conf.Backup {
-			err = backupPkgs(filenames)
-		} else {
-			err = deletePkgs(filenames)
-		}
-		return err
-	}
-
-	return nil
 }

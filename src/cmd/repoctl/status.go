@@ -15,22 +15,32 @@ import (
 var StatusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "show pending changes and packages that can be updated",
-	Long:  `Show pending changes to the database and packages that can be updated.`,
-}
+	Long: `Show pending changes to the database and packages that can be updated.
+    
+  In particular, the following is shown:
 
-func init() {
-	StatusCmd.Run = status
+    - obsolete package files that can be deleted (or backed up)
+    - database entries that should be deleted (no package files)
+    - database entries that can be updated/added (new package files)
+    - packages unavailable in AUR
+    - packages with updates in AUR
+
+  The idea of the status command is similar to that of git status.
+`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) > 0 {
+			cmd.Usage()
+			os.Exit(1)
+		}
+		err := Status()
+		dieOnError(err)
+	},
 }
 
 // Status prints a thorough status of the current repository.
-func status(cmd *cobra.Command, args []string) {
+func Status() {
 	if Conf.Unconfigured {
-		dieOnError(ErrUnconfigured)
-	}
-
-	if len(args) > 0 {
-		StatusCmd.Usage()
-		os.Exit(1)
+		return ErrUnconfigured
 	}
 
 	pkgs, outdated := getRepoPkgs(Conf.repodir)
@@ -76,4 +86,5 @@ func status(cmd *cobra.Command, args []string) {
 	if nothing {
 		fmt.Println("Everything up-to-date.")
 	}
+	return nil
 }
