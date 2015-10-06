@@ -21,7 +21,7 @@ func (pkgs Packages) Map(f MapFunc) []string {
 	return results
 }
 
-func nkgFilename(p *Package) string {
+func PkgFilename(p *Package) string {
 	return p.Filename
 }
 
