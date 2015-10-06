@@ -2,6 +2,7 @@
 // Use of this source code is governed by an MIT license
 // that can be found in the LICENSE file.
 
+// Package repoctl provides functions for managing Arch repositories.
 package repoctl
 
 import (
@@ -11,6 +12,7 @@ import (
 	"path"
 
 	"github.com/goulash/osutil"
+	"github.com/goulash/pacman"
 )
 
 type Repo struct {
@@ -96,6 +98,27 @@ func (r *Repo) Setup() error {
 	}
 
 	return os.MkdirAll(r.Directory, os.ModePerm)
+}
+
+func (r *Repo) Reset(h ErrHandler) error {
+	AssertHandler(&h)
+
+	err := r.DeleteDatabase()
+	if err != nil {
+		return err
+	}
+
+	pkgs, err := r.ReadDirectory(h)
+	if err != nil {
+		return err
+	}
+	return r.DatabaseAdd(pkgs.Map(pacman.PkgBasename)...)
+}
+
+func (r *Repo) DeleteDatabase() error {
+	db := path.Join(r.Directory, r.Database)
+	r.printf("deleting database: %s\n", db)
+	return os.Remove(db)
 }
 
 func (r *Repo) printf(format string, obj ...interface{}) {

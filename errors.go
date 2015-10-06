@@ -13,6 +13,8 @@ var (
 	ErrRepoDirRelative = errors.New("repository directory path must be absolute")
 	ErrRepoDirMissing  = errors.New("repository directory path does not exist")
 	ErrRepoDirInvalid  = errors.New("repository directory path is invalid")
+	ErrPkgDirExists    = errors.New("package destination directory already exists")
+	ErrPkgFileExists   = errors.New("package destination file already exists")
 )
 
 type NotExistsError struct {
