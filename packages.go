@@ -4,9 +4,34 @@
 
 package pacman
 
+import "path"
+
 // Packages is merely a list of packages with support for some
 // set and list functions.
 type Packages []*Package
+
+type MapFunc func(*Package) string
+
+// Map maps Packages to some string characteristic of a Package.
+func (pkgs Packages) Map(f MapFunc) []string {
+	results := make([]string, len(pkgs))
+	for i, p := range pkgs {
+		results[i] = f(p)
+	}
+	return results
+}
+
+func nkgFilename(p *Package) string {
+	return p.Filename
+}
+
+func PkgBasename(p *Package) string {
+	return path.Base(p.Filename)
+}
+
+func PkgName(p *Package) string {
+	return p.Name
+}
 
 // FilterFunc is a function that given a package, returns true if the package
 // is ok, and false if it should not be included (filtered out).
