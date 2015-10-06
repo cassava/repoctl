@@ -159,13 +159,29 @@ func (p *Package) Equal(a *Package) bool {
 
 // OlderThan returns true if pkg's version is older than alt's.
 // It takes the Epoch value into account.
+//
+// If alt is nil, then false is returned.
 func (pkg *Package) OlderThan(alt *Package) bool {
+	if pkg == nil {
+		panic("pkg is nil")
+	}
+	if alt == nil {
+		return false
+	}
 	return pkg.CompareVersion(alt) == -1
 }
 
 // NewerThan returns true if pkg's version is newer than alt's.
 // It takes the Epoch value into account.
+//
+// If alt is nil, then true is returned.
 func (pkg *Package) NewerThan(alt *Package) bool {
+	if pkg == nil {
+		panic("pkg is nil")
+	}
+	if alt == nil {
+		return true
+	}
 	return pkg.CompareVersion(alt) == 1
 }
 

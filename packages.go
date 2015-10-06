@@ -33,6 +33,31 @@ func PkgName(p *Package) string {
 	return p.Name
 }
 
+func (pkgs Packages) MapPkg(f MapFunc) map[string]*Package {
+	m := make(map[string]*Package)
+	for _, p := range pkgs {
+		m[f(p)] = p
+	}
+	return m
+}
+
+func (pkgs Packages) MapBool(f MapFunc) map[string]bool {
+	m := make(map[string]bool)
+	for _, p := range pkgs {
+		m[f(p)] = true
+	}
+	return m
+}
+
+func (pkgs Packages) Len() int      { return len(pkgs) }
+func (pkgs Packages) Swap(i, j int) { pkgs[i], pkgs[j] = pkgs[j], pkgs[i] }
+func (pkgs Packages) Less(i, j int) bool {
+	if pkgs[i].Name != pkgs[j].Name {
+		return pkgs[i].Name < pkgs[j].Name
+	}
+	return VerCmp(pkgs[i].Version, pkgs[j].Version) == -1
+}
+
 // FilterFunc is a function that given a package, returns true if the package
 // is ok, and false if it should not be included (filtered out).
 //

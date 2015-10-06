@@ -149,12 +149,23 @@ func ReadAUR(pkgname string) (*AURPackage, error) {
 	return msg.Results[0], nil
 }
 
+type AURPackages []*AURPackage
+
+func (pkgs AURPackages) Len() int      { return len(pkgs) }
+func (pkgs AURPackages) Swap(i, j int) { pkgs[i], pkgs[j] = pkgs[j], pkgs[i] }
+func (pkgs AURPackages) Less(i, j int) bool {
+	if pkgs[i].Name != pkgs[j].Name {
+		return pkgs[i].Name < pkgs[j].Name
+	}
+	return VerCmp(pkgs[i].Version, pkgs[j].Version) == -1
+}
+
 // ReadAllAUR reads multiple packages from the Arch Linux User Repository (AUR)
 // at once.
 //
-// If any packages cannot be found, ([]*AURPackage, *NotFoundError) is returned.
+// If any packages cannot be found, (AURPackages, *NotFoundError) is returned.
 // That is, all successfully read packages are returned.
-func ReadAllAUR(pkgnames []string) ([]*AURPackage, error) {
+func ReadAllAUR(pkgnames []string) (AURPackages, error) {
 	q := generateURL(pkgnames)
 	resp, err := http.Get(q)
 	if err != nil {
