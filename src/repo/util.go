@@ -4,31 +4,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path"
-
-	"github.com/goulash/pacman"
 )
-
-// mapPkgs maps Packages to some string characteristic of a Package.
-func mapPkgs(pkgs []*pacman.Package, f func(*pacman.Package) string) []string {
-	results := make([]string, len(pkgs))
-	for i, p := range pkgs {
-		results[i] = f(p)
-	}
-	return results
-}
-
-func pkgFilename(p *pacman.Package) string {
-	return p.Filename
-}
-
-func pkgBasename(p *pacman.Package) string {
-	return path.Base(p.Filename)
-}
-
-func pkgName(p *pacman.Package) string {
-	return p.Name
-}
 
 // joinArgs joins strings and arrays of strings together into one array.
 func joinArgs(args ...interface{}) []string {

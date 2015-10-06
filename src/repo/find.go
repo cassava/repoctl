@@ -10,6 +10,14 @@ import (
 	"github.com/goulash/pacman"
 )
 
+func (r *Repo) ReadPackages() pacman.Packages {
+	pkgs, err := pacman.ReadDir(r.Directory, PrinterEH(r.Error))
+	if err != nil {
+		r.errorf("error: %s\n", err)
+	}
+	return pkgs
+}
+
 func (r *Repo) FindPackages(pkgname string) pacman.Packages {
 	pkgs, err := pacman.ReadMatchingName(r.Directory, pkgname, PrinterEH(r.Error))
 	if err != nil {

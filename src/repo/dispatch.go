@@ -11,6 +11,18 @@ import (
 	"github.com/goulash/osutil"
 )
 
+func (r *Repo) Remove(pkgnames []string, h ErrHandler) error {
+	pkgs, err := pacman.ReadMatchingNames(r.Directory, pkgnames, h)
+	if err != nil {
+		return err
+	}
+	err = h(r.DatabaseRemove(pkgs.Map(pacman.PkgName)...))
+	if err != nil {
+		return err
+	}
+	return r.Dispatch(pkgs.Map(pacman.PkgFilename), h)
+}
+
 func (r *Repo) Dispatch(pkgfiles []string, h ErrHandler) error {
 	if r.Backup {
 		return r.backup(pkgfiles)

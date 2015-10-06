@@ -4,12 +4,29 @@
 
 package main
 
-import "os/exec"
+import (
+	"os"
+	"os/exec"
+	"path"
+)
 
 var (
 	SystemRepoAdd    = "/usr/bin/repo-add"
 	SystemRepoRemove = "/usr/bin/repo-remove"
 )
+
+func (r *Repo) Reset() error {
+	err := r.RemoveDatabase()
+	if err != nil {
+		return err
+	}
+}
+
+func (r *Repo) RemoveDatabase() {
+	db := path.Join(r.Directory, r.Database)
+	r.printf("removing database: %s\n", db)
+	return os.Remove(db)
+}
 
 // DatabaseAdd adds the given packages to the repository database.
 func (r *Repo) DatabaseAdd(pkgfiles ...string) error {

@@ -5,10 +5,11 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
-	"path"
 	"sort"
+	"strings"
 
 	"github.com/goulash/osutil"
 	"github.com/goulash/pacman"
@@ -75,27 +76,6 @@ func handleErrors(format string, ch <-chan error) {
 	}
 }
 
-// mapPkgs maps Packages to some string characteristic of a Package.
-func mapPkgs(pkgs []*pacman.Package, f func(*pacman.Package) string) []string {
-	results := make([]string, len(pkgs))
-	for i, p := range pkgs {
-		results[i] = f(p)
-	}
-	return results
-}
-
-func pkgFilename(p *pacman.Package) string {
-	return p.Filename
-}
-
-func pkgBasename(p *pacman.Package) string {
-	return path.Base(p.Filename)
-}
-
-func pkgName(p *pacman.Package) string {
-	return p.Name
-}
-
 // printSet prints a set of items and optionally a header.
 func printSet(list []string, h string, cols bool) {
 	sort.Strings(list)
@@ -121,4 +101,42 @@ func dieOnError(err error) {
 		fmt.Fprintf(os.Stderr, "Error: %s.\n", err)
 		os.Exit(1)
 	}
+}
+
+func pkgNameVersion(db map[string]*pacman.Package) func(*pacman.Package) string {
+	return func(p *pacman.Package) string {
+		dp, ok := db[p.Name]
+		if ok {
+			return fmt.Sprintf("%s %s -> %s", p.Name, dp.Version, p.Version)
+		}
+		return fmt.Sprintf("%s -> %s", p.Name, p.Version)
+	}
+}
+
+// confirmAll prints all the headings, items, and then returns the user's decision.
+func confirmAll(sets [][]string, hs []string, cols bool) bool {
+	nothing := true
+	for i, s := range sets {
+		if len(s) > 0 {
+			printSet(s, hs[i], cols)
+			nothing = false
+		}
+	}
+	if nothing {
+		return false
+	}
+	fmt.Println()
+	return confirm()
+}
+
+// confirm gets the user's decision.
+func confirm() bool {
+	fmt.Print("Proceed? [Yn] ")
+	r := bufio.NewReader(os.Stdin)
+	line, err := r.ReadString('\n')
+	if err != nil {
+		return false
+	}
+	line = strings.TrimSpace(strings.ToLower(line))
+	return !(line == "no" || line == "n")
 }

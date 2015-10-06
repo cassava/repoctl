@@ -20,7 +20,7 @@ func PrinterEH(w io.Writer) ErrHandler {
 
 	return func(err error) error {
 		if err != nil {
-			fmt.Fprintf(w, "Error: %s.\n", err)
+			fmt.Fprintf(w, "error: %s.\n", err)
 		}
 		return nil
 	}

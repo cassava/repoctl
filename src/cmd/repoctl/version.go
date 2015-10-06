@@ -37,8 +37,8 @@ var progInfo = programInfo{
 	Author:    "Ben Morgan",
 	Email:     "neembi@gmail.com",
 	Version:   "0.14",
-	Date:      "30 July 2015",
-	Copyright: "2014–2015",
+	Date:      "6 October 2015",
+	Copyright: "2015",
 	Homepage:  "https://github.com/cassava/repoctl",
 	License:   "MIT",
 }
