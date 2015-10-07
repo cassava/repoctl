@@ -134,7 +134,7 @@ func (r *Repo) Update(h ErrHandler, pkgnames ...string) error {
 			return err
 		}
 	} else {
-		pkgs, err = r.FindNames(h, pkgnames...)
+		pkgs, err = r.ReadNames(h, pkgnames...)
 		if err != nil {
 			return err
 		}

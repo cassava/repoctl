@@ -66,29 +66,14 @@ func (r *Repo) ReadRepository(h ErrHandler) (synced pacman.Packages, dbonly pacm
 	return
 }
 
-// ReadNames reads all possible package names from the repository.
-// This includes packages from the database where the files have been
-// deleted.
-func (r *Repo) ReadNames(h ErrHandler) ([]string, error) {
+// ReadNames returns all packages in the repository that match the given
+// names. If no names are given, all packages found are returned.
+func (r *Repo) ReadNames(h ErrHandler, pkgnames ...string) (pacman.Packages, error) {
 	AssertHandler(&h)
-	dbpkgs, err := r.ReadDatabase()
-	if err = h(err); err != nil {
-		return nil, err
+	if len(pkgnames) == 0 {
+		return r.ReadDirectory(h)
 	}
-	filepkgs, err := r.ReadDirectory(h)
-	if err = h(err); err != nil {
-		return nil, err
-	}
-
-	m := dbpkgs.MapBool(pacman.PkgName)
-	for _, p := range filepkgs {
-		m[p.Name] = true
-	}
-	names := make([]string, 0, len(m))
-	for k := range m {
-		names = append(names, k)
-	}
-	return names, nil
+	return pacman.ReadMatchingNames(r.Directory, pkgnames, h)
 }
 
 // ReadAUR reads the given package names from AUR. If no package names
@@ -97,7 +82,7 @@ func (r *Repo) ReadAUR(h ErrHandler, pkgnames ...string) (pacman.AURPackages, er
 	AssertHandler(&h)
 	var err error
 	if len(pkgnames) == 0 {
-		pkgnames, err = r.ReadNames(h)
+		pkgnames, err = r.OnlyNames(h)
 		if err != nil {
 			return nil, err
 		}
@@ -186,24 +171,13 @@ func (r *Repo) FindNewest(h ErrHandler, pkgnames ...string) (pacman.Packages, er
 	if len(pkgnames) == 0 {
 		pkgs, err = r.ReadDirectory(h)
 	} else {
-		pkgs, err = r.FindNames(h, pkgnames...)
+		pkgs, err = r.ReadNames(h, pkgnames...)
 	}
 	if err != nil {
 		return nil, err
 	}
 
 	return FilterNewest(pkgs), nil
-}
-
-// FindNames returns all packages in the repository that match the given
-// names. If no names are given, nil is returned.
-func (r *Repo) FindNames(h ErrHandler, pkgnames ...string) (pacman.Packages, error) {
-	AssertHandler(&h)
-	if len(pkgnames) == 0 {
-		r.debugf("repoctl.(Repo).FindNames: pkgnames empty.\n")
-		return nil, nil
-	}
-	return pacman.ReadMatchingNames(r.Directory, pkgnames, h)
 }
 
 // FindSimilar finds package files in the repository that
@@ -225,7 +199,7 @@ func (r *Repo) FindSimilar(h ErrHandler, pkgfiles ...string) (pacman.Packages, e
 	if err != nil {
 		return nil, err
 	}
-	similar, err := r.FindNames(h, pkgs.Map(pacman.PkgName)...)
+	similar, err := r.ReadNames(h, pkgs.Map(pacman.PkgName)...)
 	if err != nil {
 		return nil, err
 	}
@@ -257,4 +231,29 @@ func (r *Repo) FindUpdates(h ErrHandler, pkgnames ...string) (pacman.Packages, e
 		}
 	}
 	return updates, nil
+}
+
+// OnlyNames reads all possible package names from the repository.
+// This includes packages from the database where the files have been
+// deleted.
+func (r *Repo) OnlyNames(h ErrHandler) ([]string, error) {
+	AssertHandler(&h)
+	dbpkgs, err := r.ReadDatabase()
+	if err = h(err); err != nil {
+		return nil, err
+	}
+	filepkgs, err := r.ReadDirectory(h)
+	if err = h(err); err != nil {
+		return nil, err
+	}
+
+	m := dbpkgs.MapBool(pacman.PkgName)
+	for _, p := range filepkgs {
+		m[p.Name] = true
+	}
+	names := make([]string, 0, len(m))
+	for k := range m {
+		names = append(names, k)
+	}
+	return names, nil
 }
