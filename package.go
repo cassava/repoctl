@@ -52,6 +52,10 @@ const (
 // we have decided against it for now. If you feel that this is important,
 // please contact us.
 type Package struct {
+	// Filename is the file that the package is either read from, or that
+	// the package refers to (for example from the database). There is no
+	// guarantee over the format of the filename! It could be a partial
+	// path or an absolute path.
 	Filename string
 	Origin   PackageOrigin
 

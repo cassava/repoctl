@@ -21,6 +21,11 @@ func (pkgs Packages) Map(f MapFunc) []string {
 	return results
 }
 
+// PkgFilename gets the filename of the package. There is no normalization
+// done here. Comparing two Packages that refer to the same file might
+// not have the same filename internally.
+//
+// If you need that, check out PkgBasename!
 func PkgFilename(p *Package) string {
 	return p.Filename
 }
