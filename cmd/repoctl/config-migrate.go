@@ -37,5 +37,7 @@ func oldConfigPath() string {
 func oldConfigExists() bool {
 	// If we can't access the file for some reason, it might as well not exist.
 	ex, _ := osutil.FileExists(oldConfigPath())
-	return ex
+
+	// TODO: Need to implement this function!
+	return false
 }
