@@ -5,25 +5,31 @@
 package repoctl
 
 import (
-	"compress/gzip"
-	"net/http"
 	"os"
 	"path"
-	"strings"
 
 	"github.com/goulash/osutil"
 	"github.com/goulash/pacman"
-	"github.com/juju/utils/tar"
 )
 
+// Copy copies the given files into the repository if they do not already
+// exist there and adds them to the database.
 func (r *Repo) Copy(h ErrHandler, pkgfiles ...string) error {
 	return r.add(h, pkgfiles, osutil.CopyFileLazy, "copying")
 }
 
+// Move moves the given files into the repository if they do not already
+// exist there and adds them to the database. If the files already exist
+// there, then they are still deleted from where they were. Thus, the
+// move always appears to have worked, even if no work was done.
+//
+// The exception is that when the source and destination files are the
+// same; then no move or deletion is performed.
 func (r *Repo) Move(h ErrHandler, pkgfiles ...string) error {
 	return r.add(h, pkgfiles, osutil.MoveFileLazy, "moving")
 }
 
+// add does the hard work of Move and Copy.
 func (r *Repo) add(h ErrHandler, pkgfiles []string, ar func(string, string) error, lbl string) error {
 	AssertHandler(&h)
 	if len(pkgfiles) == 0 {
@@ -55,6 +61,8 @@ func (r *Repo) add(h ErrHandler, pkgfiles []string, ar func(string, string) erro
 	return r.Dispatch(h, pkgs.Map(pacman.PkgFilename)...)
 }
 
+// Remove removes the given names from the database and dispatches
+// the files.
 func (r *Repo) Remove(h ErrHandler, pkgnames ...string) error {
 	AssertHandler(&h)
 	if len(pkgnames) == 0 {
@@ -62,7 +70,7 @@ func (r *Repo) Remove(h ErrHandler, pkgnames ...string) error {
 		return nil
 	}
 
-	pkgs, err := pacman.ReadMatchingNames(r.Directory, pkgnames, h)
+	pkgs, err := r.ReadNames(h, pkgnames...)
 	if err != nil {
 		return err
 	}
@@ -73,6 +81,7 @@ func (r *Repo) Remove(h ErrHandler, pkgnames ...string) error {
 	return r.Dispatch(h, pkgs.Map(pacman.PkgFilename)...)
 }
 
+// Dispatch either removes the given files or it backs them up.
 func (r *Repo) Dispatch(h ErrHandler, pkgfiles ...string) error {
 	AssertHandler(&h)
 	if len(pkgfiles) == 0 {
@@ -120,25 +129,28 @@ func (r *Repo) unlink(h ErrHandler, pkgfiles []string) error {
 }
 
 // Update adds the newest package found for the given name to the
-// database and dispatches the obsolete packages.
+// database and dispatches the obsolete packages. Any obsolete entries
+// in the database are removed.
 //
 // If pkgnames is empty, the entire repository is scanned.
+//
+// TODO: What happens when there are multiple files, and you delete
+// the most recent one. Which file is deleted?
 func (r *Repo) Update(h ErrHandler, pkgnames ...string) error {
 	AssertHandler(&h)
 
 	var pkgs pacman.Packages
 	var err error
 	if len(pkgnames) == 0 {
-		pkgs, err = r.FindNewest(h)
+		pkgs, err = r.FindUpdates(h)
 		if err != nil {
 			return err
 		}
 	} else {
-		pkgs, err = r.ReadNames(h, pkgnames...)
+		pkgs, err = r.FindNewest(h, pkgnames...)
 		if err != nil {
 			return err
 		}
-		pkgs = FilterNewest(pkgs)
 	}
 
 	files := pkgs.Map(pacman.PkgFilename)
@@ -146,89 +158,27 @@ func (r *Repo) Update(h ErrHandler, pkgnames ...string) error {
 	if err != nil {
 		return err
 	}
+
+	// Remove entries from database that have no associated files.
+	dbpkgs, err := r.ReadDatabase()
+	if err != nil {
+		return err
+	}
+	rm := make([]string, 0)
+	for _, p := range dbpkgs {
+		if !r.Exists(p) {
+			rm = append(rm, p.Name)
+		}
+	}
+	err = r.DatabaseRemove(rm...)
+	if err != nil {
+		return err
+	}
+
+	// Dispatch all obsolete files.
 	pkgs, err = r.FindSimilar(h, files...)
 	if err != nil {
 		return err
 	}
 	return r.Dispatch(h, pkgs.Map(pacman.PkgFilename)...)
-}
-
-// Download downloads and extracts the given package tarballs.
-func (r *Repo) Download(h ErrHandler, pkgnames ...string) error {
-	AssertHandler(&h)
-	if len(pkgnames) == 0 {
-		r.debugf("repoctl.(Repo).Download: pkgnames empty.\n")
-		return nil
-	}
-
-	aurpkgs, err := r.ReadAUR(h, pkgnames...)
-	if err != nil {
-		return err
-	}
-	for _, ap := range aurpkgs {
-		err := h(r.DownloadAUR(ap, ""))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// DownloadUpgrades downloads all available upgrades for the given
-// package names.
-//
-// If pkgnames is empty, all available upgrades are downloaded.
-func (r *Repo) DownloadUpgrades(h ErrHandler, pkgnames ...string) error {
-	AssertHandler(&h)
-
-	upgrades, err := r.FindUpgrades(h, pkgnames...)
-	if err != nil {
-		return err
-	}
-
-	for _, u := range upgrades {
-		err := h(r.DownloadAUR(u.New, ""))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// DownloadAUR is actually a helper for Download and DownloadUpgrades.
-// It is provided for your convenience.
-func (r *Repo) DownloadAUR(ap *pacman.AURPackage, destdir string) error {
-	var err error
-	if destdir == "" {
-		destdir, err = os.Getwd()
-		if err != nil {
-			return err
-		}
-	}
-
-	url := ap.DownloadURL()
-	tokens := strings.Split(url, "/")
-	of := tokens[len(tokens)-1]
-
-	// Make sure we don't clobber anything.
-	ex, err := osutil.DirExists(ap.Name)
-	if err != nil {
-		return err
-	}
-	if ex {
-		return ErrPkgDirExists
-	}
-
-	r.printf("downloading: %s\n", of)
-	response, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-
-	gr, err := gzip.NewReader(response.Body)
-	if err != nil {
-		return err
-	}
-	return tar.UntarFiles(gr, destdir)
 }

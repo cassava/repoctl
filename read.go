@@ -22,14 +22,19 @@ func (r *Repo) ReadDatabase() (pacman.Packages, error) {
 	} else if !ex {
 		return make(pacman.Packages, 0), nil
 	}
-	return pacman.ReadDatabase(dbpath)
+	pkgs, err := pacman.ReadDatabase(dbpath)
+	r.MakeAbs(pkgs)
+	return pkgs, err
 }
 
 // ReadDirectory reads all packages that are found in the repository
 // directory.
 func (r *Repo) ReadDirectory(h ErrHandler) (pacman.Packages, error) {
 	AssertHandler(&h)
-	return pacman.ReadDir(r.Directory, h)
+
+	pkgs, err := pacman.ReadDir(r.Directory, h)
+	r.MakeAbs(pkgs)
+	return pkgs, err
 }
 
 // ReadRepository reads all packages that are found in the repository
@@ -38,6 +43,7 @@ func (r *Repo) ReadDirectory(h ErrHandler) (pacman.Packages, error) {
 // which packages are synced, only in the database, and only as files.
 func (r *Repo) ReadRepository(h ErrHandler) (synced pacman.Packages, dbonly pacman.Packages, fsonly pacman.Packages, err error) {
 	AssertHandler(&h)
+
 	dbpkgs, err := r.ReadDatabase()
 	if err != nil {
 		return nil, nil, nil, err
@@ -73,7 +79,10 @@ func (r *Repo) ReadNames(h ErrHandler, pkgnames ...string) (pacman.Packages, err
 	if len(pkgnames) == 0 {
 		return r.ReadDirectory(h)
 	}
-	return pacman.ReadMatchingNames(r.Directory, pkgnames, h)
+
+	pkgs, err := pacman.ReadMatchingNames(r.Directory, pkgnames, h)
+	r.MakeAbs(pkgs)
+	return pkgs, err
 }
 
 // ReadAUR reads the given package names from AUR. If no package names
@@ -226,11 +235,25 @@ func (r *Repo) FindUpdates(h ErrHandler, pkgnames ...string) (pacman.Packages, e
 	updates := make(pacman.Packages, 0)
 	db := dbpkgs.MapPkg(pacman.PkgName)
 	for _, p := range pkgs {
-		if p.NewerThan(db[p.Name]) {
+		dp := db[p.Name]
+		if dp == nil || p.NewerThan(dp) || !r.Exists(dp) {
 			updates = append(updates, p)
 		}
 	}
 	return updates, nil
+}
+
+// FindMissing returns all packages from the database that do not
+// have associated files existing.
+func (r *Repo) FindMissing() (pacman.Packages, error) {
+	pkgs, err := r.ReadDatabase()
+	if err != nil {
+		return nil, err
+	}
+
+	return pacman.Filter(pkgs, func(p *pacman.Package) bool {
+		return !r.Exists(p)
+	}), nil
 }
 
 // OnlyNames reads all possible package names from the repository.
@@ -256,4 +279,26 @@ func (r *Repo) OnlyNames(h ErrHandler) ([]string, error) {
 		names = append(names, k)
 	}
 	return names, nil
+}
+
+// MakeAbs makes all package filenames absolute. It is much easier
+// to do this to all packages than figure out when we need it and when
+// we don't.
+func (r *Repo) MakeAbs(pkgs pacman.Packages) {
+	for _, p := range pkgs {
+		base := path.Base(p.Filename)
+		if p.Filename != base {
+			r.debugf("repoctl.(Repo).Absolutify: pkgfile %q not basename.\n", p.Filename)
+		}
+		p.Filename = path.Join(r.Directory, base)
+	}
+}
+
+// Exists checks the existance of a package file; this is only necessary
+// for packages read from the database. If the file can't be read for
+// any reason, then chances are any client will not be able to read it
+// either, and so false is returned.
+func (r *Repo) Exists(p *pacman.Package) bool {
+	ex, err := osutil.FileExists(p.Filename)
+	return err != nil || !ex
 }
