@@ -29,16 +29,22 @@ import (
 //
 func ReadDir(dirpath string, errHandler func(error) error) (Packages, error) {
 	var pkgs Packages
+	dirpath = filepath.Clean(dirpath)
 	err := filepath.Walk(dirpath, func(filename string, info os.FileInfo, err error) error {
 		if err != nil && errHandler != nil {
+			println(err)
 			return errHandler(err)
 		}
 		if info.Mode().IsDir() {
+			if filename == dirpath {
+				return nil
+			}
 			return filepath.SkipDir
 		}
 		if !info.Mode().IsDir() && HasPackageFormat(filename) {
 			p, err := ReadPackage(filename)
 			if err != nil && errHandler != nil {
+				println(err)
 				return errHandler(err)
 			}
 
