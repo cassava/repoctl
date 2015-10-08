@@ -171,7 +171,7 @@ func (r *Repo) ReadMeta(h ErrHandler, aur bool, pkgnames ...string) (MetaPackage
 	// Read from AUR.
 	if aur {
 		aurpkgs, err := r.ReadAUR(h, names...)
-		if err != nil {
+		if _, ok := err.(*pacman.NotFoundError); !ok {
 			r.errorf("error reading aur: %s.\n", err)
 		} else {
 			for _, ap := range aurpkgs {
