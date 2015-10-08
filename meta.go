@@ -30,7 +30,7 @@ func (mp *MetaPackage) Package() *pacman.Package {
 	if len(mp.Files) == 0 {
 		return nil
 	}
-	return mp.Files[len(mp.Files)-1]
+	return mp.Files[0]
 }
 
 // Version returns the newest actual package version available. This
@@ -82,6 +82,11 @@ func (mp *MetaPackage) HasPending() bool {
 	return p.CompareVersion(mp.Database) != 0
 }
 
+// HasMissing returns true when there are no files for this package.
+func (mp *MetaPackage) HasMissing() bool {
+	return len(mp.Files) == 0
+}
+
 // HasUpdate returns true when there is a newer package file available
 // that hasn't been added to the database. This includes the case where
 // there is no database entry for this package.
@@ -100,6 +105,13 @@ func (mp *MetaPackage) HasUpgrade() bool {
 	}
 	c := pacman.VerCmp(mp.AUR.Version, mp.Version())
 	return c > 0
+}
+
+func (mp *MetaPackage) Obsolete() pacman.Packages {
+	if mp.HasObsolete() {
+		return mp.Files[1:]
+	}
+	return nil
 }
 
 type MetaPackages []*MetaPackage
@@ -173,7 +185,7 @@ func (r *Repo) ReadMeta(h ErrHandler, aur bool, pkgnames ...string) (MetaPackage
 	for _, n := range names {
 		mp := mps[n]
 		if mp.Files != nil {
-			sort.Sort(mp.Files)
+			sort.Sort(sort.Reverse(mp.Files))
 		}
 		pkgs[i] = mp
 		i++

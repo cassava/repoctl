@@ -17,7 +17,7 @@ import (
 )
 
 // Download downloads and extracts the given package tarballs.
-func (r *Repo) Download(h ErrHandler, destdir string, extract bool, pkgnames ...string) error {
+func (r *Repo) Download(h ErrHandler, destdir string, extract bool, clobber bool, pkgnames ...string) error {
 	AssertHandler(&h)
 	if len(pkgnames) == 0 {
 		r.debugf("repoctl.(Repo).Download: pkgnames empty.\n")
@@ -34,7 +34,7 @@ func (r *Repo) Download(h ErrHandler, destdir string, extract bool, pkgnames ...
 		if extract {
 			download = DownloadExtractAUR
 		}
-		err = h(download(ap, destdir))
+		err = h(download(ap, destdir, clobber))
 		if err != nil {
 			return err
 		}
@@ -46,7 +46,7 @@ func (r *Repo) Download(h ErrHandler, destdir string, extract bool, pkgnames ...
 // package names.
 //
 // If pkgnames is empty, all available upgrades are downloaded.
-func (r *Repo) DownloadUpgrades(h ErrHandler, destdir string, extract bool, pkgnames ...string) error {
+func (r *Repo) DownloadUpgrades(h ErrHandler, destdir string, extract bool, clobber bool, pkgnames ...string) error {
 	AssertHandler(&h)
 
 	upgrades, err := r.FindUpgrades(h, pkgnames...)
@@ -60,7 +60,7 @@ func (r *Repo) DownloadUpgrades(h ErrHandler, destdir string, extract bool, pkgn
 		if extract {
 			download = DownloadExtractAUR
 		}
-		err = h(download(u.New, destdir))
+		err = h(download(u.New, destdir, clobber))
 		if err != nil {
 			return err
 		}
@@ -69,7 +69,7 @@ func (r *Repo) DownloadUpgrades(h ErrHandler, destdir string, extract bool, pkgn
 }
 
 // DownloadExtractAUR is a helper for Download and DownloadUpgrades.
-func DownloadExtractAUR(ap *pacman.AURPackage, destdir string) error {
+func DownloadExtractAUR(ap *pacman.AURPackage, destdir string, clobber bool) error {
 	var err error
 	if destdir == "" {
 		destdir, err = os.Getwd()
@@ -79,12 +79,14 @@ func DownloadExtractAUR(ap *pacman.AURPackage, destdir string) error {
 	}
 
 	// Make sure we don't clobber anything.
-	ex, err := osutil.DirExists(ap.Name)
-	if err != nil {
-		return err
-	}
-	if ex {
-		return ErrPkgDirExists
+	if !clobber {
+		ex, err := osutil.DirExists(ap.Name)
+		if err != nil {
+			return err
+		}
+		if ex {
+			return ErrPkgDirExists
+		}
 	}
 
 	response, err := http.Get(ap.DownloadURL())
@@ -100,7 +102,7 @@ func DownloadExtractAUR(ap *pacman.AURPackage, destdir string) error {
 	return tar.UntarFiles(gr, destdir)
 }
 
-func DownloadTarballAUR(ap *pacman.AURPackage, destdir string) error {
+func DownloadTarballAUR(ap *pacman.AURPackage, destdir string, clobber bool) error {
 	var err error
 	if destdir == "" {
 		destdir, err = os.Getwd()
@@ -114,12 +116,14 @@ func DownloadTarballAUR(ap *pacman.AURPackage, destdir string) error {
 	of := tokens[len(tokens)-1]
 
 	// Make sure we don't clobber anything.
-	ex, err := osutil.FileExists(of)
-	if err != nil {
-		return err
-	}
-	if ex {
-		return ErrPkgFileExists
+	if !clobber {
+		ex, err := osutil.FileExists(of)
+		if err != nil {
+			return err
+		}
+		if ex {
+			return ErrPkgFileExists
+		}
 	}
 
 	response, err := http.Get(url)

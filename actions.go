@@ -164,7 +164,7 @@ func (r *Repo) Update(h ErrHandler, pkgnames ...string) error {
 	if err != nil {
 		return err
 	}
-	rm := make([]string, 0)
+	var rm []string
 	for _, p := range dbpkgs {
 		if !r.Exists(p) {
 			rm = append(rm, p.Name)

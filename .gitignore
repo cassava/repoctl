@@ -1,3 +1,3 @@
-pkg/
-bin/
 .lvimrc
+cmd/repoctl/repoctl
+cmd/repols/repols

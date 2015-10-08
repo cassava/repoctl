@@ -5,11 +5,14 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
+	"text/template"
 
 	"github.com/cassava/repoctl"
 	"github.com/cassava/repoctl/conf"
+	"github.com/goulash/pacman"
 	"github.com/spf13/cobra"
 )
 
@@ -19,6 +22,172 @@ var Repo *repoctl.Repo
 // Conf loads and stores the configuration (apart from command line
 // configuration) of this program, including where the repository is.
 var Conf = conf.Default()
+
+// Status ------------------------------------------------------------
+
+var statusAUR bool
+
+func init() {
+	StatusCmd.Flags().BoolVarP(&statusAUR, "aur", "a", false, "check AUR for upgrades")
+}
+
+var StatusCmd = &cobra.Command{
+	Use:   "status [--aur]",
+	Short: "show pending changes and packages that can be upgraded",
+	Long: `Show pending changes to the database and packages that can be updated.
+    
+  In particular, the following is shown:
+
+    - obsolete package files that can be deleted (or backed up)
+    - database entries that should be deleted (no package files)
+    - database entries that can be updated/added (new package files)
+    - packages unavailable in AUR
+    - packages with updates in AUR
+`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) > 0 {
+			cmd.Usage()
+			os.Exit(1)
+		}
+
+		Init()
+		fmt.Printf("On repo %s\n\n", Repo.Name())
+
+		pkgs, err := Repo.ReadMeta(nil, statusAUR)
+		dieOnError(err)
+
+		// We assume that there is nothing to do, and if there is,
+		// then this is set to false.
+		var nothing = true
+
+		for _, p := range pkgs {
+			var flags []string
+			if p.HasUpgrade() {
+				flags = append(flags, fmt.Sprintf("upgrade(%s->%s)", p.Version(), p.AUR.Version))
+			}
+			if p.HasUpdate() {
+				flags = append(flags, "update(%s->%s)", p.VersionRegistered(), p.Version())
+			}
+			if p.HasMissing() {
+				flags = append(flags, "removal")
+			}
+			if o := p.Obsolete(); len(o) > 0 {
+				flags = append(flags, fmt.Sprintf("obsolete(%d)", len(o)))
+			}
+
+			if len(flags) > 0 {
+				nothing = false
+				fmt.Print("\t%s:", p.Name)
+				for _, f := range flags {
+					fmt.Printf(" %s", f)
+				}
+				fmt.Println()
+			}
+		}
+
+		if nothing {
+			fmt.Println("Everything up-to-date.")
+		}
+	},
+}
+
+// List --------------------------------------------------------------
+
+var (
+	// Versioned causes packages to be printed with version information.
+	listVersioned bool
+	// Mode can be either "count", "filter", or "mark" (which is the default
+	// if no match is found.
+	listMode string
+	// Pending marks packages that need to be added to the database,
+	// as well as packages that are in the database but are not available.
+	listPending bool
+	// Duplicates marks the number of obsolete packages for each package.
+	listDuplicates bool
+	// Installed marks whether packages are locally installed or not.
+	listInstalled bool
+	// Synchronize marks which packages have newer versions on AUR.
+	listSynchronize bool
+	// Same as all of the above.
+	listAllOptions bool
+)
+
+func init() {
+	ListCmd.Flags().BoolVarP(&listVersioned, "versioned", "v", false, "show package versions along with name")
+	ListCmd.Flags().BoolVarP(&listPending, "pending", "p", false, "mark pending changes to the database")
+	ListCmd.Flags().BoolVarP(&listDuplicates, "duplicates", "d", false, "mark packages with duplicate package files")
+	ListCmd.Flags().BoolVarP(&listInstalled, "installed", "l", false, "mark packages that are locally installed")
+	ListCmd.Flags().BoolVarP(&listSynchronize, "outdated", "o", false, "mark packages that are newer in AUR")
+	ListCmd.Flags().BoolVarP(&listAllOptions, "all", "a", false, "all information; same as -vpdlo")
+}
+
+var ListCmd = &cobra.Command{
+	Use:     "list",
+	Aliases: []string{"ls"},
+	Short:   "list packages that belong to the managed repository",
+	Long: `List packages that belong to the managed repository.
+
+  Note that they don't need to be registered with the database.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		Init()
+		if len(args) > 0 {
+			cmd.Usage()
+			os.Exit(1)
+		}
+
+		if listAllOptions {
+			listVersioned = true
+			listPending = true
+			listDuplicates = true
+			listInstalled = true
+			listSynchronize = true
+		}
+
+		pkgs, err := Repo.ListMeta(nil, listSynchronize, func(p *repoctl.MetaPackage) string {
+			if listPending && p.HasMissing() {
+				return fmt.Sprintf("-%s-", p.Name)
+			}
+
+			buf := bytes.NewBufferString(p.Name)
+			if listPending && p.HasUpdate() {
+				buf.WriteRune('*')
+			}
+			if listVersioned {
+				buf.WriteRune(' ')
+				buf.WriteString(p.Version())
+			}
+			if listSynchronize {
+				ap := p.AUR
+				if ap == nil {
+					buf.WriteString(" <?>")
+				} else if pacman.VerCmp(ap.Version, p.Version()) == 1 {
+					if listVersioned {
+						buf.WriteString(" -> ")
+						buf.WriteString(ap.Version)
+					} else {
+						buf.WriteString(" <!>")
+					}
+				} else if pacman.VerCmp(ap.Version, p.Version()) == -1 {
+					if listVersioned {
+						buf.WriteString(" <- ")
+						buf.WriteString(ap.Version)
+					} else {
+						buf.WriteString(" <*>")
+					}
+				}
+			}
+			if listDuplicates && len(p.Files)-1 > 0 {
+				buf.WriteString(fmt.Sprintf(" (%v)", len(p.Files)-1))
+			}
+
+			return buf.String()
+		})
+		dieOnError(err)
+
+		// Print packages to stdout
+		printSet(pkgs, "", Conf.Columnate)
+	},
+}
 
 // Reset -------------------------------------------------------------
 
@@ -153,9 +322,9 @@ in the current directory.
 		Init()
 		var err error
 		if downAll {
-			names, err := Repo.ReadAUR(nil)
+			names, err := Repo.ReadNames(nil)
 			dieOnError(err)
-			err = Repo.Download(nil, downDest, downExtract, downClobber, names...)
+			err = Repo.Download(nil, downDest, downExtract, downClobber, names.Map(pacman.PkgName)...)
 		} else if downUpgrades {
 			err = Repo.DownloadUpgrades(nil, downDest, downExtract, downClobber, args...)
 		} else {
@@ -203,7 +372,7 @@ var VersionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "show version and date information",
 	Long:  "Show the official version number of repoctl, as well as the release date.",
-	func(cmd *cobra.Command, args []string) {
+	Run: func(cmd *cobra.Command, args []string) {
 		template.Must(template.New("version").Parse(versionTmpl)).Execute(os.Stdout, progInfo)
 	},
 }
@@ -237,7 +406,7 @@ func addConfFlags(cmd *cobra.Command) {
 func addCommands(cmd *cobra.Command) {
 	cmd.AddCommand(StatusCmd)
 	cmd.AddCommand(ListCmd)
-	cmd.AddCommand(FilterCmd)
+	//	cmd.AddCommand(FilterCmd)
 	cmd.AddCommand(NewCmd)
 	cmd.AddCommand(AddCmd)
 	cmd.AddCommand(RemoveCmd)

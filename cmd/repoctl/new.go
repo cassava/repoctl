@@ -11,6 +11,8 @@ import (
 	"path"
 	"strings"
 
+	"github.com/cassava/repoctl"
+	"github.com/cassava/repoctl/conf"
 	"github.com/goulash/osutil"
 	"github.com/spf13/cobra"
 )
@@ -51,7 +53,7 @@ var (
 )
 
 func init() {
-	NewCmd.PersistentFlags().StringVarP(&nConf, "config", "c", HomeConf(), "path to configuration file")
+	NewCmd.PersistentFlags().StringVarP(&nConf, "config", "c", conf.HomeConf(), "path to configuration file")
 }
 
 func init() {
@@ -123,7 +125,7 @@ func NewConfig(confpath, repo string) error {
 	}
 
 	if !path.IsAbs(repo) {
-		return ErrRepoNotAbs
+		return repoctl.ErrRepoDirRelative
 	}
 	if !strings.HasSuffix(repo, ".db.tar.gz") {
 		repo += ".db.tar.gz"

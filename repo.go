@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/goulash/osutil"
 	"github.com/goulash/pacman"
@@ -72,6 +73,13 @@ func New(repo string) *Repo {
 		AddParameters:    make([]string, 0),
 		RemoveParameters: make([]string, 0),
 	}
+}
+
+// Name returns the name of the repository, which is interpreted to be
+// the name of the database up to the first period.
+func (r *Repo) Name() string {
+	base := path.Base(r.Database)
+	return base[:strings.IndexByte(base, '.')]
 }
 
 // ignoreMap returns a map that is true for every package name that

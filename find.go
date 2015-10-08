@@ -77,7 +77,7 @@ func (r *Repo) FindUpgrades(h ErrHandler, pkgnames ...string) (Upgrades, error) 
 	for _, p := range aur {
 		am[p.Name] = p
 	}
-	upgrades := make(Upgrades, 0)
+	var upgrades Upgrades
 	for _, p := range pkgs {
 		a := am[p.Name]
 		if a.Package().NewerThan(p) {
@@ -149,7 +149,7 @@ func (r *Repo) FindUpdates(h ErrHandler, pkgnames ...string) (pacman.Packages, e
 	if err != nil {
 		return nil, err
 	}
-	updates := make(pacman.Packages, 0)
+	var updates pacman.Packages
 	db := dbpkgs.MapPkg(pacman.PkgName)
 	for _, p := range pkgs {
 		dp := db[p.Name]
