@@ -9,8 +9,16 @@ import (
 	"os"
 
 	"github.com/cassava/repoctl"
+	"github.com/cassava/repoctl/conf"
 	"github.com/spf13/cobra"
 )
+
+// Repo lets us use the repoctl library to do the most of the work.
+var Repo *repoctl.Repo
+
+// Conf loads and stores the configuration (apart from command line
+// configuration) of this program, including where the repository is.
+var Conf = conf.Default()
 
 // Reset -------------------------------------------------------------
 
@@ -23,6 +31,7 @@ var ResetCmd = &cobra.Command{
   recreates it by running the update command.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+		Init()
 		err := Repo.Reset(nil)
 		dieOnError(err)
 	},
@@ -56,6 +65,7 @@ var AddCmd = &cobra.Command{
 `,
 	Example: `  repoctl add -m ./fairsplit-1.0.pkg.tar.gz`,
 	Run: func(cmd *cobra.Command, args []string) {
+		Init()
 		var err error
 		if movePackages {
 			err = Repo.Move(nil, args...)
@@ -82,6 +92,7 @@ var UpdateCmd = &cobra.Command{
 `,
 	Example: `  repoctl update fairsplit`,
 	Run: func(cmd *cobra.Command, args []string) {
+		Init()
 		err := Repo.Update(nil, args...)
 		dieOnError(err)
 	},
@@ -102,6 +113,7 @@ var RemoveCmd = &cobra.Command{
 `,
 	Example: `  repoctl rm fairsplit`,
 	Run: func(cmd *cobra.Command, args []string) {
+		Init()
 		err := Repo.Remove(nil, args...)
 		dieOnError(err)
 	},
@@ -138,6 +150,7 @@ in the current directory.
 `,
 	Example: `  repoctl down -u`,
 	Run: func(cmd *cobra.Command, args []string) {
+		Init()
 		var err error
 		if downAll {
 			names, err := Repo.ReadAUR(nil)
@@ -197,8 +210,6 @@ var VersionCmd = &cobra.Command{
 
 // Main --------------------------------------------------------------
 
-var Repo *repoctl.Repo
-
 var repoctlCmd = &cobra.Command{
 	Use:   "repoctl",
 	Short: "manage local Pacman repositories",
@@ -236,6 +247,16 @@ func addCommands(cmd *cobra.Command) {
 	cmd.AddCommand(VersionCmd)
 }
 
+// Init makes sure that Conf is configured, and sets Repo up.
+func Init() {
+	if Conf.Unconfigured {
+		fmt.Fprintln(os.Stderr, "Error: repoctl is unconfigured.")
+		fmt.Fprintln(os.Stderr, "Please see: repoctl help new")
+		os.Exit(1)
+	}
+	Repo = Conf.Repo()
+}
+
 // main loads the configuration and executes the primary command.
 func main() {
 	err := Conf.MergeAll()
@@ -253,21 +274,6 @@ func main() {
 	// configuration file via the command line; right now it is not a priority.
 	addConfFlags(repoctlCmd)
 	addCommands(repoctlCmd)
-
-	// All the commands rely on Repo being set correctly. Do that now.
-	Repo = repoctl.New(Conf.Repository)
-	Repo.Backup = Conf.Backup
-	Repo.BackupDir = Conf.BackupDir
-	Repo.AddParameters = Conf.AddParameters
-	Repo.RemoveParameters = Conf.RemoveParameters
-	Repo.Error = os.Stderr
-	if Conf.Quiet {
-		Repo.Info = nil
-	}
-	if Conf.Debug {
-		Repo.Info = os.Stdout
-		Repo.Debug = os.Stdout
-	}
 
 	repoctlCmd.Execute()
 }

@@ -13,7 +13,7 @@
 // Here we check whether there is only this old configuration file,
 // and we tell the user how to deal with it.
 
-package main
+package conf
 
 import (
 	"os"
@@ -37,7 +37,8 @@ func oldConfigPath() string {
 func oldConfigExists() bool {
 	// If we can't access the file for some reason, it might as well not exist.
 	ex, _ := osutil.FileExists(oldConfigPath())
-
-	// TODO: Need to implement this function!
+	if ex {
+		return true
+	}
 	return false
 }

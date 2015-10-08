@@ -64,7 +64,7 @@ var newRepoCmd = &cobra.Command{
 	Short: "create a new repository and configuration file",
 	Long: `Create a new repository with configuration file.
 
-FIXME: This function still needs to be implemented.
+  FIXME: This function still needs to be implemented.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		panic("not implemented")

@@ -2,7 +2,7 @@
 // Use of this source code is governed by an MIT license
 // that can be found in the LICENSE file.
 
-package main
+package conf
 
 import (
 	"bytes"
@@ -110,11 +110,15 @@ type Configuration struct {
 	Unconfigured bool `toml:"unconfigured"`
 }
 
-// Conf acts as the global storage for the program configuration.
-// It also contains the default values.
-var Conf = &Configuration{
-	BackupDir:    "backup/",
-	Unconfigured: true,
+// Default acts as the default configuraton.
+func Default() *Configuration {
+	return &Configuration{
+		BackupDir:        "backup/",
+		AddParameters:    make([]string, 0),
+		RemoveParameters: make([]string, 0),
+		IgnoreAUR:        make([]string, 0),
+		Unconfigured:     true,
+	}
 }
 
 // HomeConf is the path to the home configuration file.
@@ -132,13 +136,13 @@ func HomeConf() string {
 	}
 }
 
-// NewConfiguration creates a new default configuration with repo as
+// New creates a new default configuration with repo as
 // the repository database.
 //
 // If repo is invalid (because it is absolute), nil is returned.
 // We don't check for existance, because at this point, it might
 // not exist yet.
-func NewConfiguration(repo string) *Configuration {
+func New(repo string) *Configuration {
 	if !path.IsAbs(repo) {
 		return nil
 	}
@@ -153,19 +157,19 @@ func NewConfiguration(repo string) *Configuration {
 	}
 }
 
-// ReadConfiguration creates a new configuration by reading one
+// Read creates a new configuration by reading one
 // from the specified path.
-func ReadConfiguration(filepath string) (*Configuration, error) {
+func Read(filepath string) (*Configuration, error) {
 	c := &Configuration{}
 	err := c.MergeFile(filepath)
 	return c, err
 }
 
-// Initialize should be called every time after changing c.Repository.
+// Init should be called every time after changing c.Repository.
 // This ensures that the configuration is both valid and consistent.
 //
 // If the repository path is not absolute, ErrRepoNotAbs is returned.
-func (c *Configuration) Initialize() error {
+func (c *Configuration) Init() error {
 	if !path.IsAbs(c.Repository) {
 		return ErrRepoNotAbs
 	}
@@ -283,15 +287,15 @@ func (c *Configuration) MergeAll() error {
 	if err != nil {
 		c.Unconfigured = true
 		return err
-	} else if Conf.Repository == "" {
+	} else if c.Repository == "" {
 		c.Unconfigured = true
 		return ErrRepoUnset
-	} else if err = Conf.Initialize(); err != nil {
+	} else if err = c.Init(); err != nil {
 		c.Unconfigured = true
 		return err
 	}
 
-	return c.Initialize()
+	return c.Init()
 }
 
 // printt returns a TOML representation of the value.
