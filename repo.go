@@ -28,6 +28,10 @@ type Repo struct {
 	// BackupDir specifies where old packages are backed up to,
 	// relative to the repository directory.
 	BackupDir string
+	// IgnoreUpgrades specifies which packages to ignore when looking
+	// for upgrades. Explicitely specifying the file will override the
+	// ignore however.
+	IgnoreUpgrades []string
 
 	// AddParameters are parameters to add to the repo-add
 	// command line.
@@ -64,9 +68,20 @@ func New(repo string) *Repo {
 		Info:  os.Stdout,
 		Debug: nil,
 
+		IgnoreUpgrades:   make([]string, 0),
 		AddParameters:    make([]string, 0),
 		RemoveParameters: make([]string, 0),
 	}
+}
+
+// ignoreMap returns a map that is true for every package name that
+// should have upgrades ignored.
+func (r *Repo) ignoreMap() map[string]bool {
+	iu := make(map[string]bool)
+	for _, p := range r.IgnoreUpgrades {
+		iu[p] = true
+	}
+	return iu
 }
 
 // AssertSetup returns nil if a normal repository setup is present:

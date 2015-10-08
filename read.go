@@ -151,6 +151,12 @@ func (r *Repo) FindUpgrades(h ErrHandler, pkgnames ...string) (Upgrades, error) 
 	if err != nil {
 		return nil, err
 	}
+	if len(pkgnames) == 0 && len(r.IgnoreUpgrades) != 0 {
+		iu := r.ignoreMap()
+		pkgs = pacman.Filter(pkgs, func(p *pacman.Package) bool {
+			return !iu[p.Name]
+		})
+	}
 	aur, err := pacman.ReadAllAUR(pkgs.Map(pacman.PkgName))
 	if err != nil {
 		return nil, err
