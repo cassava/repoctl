@@ -6,6 +6,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"text/template"
@@ -13,6 +14,7 @@ import (
 	"github.com/cassava/repoctl"
 	"github.com/cassava/repoctl/conf"
 	"github.com/goulash/pacman"
+	"github.com/goulash/pr"
 	"github.com/spf13/cobra"
 )
 
@@ -23,12 +25,29 @@ var Repo *repoctl.Repo
 // configuration) of this program, including where the repository is.
 var Conf = conf.Default()
 
+// Colorizer is a pr.Colorizer instance, which you are able to customize.
+// In particular, it may be useful to turn off colorization when the
+// terminal does not support it, or when redirecting output:
+//
+//	if colorState == "auto" {
+//		dungeon.Colorizer.SetFile(os.Stdout)
+//	} else if colorState == "always" {
+//		dungeon.Colorizer.SetEnabled(true)
+//	} else if colorState == "never" {
+//		dungeon.Colorizer.SetEnabled(false)
+//	}
+var col = pr.NewColorizer()
+
 // Status ------------------------------------------------------------
 
-var statusAUR bool
+var (
+	statusAUR     bool
+	statusMissing bool
+)
 
 func init() {
 	StatusCmd.Flags().BoolVarP(&statusAUR, "aur", "a", false, "check AUR for upgrades")
+	StatusCmd.Flags().BoolVarP(&statusMissing, "missing", "m", false, "highlight packages missing in AUR")
 }
 
 var StatusCmd = &cobra.Command{
@@ -50,8 +69,8 @@ var StatusCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		Init()
-		fmt.Printf("On repo %s\n\n", Repo.Name())
+		dieOnError(Init())
+		col.Printf("On repo @{!y}%s\n\n", Repo.Name())
 
 		pkgs, err := Repo.ReadMeta(nil, statusAUR)
 		dieOnError(err)
@@ -63,21 +82,24 @@ var StatusCmd = &cobra.Command{
 		for _, p := range pkgs {
 			var flags []string
 			if p.HasUpgrade() {
-				flags = append(flags, fmt.Sprintf("upgrade(%s->%s)", p.Version(), p.AUR.Version))
+				flags = append(flags, col.Sprintf("@gupgrade(@|%s->%s@g)", p.Version(), p.AUR.Version))
 			}
 			if p.HasUpdate() {
-				flags = append(flags, "update(%s->%s)", p.VersionRegistered(), p.Version())
+				flags = append(flags, col.Sprintf("@gupdate(@|%s->%s@g)", p.VersionRegistered(), p.Version()))
 			}
 			if p.HasMissing() {
-				flags = append(flags, "removal")
+				flags = append(flags, col.Sprint("@rremoval"))
 			}
 			if o := p.Obsolete(); len(o) > 0 {
-				flags = append(flags, fmt.Sprintf("obsolete(%d)", len(o)))
+				flags = append(flags, col.Sprintf("@yobsolete(@|%d@y)", len(o)))
+			}
+			if statusMissing && p.AUR == nil {
+				flags = append(flags, col.Sprint("@y!aur"))
 			}
 
 			if len(flags) > 0 {
 				nothing = false
-				fmt.Print("\t%s:", p.Name)
+				fmt.Printf("\t%s:", p.Name)
 				for _, f := range flags {
 					fmt.Printf(" %s", f)
 				}
@@ -129,7 +151,7 @@ var ListCmd = &cobra.Command{
 
   Note that they don't need to be registered with the database.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		Init()
+		dieOnError(Init())
 		if len(args) > 0 {
 			cmd.Usage()
 			os.Exit(1)
@@ -200,7 +222,7 @@ var ResetCmd = &cobra.Command{
   recreates it by running the update command.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		Init()
+		dieOnError(Init())
 		err := Repo.Reset(nil)
 		dieOnError(err)
 	},
@@ -234,7 +256,7 @@ var AddCmd = &cobra.Command{
 `,
 	Example: `  repoctl add -m ./fairsplit-1.0.pkg.tar.gz`,
 	Run: func(cmd *cobra.Command, args []string) {
-		Init()
+		dieOnError(Init())
 		var err error
 		if movePackages {
 			err = Repo.Move(nil, args...)
@@ -261,7 +283,7 @@ var UpdateCmd = &cobra.Command{
 `,
 	Example: `  repoctl update fairsplit`,
 	Run: func(cmd *cobra.Command, args []string) {
-		Init()
+		dieOnError(Init())
 		err := Repo.Update(nil, args...)
 		dieOnError(err)
 	},
@@ -282,7 +304,7 @@ var RemoveCmd = &cobra.Command{
 `,
 	Example: `  repoctl rm fairsplit`,
 	Run: func(cmd *cobra.Command, args []string) {
-		Init()
+		dieOnError(Init())
 		err := Repo.Remove(nil, args...)
 		dieOnError(err)
 	},
@@ -300,7 +322,7 @@ var (
 
 func init() {
 	DownCmd.Flags().StringVarP(&downDest, "dest", "d", "", "output directory for tarballs")
-	DownCmd.Flags().BoolVarP(&downClobber, "clobber", "b", false, "delete conflicting files and folders")
+	DownCmd.Flags().BoolVarP(&downClobber, "clobber", "l", false, "delete conflicting files and folders")
 	DownCmd.Flags().BoolVarP(&downExtract, "extract", "e", true, "extract the downloaded tarballs")
 	DownCmd.Flags().BoolVarP(&downUpgrades, "upgrades", "u", false, "download tarballs for all upgrades")
 	DownCmd.Flags().BoolVarP(&downAll, "all", "a", false, "download tarballs for all packages in database")
@@ -319,7 +341,7 @@ in the current directory.
 `,
 	Example: `  repoctl down -u`,
 	Run: func(cmd *cobra.Command, args []string) {
-		Init()
+		dieOnError(Init())
 		var err error
 		if downAll {
 			names, err := Repo.ReadNames(nil)
@@ -401,6 +423,7 @@ func addConfFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().BoolVarP(&Conf.Columnate, "columns", "s", Conf.Columnate, "show items in columns rather than lines")
 	cmd.PersistentFlags().BoolVarP(&Conf.Quiet, "quiet", "q", Conf.Quiet, "show minimal amount of information")
 	cmd.PersistentFlags().BoolVar(&Conf.Debug, "debug", Conf.Debug, "show unnecessary debugging information")
+	cmd.PersistentFlags().StringVar(&Conf.Color, "color", Conf.Color, "when to use color (auto|never|always)")
 }
 
 func addCommands(cmd *cobra.Command) {
@@ -417,13 +440,20 @@ func addCommands(cmd *cobra.Command) {
 }
 
 // Init makes sure that Conf is configured, and sets Repo up.
-func Init() {
+func Init() error {
+	if Conf.Color == "auto" {
+		col.SetFile(os.Stdout)
+	} else if Conf.Color == "always" {
+		col.SetEnabled(true)
+	} else if Conf.Color == "never" {
+		col.SetEnabled(false)
+	}
+
 	if Conf.Unconfigured {
-		fmt.Fprintln(os.Stderr, "Error: repoctl is unconfigured.")
-		fmt.Fprintln(os.Stderr, "Please see: repoctl help new")
-		os.Exit(1)
+		return errors.New("repoctl is unconfigured, please create configuration")
 	}
 	Repo = Conf.Repo()
+	return nil
 }
 
 // main loads the configuration and executes the primary command.

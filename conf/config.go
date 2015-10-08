@@ -69,6 +69,9 @@ interactive = {{printt .Interactive}}
 # in lines. This only applies to the list command.
 columnate = {{printt .Columnate}}
 
+# color specifies when to use color. Can be one of auto, always, and never.
+color = {{printt .Color}}
+
 # quiet specifies whether repoctl should print more information or less.
 # I prefer to know what happens, but if you don't like it, you can change it.
 quiet = {{printt .Quiet}}
@@ -100,6 +103,8 @@ type Configuration struct {
 
 	// Columnate causes items to be printed in columns rather than lines.
 	Columnate bool `toml:"columnate"`
+	// Color causes repoctl output to be colorized.
+	Color string `toml:"color"`
 	// Quiet causes less information to be printed than usual.
 	Quiet bool `toml:"quiet"`
 
@@ -114,6 +119,7 @@ type Configuration struct {
 func Default() *Configuration {
 	return &Configuration{
 		BackupDir:        "backup/",
+		Color:            "auto",
 		AddParameters:    make([]string, 0),
 		RemoveParameters: make([]string, 0),
 		IgnoreAUR:        make([]string, 0),
@@ -243,7 +249,7 @@ func (c *Configuration) MergeXDG() error {
 
 // The last configuration is most important.
 func xdgConfigDirs(postfix string) []string {
-	sys := strings.Split(os.Getenv("XDG_CONFIG_DIRS"), ":")
+	sys := clean(strings.Split(os.Getenv("XDG_CONFIG_DIRS"), ":"))
 	if len(sys) == 0 {
 		return []string{path.Join("/etc/xdg", postfix)}
 	}
@@ -253,6 +259,16 @@ func xdgConfigDirs(postfix string) []string {
 		paths[i] = path.Join(sys[n-i-1], postfix)
 	}
 	return paths
+}
+
+func clean(xs []string) []string {
+	var s []string
+	for _, x := range xs {
+		if x != "" {
+			s = append(s, x)
+		}
+	}
+	return s
 }
 
 func xdgConfigHome(postfix string) (string, error) {
