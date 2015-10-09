@@ -19,6 +19,9 @@ var (
 
 // DatabaseAdd adds the given packages to the repository database.
 func (r *Repo) DatabaseAdd(pkgfiles ...string) error {
+	if len(pkgfiles) == 0 {
+		return nil
+	}
 	return in(r.Directory, func() error {
 		for _, p := range pkgfiles {
 			r.printf("adding package to database: %s\n", p)
@@ -31,6 +34,9 @@ func (r *Repo) DatabaseAdd(pkgfiles ...string) error {
 }
 
 func (r *Repo) DatabaseRemove(pkgnames ...string) error {
+	if len(pkgnames) == 0 {
+		return nil
+	}
 	return in(r.Directory, func() error {
 		for _, p := range pkgnames {
 			r.printf("removing package from database %s\n", p)

@@ -141,6 +141,7 @@ func (r *Repo) FindSimilar(h ErrHandler, pkgfiles ...string) (pacman.Packages, e
 func (r *Repo) FindUpdates(h ErrHandler, pkgnames ...string) (pacman.Packages, error) {
 	AssertHandler(&h)
 
+	// Case len(pkgnames) == 0 handled by FindNewest
 	pkgs, err := r.FindNewest(h, pkgnames...)
 	if err != nil {
 		return nil, err

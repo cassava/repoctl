@@ -139,46 +139,56 @@ func (r *Repo) unlink(h ErrHandler, pkgfiles []string) error {
 func (r *Repo) Update(h ErrHandler, pkgnames ...string) error {
 	AssertHandler(&h)
 
-	var pkgs pacman.Packages
-	var err error
-	if len(pkgnames) == 0 {
-		pkgs, err = r.FindUpdates(h)
-		if err != nil {
-			return err
-		}
-	} else {
-		pkgs, err = r.FindNewest(h, pkgnames...)
-		if err != nil {
-			return err
-		}
-	}
-
-	files := pkgs.Map(pacman.PkgFilename)
-	err = r.DatabaseAdd(files...)
+	pkgs, err := r.ReadMeta(h, false, pkgnames...)
 	if err != nil {
 		return err
 	}
 
-	// Remove entries from database that have no associated files.
-	dbpkgs, err := r.ReadDatabase()
-	if err != nil {
-		return err
-	}
-	var rm []string
-	for _, p := range dbpkgs {
-		if !r.Exists(p) {
-			rm = append(rm, p.Name)
+	var updates []string
+	var obsolete []string
+	var missing []string
+	for _, p := range pkgs {
+		if !p.HasFiles() {
+			missing = append(missing, p.Name)
+			continue
+		}
+		if p.HasUpdate() || len(pkgnames) > 0 {
+			updates = append(updates, p.Package().Filename)
+		}
+		if p.HasObsolete() {
+			obsolete = append(obsolete, p.Obsolete().Map(pacman.PkgFilename)...)
 		}
 	}
-	err = r.DatabaseRemove(rm...)
+
+	err = r.DatabaseRemove(missing...)
 	if err != nil {
 		return err
 	}
 
-	// Dispatch all obsolete files.
-	pkgs, err = r.FindSimilar(h, files...)
+	err = r.DatabaseAdd(updates...)
 	if err != nil {
 		return err
 	}
-	return r.Dispatch(h, pkgs.Map(pacman.PkgFilename)...)
+
+	return r.Dispatch(h, obsolete...)
+}
+
+// Delete the repository database and readd all the packages.
+// This is the same as unlinking the database and then running Update.
+func (r *Repo) Reset(h ErrHandler) error {
+	AssertHandler(&h)
+
+	err := r.DeleteDatabase()
+	if err != nil {
+		return err
+	}
+
+	return r.Update(h)
+}
+
+// Delete the repository database (but not the files).
+func (r *Repo) DeleteDatabase() error {
+	db := path.Join(r.Directory, r.Database)
+	r.printf("deleting database: %s\n", db)
+	return os.Remove(db)
 }

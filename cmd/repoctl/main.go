@@ -87,7 +87,7 @@ var StatusCmd = &cobra.Command{
 			if p.HasUpdate() {
 				flags = append(flags, col.Sprintf("@gupdate(@|%s->%s@g)", p.VersionRegistered(), p.Version()))
 			}
-			if p.HasMissing() {
+			if !p.HasFiles() {
 				flags = append(flags, col.Sprint("@rremoval"))
 			}
 			if o := p.Obsolete(); len(o) > 0 {
@@ -166,7 +166,7 @@ var ListCmd = &cobra.Command{
 		}
 
 		pkgs, err := Repo.ListMeta(nil, listSynchronize, func(p *repoctl.MetaPackage) string {
-			if listPending && p.HasMissing() {
+			if listPending && !p.HasFiles() {
 				return fmt.Sprintf("-%s-", p.Name)
 			}
 

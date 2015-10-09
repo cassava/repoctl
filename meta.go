@@ -82,9 +82,23 @@ func (mp *MetaPackage) HasPending() bool {
 	return p.CompareVersion(mp.Database) != 0
 }
 
-// HasMissing returns true when there are no files for this package.
-func (mp *MetaPackage) HasMissing() bool {
-	return len(mp.Files) == 0
+// HasFiles returns true when there are files for this package.
+func (mp *MetaPackage) HasFiles() bool {
+	return len(mp.Files) > 0
+}
+
+// HasRegistered returns true when the package registered in the database
+// does not exist or when the package is not registered.
+func (mp *MetaPackage) HasRegistered() bool {
+	if mp.Database == nil {
+		return false
+	}
+	for _, p := range mp.Files {
+		if p.Filename == mp.Database.Filename {
+			return true
+		}
+	}
+	return false
 }
 
 // HasUpdate returns true when there is a newer package file available
@@ -94,7 +108,7 @@ func (mp *MetaPackage) HasUpdate() bool {
 	if len(mp.Files) == 0 {
 		return false
 	}
-	return mp.Package().NewerThan(mp.Database)
+	return !mp.HasRegistered() || mp.Package().NewerThan(mp.Database)
 }
 
 // HasUpgrade returns true when there is a newer version than either
@@ -132,6 +146,8 @@ func (r *Repo) ReadMeta(h ErrHandler, aur bool, pkgnames ...string) (MetaPackage
 	}
 	mps := make(map[string]*MetaPackage)
 	for _, p := range dbpkgs {
+		// This is the same as unlinking the database
+		// and then running Update.
 		mps[p.Name] = &MetaPackage{Name: p.Name, Database: p}
 	}
 
