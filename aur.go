@@ -99,6 +99,7 @@ func (ap *AURPackage) Package() *Package {
 	return &Package{
 		Origin:      AUROrigin,
 		Name:        ap.Name,
+		Base:        ap.PackageBase,
 		Version:     ap.Version,
 		Description: ap.Description,
 		URL:         ap.URL,
@@ -158,6 +159,14 @@ func (pkgs AURPackages) Less(i, j int) bool {
 		return pkgs[i].Name < pkgs[j].Name
 	}
 	return VerCmp(pkgs[i].Version, pkgs[j].Version) == -1
+}
+
+func (pkgs AURPackages) Packages() Packages {
+	results := make(Packages, len(pkgs))
+	for i, p := range pkgs {
+		results[i] = p.Package()
+	}
+	return results
 }
 
 // ReadAllAUR reads multiple packages from the Arch Linux User Repository (AUR)
