@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/goulash/osutil"
@@ -24,10 +25,12 @@ func (r *Repo) Download(h ErrHandler, destdir string, extract bool, clobber bool
 		return nil
 	}
 
+	// If a package cannot be found, we want to report it.
 	aurpkgs, err := r.ReadAUR(h, pkgnames...)
 	if err != nil {
 		return err
 	}
+	aurpkgs = uniqueBases(aurpkgs)
 	for _, ap := range aurpkgs {
 		r.printf("downloading: %s\n", ap.Name)
 		download := DownloadTarballAUR
@@ -54,8 +57,9 @@ func (r *Repo) DownloadUpgrades(h ErrHandler, destdir string, extract bool, clob
 		return err
 	}
 
+	upgrades = uniqueUpgrades(upgrades)
 	for _, u := range upgrades {
-		r.printf("downloading: %s\n", u.Name)
+		r.printf("downloading: %s\n", u.Name())
 		download := DownloadTarballAUR
 		if extract {
 			download = DownloadExtractAUR
@@ -99,6 +103,15 @@ func DownloadExtractAUR(ap *pacman.AURPackage, destdir string, clobber bool) err
 	if err != nil {
 		return err
 	}
+
+	// FIXME: This is a workaround for a bug somewhere in the chain of
+	// command starting from UntarFiles which extracts the header in
+	// the tar file.
+	paxf := path.Join(destdir, "pax_global_header")
+	if ex, _ := osutil.FileExists(paxf); !ex {
+		defer os.Remove(paxf)
+	}
+
 	return tar.UntarFiles(gr, destdir)
 }
 
@@ -144,4 +157,34 @@ func DownloadTarballAUR(ap *pacman.AURPackage, destdir string, clobber bool) err
 		return err
 	}
 	return nil
+}
+
+// uniqueBases returns a subset of the given aurpkgs where the package bases
+// are the same.
+func uniqueBases(aurpkgs pacman.AURPackages) pacman.AURPackages {
+	bases := make(pacman.AURPackages, 0, len(aurpkgs))
+	mp := make(map[string]bool)
+	for _, p := range aurpkgs {
+		if mp[p.PackageBase] {
+			continue
+		}
+		mp[p.PackageBase] = true
+		bases = append(bases, p)
+	}
+	return bases
+}
+
+// uniqueBases returns a subset of the given aurpkgs where the package bases
+// are the same.
+func uniqueUpgrades(us Upgrades) Upgrades {
+	bases := make(Upgrades, 0, len(us))
+	mp := make(map[string]bool)
+	for _, u := range us {
+		if mp[u.New.PackageBase] {
+			continue
+		}
+		mp[u.New.PackageBase] = true
+		bases = append(bases, u)
+	}
+	return bases
 }

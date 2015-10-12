@@ -22,6 +22,10 @@ func (u *Upgrade) Name() string {
 	return u.New.Name
 }
 
+func (u *Upgrade) Base() string {
+	return u.New.PackageBase
+}
+
 // DownloadURL returns the download URL of the upgrade.
 func (u *Upgrade) DownloadURL() string {
 	return u.New.DownloadURL()
@@ -70,7 +74,11 @@ func (r *Repo) FindUpgrades(h ErrHandler, pkgnames ...string) (Upgrades, error) 
 	}
 	aur, err := pacman.ReadAllAUR(pkgs.Map(pacman.PkgName))
 	if err != nil {
-		return nil, err
+		if e, ok := err.(*pacman.NotFoundError); ok {
+			r.debugf(e.Error())
+		} else {
+			return nil, err
+		}
 	}
 
 	am := make(map[string]*pacman.AURPackage)
@@ -80,7 +88,7 @@ func (r *Repo) FindUpgrades(h ErrHandler, pkgnames ...string) (Upgrades, error) 
 	var upgrades Upgrades
 	for _, p := range pkgs {
 		a := am[p.Name]
-		if a.Package().NewerThan(p) {
+		if a != nil && a.Package().NewerThan(p) {
 			upgrades = append(upgrades, &Upgrade{p, a})
 		}
 	}

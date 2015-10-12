@@ -98,9 +98,9 @@ func (r *Repo) Dispatch(h ErrHandler, pkgfiles ...string) error {
 func (r *Repo) backup(h ErrHandler, pkgfiles []string) error {
 	for _, f := range pkgfiles {
 		src := path.Base(f)
-		r.printf("backing up: %s\n", src)
+		r.printf("backing up: %s\n", f)
 		dst := path.Join(r.Directory, r.BackupDir, src)
-		err := osutil.MoveFileLazy(src, dst)
+		err := osutil.MoveFileLazy(f, dst)
 		if err != nil {
 			err = h(err)
 			if err != nil {
@@ -114,9 +114,8 @@ func (r *Repo) backup(h ErrHandler, pkgfiles []string) error {
 
 func (r *Repo) unlink(h ErrHandler, pkgfiles []string) error {
 	for _, f := range pkgfiles {
-		src := path.Base(f)
-		r.printf("deleting: %s\n", src)
-		err := os.Remove(src)
+		r.printf("deleting: %s\n", f)
+		err := os.Remove(f)
 		if err != nil {
 			err = h(err)
 			if err != nil {
