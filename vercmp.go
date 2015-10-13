@@ -189,3 +189,54 @@ func nextSection(a *string) (s string, num bool) {
 	*a = (*a)[i:]
 	return s, num
 }
+
+// intcmp returns the comparison of two integers.
+func intcmp(a, b int) int {
+	if a < b {
+		return -1
+	} else if a > b {
+		return 1
+	}
+	return 0
+}
+
+// strcmp returns the comparison of two strings.
+func strcmp(a, b string) int {
+	m, n := len(a), len(b)
+	z := min(m, n)
+	for i := 0; i < z; i++ {
+		if a[i] != b[i] {
+			if a[i] < b[i] {
+				return -1
+			}
+			return 1
+		}
+	}
+	return intcmp(m, n)
+}
+
+// min returns the lesser of two integers.
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+// max returns the greater of two integers.
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+// isdigit returns true if c is a digit.
+func isdigit(c byte) bool {
+	return '0' <= c && c <= '9'
+}
+
+// isalpha returns true if c is part of [a-z].
+func isalpha(c byte) bool {
+	return 'a' <= c && c <= 'z'
+}
