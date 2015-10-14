@@ -7,14 +7,17 @@ package repoctl
 import (
 	"fmt"
 
+	"github.com/goulash/errs"
 	"github.com/goulash/osutil"
 	"github.com/goulash/pacman"
+	"github.com/goulash/pacman/aur"
+	"github.com/goulash/pacman/pkgutil"
 )
 
 // Upgrade represents an available AUR upgrade.
 type Upgrade struct {
 	Old *pacman.Package
-	New *pacman.AURPackage
+	New *aur.Package
 }
 
 // Name returns the package name of the upgrade.
@@ -60,35 +63,35 @@ func (u Upgrades) Less(i, j int) bool { return u[i].New.Name < u[j].New.Name }
 
 // FindUpgrades finds all upgrades it finds to the given packages. If
 // no package names are given, all available package names are searched.
-func (r *Repo) FindUpgrades(h ErrHandler, pkgnames ...string) (Upgrades, error) {
-	AssertHandler(&h)
+func (r *Repo) FindUpgrades(h errs.Handler, pkgnames ...string) (Upgrades, error) {
+	errs.Init(&h)
 	pkgs, err := r.FindNewest(h, pkgnames...)
 	if err != nil {
 		return nil, err
 	}
 	if len(pkgnames) == 0 && len(r.IgnoreUpgrades) != 0 {
 		iu := r.ignoreMap()
-		pkgs = pacman.Filter(pkgs, func(p *pacman.Package) bool {
+		pkgs = pkgutil.Filter(pkgs, func(p *pacman.Package) bool {
 			return !iu[p.Name]
 		})
 	}
-	aur, err := pacman.ReadAllAUR(pkgs.Map(pacman.PkgName))
+	as, err := aur.ReadAll(pkgutil.Map(pkgs, pkgutil.PkgName))
 	if err != nil {
-		if e, ok := err.(*pacman.NotFoundError); ok {
+		if e, ok := err.(*aur.NotFoundError); ok {
 			r.debugf(e.Error())
 		} else {
 			return nil, err
 		}
 	}
 
-	am := make(map[string]*pacman.AURPackage)
-	for _, p := range aur {
+	am := make(map[string]*aur.Package)
+	for _, p := range as {
 		am[p.Name] = p
 	}
 	var upgrades Upgrades
 	for _, p := range pkgs {
 		a := am[p.Name]
-		if a != nil && a.Package().NewerThan(p) {
+		if a != nil && a.PacmanPkg().Newer(p) {
 			upgrades = append(upgrades, &Upgrade{p, a})
 		}
 	}
@@ -97,8 +100,8 @@ func (r *Repo) FindUpgrades(h ErrHandler, pkgnames ...string) (Upgrades, error) 
 
 // FindNewest returns the newest package files found for the given
 // package names. If no names are given, all names are searched for.
-func (r *Repo) FindNewest(h ErrHandler, pkgnames ...string) (pacman.Packages, error) {
-	AssertHandler(&h)
+func (r *Repo) FindNewest(h errs.Handler, pkgnames ...string) (pacman.Packages, error) {
+	errs.Init(&h)
 
 	var pkgs pacman.Packages
 	var err error
@@ -111,7 +114,7 @@ func (r *Repo) FindNewest(h ErrHandler, pkgnames ...string) (pacman.Packages, er
 		return nil, err
 	}
 
-	return FilterNewest(pkgs), nil
+	return pkgutil.FilterNewest(pkgs), nil
 }
 
 // FindSimilar finds package files in the repository that
@@ -122,32 +125,32 @@ func (r *Repo) FindNewest(h ErrHandler, pkgnames ...string) (pacman.Packages, er
 // packages given a particular package file.
 //
 // If no pkgfiles are given, nil is returned.
-func (r *Repo) FindSimilar(h ErrHandler, pkgfiles ...string) (pacman.Packages, error) {
-	AssertHandler(&h)
+func (r *Repo) FindSimilar(h errs.Handler, pkgfiles ...string) (pacman.Packages, error) {
+	errs.Init(&h)
 	if len(pkgfiles) == 0 {
 		r.debugf("repoctl.(Repo).FindSimilar: pkgfiles empty.\n")
 		return nil, nil
 	}
 
-	pkgs, err := ReadPackages(h, pkgfiles...)
+	pkgs, err := pacman.ReadFiles(h, pkgfiles...)
 	if err != nil {
 		return nil, err
 	}
-	similar, err := r.ReadNames(h, pkgs.Map(pacman.PkgName)...)
+	similar, err := r.ReadNames(h, pkgutil.Map(pkgs, pkgutil.PkgName)...)
 	if err != nil {
 		return nil, err
 	}
 
-	basefiles := pkgs.MapBool(pacman.PkgFilename)
-	return pacman.Filter(similar, func(p *pacman.Package) bool {
+	basefiles := pkgutil.MapBool(pkgs, pkgutil.PkgFilename)
+	return pkgutil.Filter(similar, func(p *pacman.Package) bool {
 		return !basefiles[p.Filename]
 	}), nil
 }
 
 // FindUpdates finds all given packages with updates. If no names are
 // given, all names are checked.
-func (r *Repo) FindUpdates(h ErrHandler, pkgnames ...string) (pacman.Packages, error) {
-	AssertHandler(&h)
+func (r *Repo) FindUpdates(h errs.Handler, pkgnames ...string) (pacman.Packages, error) {
+	errs.Init(&h)
 
 	// Case len(pkgnames) == 0 handled by FindNewest
 	pkgs, err := r.FindNewest(h, pkgnames...)
@@ -159,10 +162,10 @@ func (r *Repo) FindUpdates(h ErrHandler, pkgnames ...string) (pacman.Packages, e
 		return nil, err
 	}
 	var updates pacman.Packages
-	db := dbpkgs.MapPkg(pacman.PkgName)
+	db := pkgutil.MapPkg(dbpkgs, pkgutil.PkgName)
 	for _, p := range pkgs {
 		dp := db[p.Name]
-		if dp == nil || p.NewerThan(dp) || !r.Exists(dp) {
+		if dp == nil || p.Newer(dp) || !r.Exists(dp) {
 			updates = append(updates, p)
 		}
 	}
@@ -177,7 +180,7 @@ func (r *Repo) FindMissing() (pacman.Packages, error) {
 		return nil, err
 	}
 
-	return pacman.Filter(pkgs, func(p *pacman.Package) bool {
+	return pkgutil.Filter(pkgs, func(p *pacman.Package) bool {
 		return !r.Exists(p)
 	}), nil
 }
@@ -185,8 +188,8 @@ func (r *Repo) FindMissing() (pacman.Packages, error) {
 // OnlyNames reads all possible package names from the repository.
 // This includes packages from the database where the files have been
 // deleted.
-func (r *Repo) OnlyNames(h ErrHandler) ([]string, error) {
-	AssertHandler(&h)
+func (r *Repo) OnlyNames(h errs.Handler) ([]string, error) {
+	errs.Init(&h)
 	dbpkgs, err := r.ReadDatabase()
 	if err = h(err); err != nil {
 		return nil, err
@@ -196,7 +199,7 @@ func (r *Repo) OnlyNames(h ErrHandler) ([]string, error) {
 		return nil, err
 	}
 
-	m := dbpkgs.MapBool(pacman.PkgName)
+	m := pkgutil.MapBool(dbpkgs, pkgutil.PkgName)
 	for _, p := range filepkgs {
 		m[p.Name] = true
 	}

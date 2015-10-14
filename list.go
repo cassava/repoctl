@@ -7,12 +7,14 @@ package repoctl
 import (
 	"sort"
 
+	"github.com/goulash/errs"
 	"github.com/goulash/pacman"
+	"github.com/goulash/pacman/pkgutil"
 )
 
 func (r *Repo) ListDatabase(f func(*pacman.Package) string) ([]string, error) {
 	if f == nil {
-		f = pacman.PkgName
+		f = pkgutil.PkgName
 	}
 
 	pkgs, err := r.ReadDatabase()
@@ -22,10 +24,10 @@ func (r *Repo) ListDatabase(f func(*pacman.Package) string) ([]string, error) {
 	return List(pkgs, f), nil
 }
 
-func (r *Repo) ListDirectory(h ErrHandler, f func(*pacman.Package) string) ([]string, error) {
-	AssertHandler(&h)
+func (r *Repo) ListDirectory(h errs.Handler, f func(*pacman.Package) string) ([]string, error) {
+	errs.Init(&h)
 	if f == nil {
-		f = pacman.PkgName
+		f = pkgutil.PkgName
 	}
 
 	pkgs, err := r.ReadDirectory(h)
@@ -35,8 +37,8 @@ func (r *Repo) ListDirectory(h ErrHandler, f func(*pacman.Package) string) ([]st
 	return List(pkgs, f), nil
 }
 
-func (r *Repo) ListMeta(h ErrHandler, aur bool, f func(*MetaPackage) string) ([]string, error) {
-	AssertHandler(&h)
+func (r *Repo) ListMeta(h errs.Handler, aur bool, f func(*MetaPackage) string) ([]string, error) {
+	errs.Init(&h)
 	if f == nil {
 		f = func(mp *MetaPackage) string { return mp.Name }
 	}
@@ -61,7 +63,7 @@ func ListMeta(mpkgs MetaPackages, f func(*MetaPackage) string) []string {
 	return unique(ls)
 }
 
-func List(pkgs pacman.Packages, f func(*pacman.Package) string) []string {
+func List(pkgs pacman.Packages, f pkgutil.MapFunc) []string {
 	sort.Sort(pkgs)
 
 	ls := make([]string, 0, len(pkgs))

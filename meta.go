@@ -7,7 +7,9 @@ package repoctl
 import (
 	"sort"
 
+	"github.com/goulash/errs"
 	"github.com/goulash/pacman"
+	"github.com/goulash/pacman/aur"
 )
 
 // MetaPackage binds together the three places a package can reside:
@@ -21,7 +23,7 @@ type MetaPackage struct {
 
 	Files    pacman.Packages
 	Database *pacman.Package
-	AUR      *pacman.AURPackage
+	AUR      *aur.Package
 }
 
 // Package returns the newest actual package available. This disregards
@@ -79,7 +81,7 @@ func (mp *MetaPackage) HasPending() bool {
 	if p.Filename != mp.Database.Filename {
 		return true
 	}
-	return p.CompareVersion(mp.Database) != 0
+	return pacman.VerCmp(p.Version, mp.Database.Version) != 0
 }
 
 // HasFiles returns true when there are files for this package.
@@ -108,7 +110,7 @@ func (mp *MetaPackage) HasUpdate() bool {
 	if len(mp.Files) == 0 {
 		return false
 	}
-	return !mp.HasRegistered() || mp.Package().NewerThan(mp.Database)
+	return !mp.HasRegistered() || mp.Package().Newer(mp.Database)
 }
 
 // HasUpgrade returns true when there is a newer version than either
@@ -136,8 +138,8 @@ func (mps MetaPackages) Less(i, j int) bool { return mps[i].Name < mps[j].Name }
 
 // ReadMeta reads a list of MetaPackages. If pkgnames is empty, the entire
 // repository is loaded. MetaPackages is returned sorted (ascending).
-func (r *Repo) ReadMeta(h ErrHandler, aur bool, pkgnames ...string) (MetaPackages, error) {
-	AssertHandler(&h)
+func (r *Repo) ReadMeta(h errs.Handler, readAUR bool, pkgnames ...string) (MetaPackages, error) {
+	errs.Init(&h)
 
 	// Read the database and start tracking the packages.
 	dbpkgs, err := r.ReadDatabase()
@@ -185,9 +187,9 @@ func (r *Repo) ReadMeta(h ErrHandler, aur bool, pkgnames ...string) (MetaPackage
 	sort.Strings(names)
 
 	// Read from AUR.
-	if aur {
+	if readAUR {
 		aurpkgs, err := r.ReadAUR(h, names...)
-		if _, ok := err.(*pacman.NotFoundError); !ok {
+		if _, ok := err.(*aur.NotFoundError); !ok {
 			r.errorf("error reading aur: %s.\n", err)
 		} else {
 			for _, ap := range aurpkgs {

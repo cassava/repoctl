@@ -8,13 +8,14 @@ import (
 	"os"
 	"path"
 
+	"github.com/goulash/errs"
 	"github.com/goulash/osutil"
-	"github.com/goulash/pacman"
+	"github.com/goulash/pacman/pkgutil"
 )
 
 // Copy copies the given files into the repository if they do not already
 // exist there and adds them to the database.
-func (r *Repo) Copy(h ErrHandler, pkgfiles ...string) error {
+func (r *Repo) Copy(h errs.Handler, pkgfiles ...string) error {
 	return r.add(h, pkgfiles, osutil.CopyFileLazy, "copying")
 }
 
@@ -25,13 +26,13 @@ func (r *Repo) Copy(h ErrHandler, pkgfiles ...string) error {
 //
 // The exception is that when the source and destination files are the
 // same; then no move or deletion is performed.
-func (r *Repo) Move(h ErrHandler, pkgfiles ...string) error {
+func (r *Repo) Move(h errs.Handler, pkgfiles ...string) error {
 	return r.add(h, pkgfiles, osutil.MoveFileLazy, "moving")
 }
 
 // add does the hard work of Move and Copy.
-func (r *Repo) add(h ErrHandler, pkgfiles []string, ar func(string, string) error, lbl string) error {
-	AssertHandler(&h)
+func (r *Repo) add(h errs.Handler, pkgfiles []string, ar func(string, string) error, lbl string) error {
+	errs.Init(&h)
 	if len(pkgfiles) == 0 {
 		r.debugf("repoctl.(Repo).add: pkgfiles empty.\n")
 		return nil
@@ -58,13 +59,13 @@ func (r *Repo) add(h ErrHandler, pkgfiles []string, ar func(string, string) erro
 	}
 
 	pkgs, err := r.FindSimilar(h, added...)
-	return r.Dispatch(h, pkgs.Map(pacman.PkgFilename)...)
+	return r.Dispatch(h, pkgutil.Map(pkgs, pkgutil.PkgFilename)...)
 }
 
 // Remove removes the given names from the database and dispatches
 // the files.
-func (r *Repo) Remove(h ErrHandler, pkgnames ...string) error {
-	AssertHandler(&h)
+func (r *Repo) Remove(h errs.Handler, pkgnames ...string) error {
+	errs.Init(&h)
 	if len(pkgnames) == 0 {
 		r.debugf("repoctl.(Repo).Remove: pkgnames empty.\n")
 		return nil
@@ -74,16 +75,16 @@ func (r *Repo) Remove(h ErrHandler, pkgnames ...string) error {
 	if err != nil {
 		return err
 	}
-	err = h(r.DatabaseRemove(pkgs.Map(pacman.PkgName)...))
+	err = h(r.DatabaseRemove(pkgutil.Map(pkgs, pkgutil.PkgName)...))
 	if err != nil {
 		return err
 	}
-	return r.Dispatch(h, pkgs.Map(pacman.PkgFilename)...)
+	return r.Dispatch(h, pkgutil.Map(pkgs, pkgutil.PkgFilename)...)
 }
 
 // Dispatch either removes the given files or it backs them up.
-func (r *Repo) Dispatch(h ErrHandler, pkgfiles ...string) error {
-	AssertHandler(&h)
+func (r *Repo) Dispatch(h errs.Handler, pkgfiles ...string) error {
+	errs.Init(&h)
 	if len(pkgfiles) == 0 {
 		r.debugf("repoctl.(Repo).Dispatch: pkgfiles empty.\n")
 		return nil
@@ -95,7 +96,7 @@ func (r *Repo) Dispatch(h ErrHandler, pkgfiles ...string) error {
 	return r.unlink(h, pkgfiles)
 }
 
-func (r *Repo) backup(h ErrHandler, pkgfiles []string) error {
+func (r *Repo) backup(h errs.Handler, pkgfiles []string) error {
 	for _, f := range pkgfiles {
 		src := path.Base(f)
 		r.printf("backing up: %s\n", f)
@@ -112,7 +113,7 @@ func (r *Repo) backup(h ErrHandler, pkgfiles []string) error {
 	return nil
 }
 
-func (r *Repo) unlink(h ErrHandler, pkgfiles []string) error {
+func (r *Repo) unlink(h errs.Handler, pkgfiles []string) error {
 	for _, f := range pkgfiles {
 		r.printf("deleting: %s\n", f)
 		err := os.Remove(f)
@@ -135,8 +136,8 @@ func (r *Repo) unlink(h ErrHandler, pkgfiles []string) error {
 //
 // TODO: What happens when there are multiple files, and you delete
 // the most recent one. Which file is deleted?
-func (r *Repo) Update(h ErrHandler, pkgnames ...string) error {
-	AssertHandler(&h)
+func (r *Repo) Update(h errs.Handler, pkgnames ...string) error {
+	errs.Init(&h)
 
 	pkgs, err := r.ReadMeta(h, false, pkgnames...)
 	if err != nil {
@@ -155,7 +156,7 @@ func (r *Repo) Update(h ErrHandler, pkgnames ...string) error {
 			updates = append(updates, p.Package().Filename)
 		}
 		if p.HasObsolete() {
-			obsolete = append(obsolete, p.Obsolete().Map(pacman.PkgFilename)...)
+			obsolete = append(obsolete, pkgutil.Map(p.Obsolete(), pkgutil.PkgFilename)...)
 		}
 	}
 
@@ -174,8 +175,8 @@ func (r *Repo) Update(h ErrHandler, pkgnames ...string) error {
 
 // Delete the repository database and readd all the packages.
 // This is the same as unlinking the database and then running Update.
-func (r *Repo) Reset(h ErrHandler) error {
-	AssertHandler(&h)
+func (r *Repo) Reset(h errs.Handler) error {
+	errs.Init(&h)
 
 	err := r.DeleteDatabase()
 	if err != nil {

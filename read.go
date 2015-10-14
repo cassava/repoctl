@@ -7,8 +7,11 @@ package repoctl
 import (
 	"path"
 
+	"github.com/goulash/errs"
 	"github.com/goulash/osutil"
 	"github.com/goulash/pacman"
+	"github.com/goulash/pacman/aur"
+	"github.com/goulash/pacman/pkgutil"
 )
 
 // ReadDatabase reads the database at r.Directory/r.Database.
@@ -28,10 +31,10 @@ func (r *Repo) ReadDatabase() (pacman.Packages, error) {
 
 // ReadDirectory reads all packages that are found in the repository
 // directory.
-func (r *Repo) ReadDirectory(h ErrHandler) (pacman.Packages, error) {
-	AssertHandler(&h)
+func (r *Repo) ReadDirectory(h errs.Handler) (pacman.Packages, error) {
+	errs.Init(&h)
 
-	pkgs, err := pacman.ReadDir(r.Directory, h)
+	pkgs, err := pacman.ReadDir(h, r.Directory)
 	r.MakeAbs(pkgs)
 	return pkgs, err
 }
@@ -40,8 +43,8 @@ func (r *Repo) ReadDirectory(h ErrHandler) (pacman.Packages, error) {
 // directory as well as all packages that are found in the database.
 // These packages are then merged as neccesary, so that you can see
 // which packages are synced, only in the database, and only as files.
-func (r *Repo) ReadRepository(h ErrHandler) (synced pacman.Packages, dbonly pacman.Packages, fsonly pacman.Packages, err error) {
-	AssertHandler(&h)
+func (r *Repo) ReadRepository(h errs.Handler) (synced pacman.Packages, dbonly pacman.Packages, fsonly pacman.Packages, err error) {
+	errs.Init(&h)
 
 	dbpkgs, err := r.ReadDatabase()
 	if err != nil {
@@ -56,7 +59,7 @@ func (r *Repo) ReadRepository(h ErrHandler) (synced pacman.Packages, dbonly pacm
 	dbonly = make(pacman.Packages, 0)
 	fsonly = make(pacman.Packages, 0)
 
-	db := dbpkgs.MapPkg(pacman.PkgFilename)
+	db := pkgutil.MapPkg(dbpkgs, pkgutil.PkgFilename)
 	for _, p := range filepkgs {
 		if db[p.Filename] != nil {
 			synced = append(synced, p)
@@ -73,21 +76,21 @@ func (r *Repo) ReadRepository(h ErrHandler) (synced pacman.Packages, dbonly pacm
 
 // ReadNames returns all packages in the repository that match the given
 // names. If no names are given, all packages found are returned.
-func (r *Repo) ReadNames(h ErrHandler, pkgnames ...string) (pacman.Packages, error) {
-	AssertHandler(&h)
+func (r *Repo) ReadNames(h errs.Handler, pkgnames ...string) (pacman.Packages, error) {
+	errs.Init(&h)
 	if len(pkgnames) == 0 {
 		return r.ReadDirectory(h)
 	}
 
-	pkgs, err := pacman.ReadMatchingNames(r.Directory, pkgnames, h)
+	pkgs, err := pacman.ReadNames(h, r.Directory, pkgnames...)
 	r.MakeAbs(pkgs)
 	return pkgs, err
 }
 
 // ReadAUR reads the given package names from AUR. If no package names
 // are given, ReadAUR reads all the names found in the repository.
-func (r *Repo) ReadAUR(h ErrHandler, pkgnames ...string) (pacman.AURPackages, error) {
-	AssertHandler(&h)
+func (r *Repo) ReadAUR(h errs.Handler, pkgnames ...string) (aur.Packages, error) {
+	errs.Init(&h)
 	var err error
 	if len(pkgnames) == 0 {
 		pkgnames, err = r.OnlyNames(h)
@@ -96,7 +99,7 @@ func (r *Repo) ReadAUR(h ErrHandler, pkgnames ...string) (pacman.AURPackages, er
 		}
 	}
 
-	return pacman.ReadAllAUR(pkgnames)
+	return aur.ReadAll(pkgnames)
 }
 
 // MakeAbs makes all package filenames absolute. It is much easier
