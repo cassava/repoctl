@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/cassava/repoctl"
 	"github.com/cassava/repoctl/conf"
-	"github.com/goulash/pacman"
+	"github.com/goulash/errs"
+	"github.com/goulash/pacman/pkgutil"
 )
 
 // main loads the configuration and executes the primary command.
@@ -22,8 +22,8 @@ func main() {
 		os.Exit(1)
 	}
 	repo := conf.Repo()
-	// Because we're still testing:
-	repoctl.DefaultEH = repoctl.PrinterEH(os.Stderr)
+	// TODO: Does this work? Because we're still testing:
+	errs.Default = errs.Print(os.Stderr)
 	repo.Debug = os.Stderr
 	repo.Info = os.Stderr
 	repo.Error = os.Stderr
@@ -44,11 +44,11 @@ func main() {
 		dieOnError(err)
 		printList(names)
 	case "files", "filesystem":
-		filenames, err := repo.ListDirectory(nil, pacman.PkgFilename)
+		filenames, err := repo.ListDirectory(nil, pkgutil.PkgFilename)
 		dieOnError(err)
 		printList(filenames)
 	case "database":
-		filenames, err := repo.ListDatabase(pacman.PkgFilename)
+		filenames, err := repo.ListDatabase(pkgutil.PkgFilename)
 		dieOnError(err)
 		printList(filenames)
 	default:

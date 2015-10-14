@@ -14,6 +14,7 @@ import (
 	"github.com/cassava/repoctl"
 	"github.com/cassava/repoctl/conf"
 	"github.com/goulash/pacman"
+	"github.com/goulash/pacman/pkgutil"
 	"github.com/goulash/pr"
 	"github.com/spf13/cobra"
 )
@@ -346,7 +347,7 @@ in the current directory.
 		if downAll {
 			names, err := Repo.ReadNames(nil)
 			dieOnError(err)
-			err = Repo.Download(nil, downDest, downExtract, downClobber, names.Map(pacman.PkgName)...)
+			err = Repo.Download(nil, downDest, downExtract, downClobber, pkgutil.Map(names, pkgutil.PkgName)...)
 		} else if downUpgrades {
 			err = Repo.DownloadUpgrades(nil, downDest, downExtract, downClobber, args...)
 		} else {
