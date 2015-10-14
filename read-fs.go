@@ -45,7 +45,29 @@ func ReadDir(h errs.Handler, dirpath string) (Packages, error) {
 	return pkgs, err
 }
 
-// ReadMatchingNames reads all packages with one of the given names in a directory.
+// ReadFiles reads all the given package files.
+func ReadFiles(h errs.Handler, pkgfiles ...string) (Packages, error) {
+	errs.Init(&h)
+	if len(pkgfiles) == 0 {
+		return nil, nil
+	}
+
+	pkgs := make(Packages, 0, len(pkgfiles))
+	for _, pf := range pkgfiles {
+		p, err := Read(pf)
+		if err != nil {
+			err = h(err)
+			if err != nil {
+				return pkgs, err
+			}
+		} else {
+			pkgs = append(pkgs, p)
+		}
+	}
+	return pkgs, nil
+}
+
+// ReadNames reads all packages with one of the given names in a directory.
 func ReadNames(h errs.Handler, dirpath string, pkgnames ...string) (Packages, error) {
 	errs.Init(&h)
 

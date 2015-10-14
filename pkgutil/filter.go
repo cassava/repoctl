@@ -93,3 +93,18 @@ func FilterAny(pkgs pacman.Packages, fs []FilterFunc) pacman.Packages {
 	}
 	return fps
 }
+
+func FilterNewest(pkgs pacman.Packages) pacman.Packages {
+	m := make(map[string]*pacman.Package)
+	for _, p := range pkgs {
+		if p.Newer(m[p.Name]) {
+			m[p.Name] = p
+		}
+	}
+
+	out := make(pacman.Packages, 0, len(m))
+	for _, p := range m {
+		out = append(out, p)
+	}
+	return out
+}
