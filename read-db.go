@@ -1,4 +1,4 @@
-// Copyright (c) 2014, Ben Morgan. All rights reserved.
+// Copyright (c) 2015, Ben Morgan. All rights reserved.
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 
@@ -16,16 +16,6 @@ import (
 
 	"github.com/goulash/osutil"
 )
-
-// HasDatabaseFormat returns true if the filename matches a pacman package
-// format that we can do anything with.
-//
-// Currently, only the following formats are supported:
-//	.db.tar.gz
-//
-func HasDatabaseFormat(filename string) bool {
-	return strings.HasSuffix(filename, ".db.tar.gz")
-}
 
 // ReadDatabase reads all the packages from a database file.
 func ReadDatabase(dbpath string) (Packages, error) {

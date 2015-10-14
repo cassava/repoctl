@@ -2,7 +2,8 @@
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 
-package pacman
+// Package aur lets you query the Arch Linux User Repository (AUR).
+package aur
 
 import (
 	"bytes"
@@ -11,6 +12,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/goulash/pacman"
 )
 
 // NotFoundError is returned when a package could not be found on AUR.
@@ -43,12 +46,12 @@ func (e NotFoundError) Error() string {
 	return buf.String()
 }
 
-type aurResponse struct {
+type response struct {
 	ResultCount int
-	Results     []*AURPackage
+	Results     []*Package
 }
 
-// AURPackage is the information that we can retrieve about a package that is
+// Package is the information that we can retrieve about a package that is
 // hosted on the Arch Linux User Repository (AUR), version 4.
 //
 // JSON Example:
@@ -71,7 +74,7 @@ type aurResponse struct {
 //		"CategoryID": 1,
 //		"Popularity": 0
 //	}
-type AURPackage struct {
+type Package struct {
 	ID             uint64
 	Name           string
 	PackageBaseID  uint64
@@ -90,26 +93,26 @@ type AURPackage struct {
 	Popularity     float64
 }
 
-// Package converts an AURPackage into a Package.
+// PacmanPkg converts an aur.Package into a pacman.Package.
 //
 // Note that only a few fields in the resulting Package are actually filled in,
 // namely Origin, Name, Version, Description, URL, and License. This is all the
 // information that we are able to retrieve.
-func (ap *AURPackage) Package() *Package {
-	return &Package{
-		Origin:      AUROrigin,
-		Name:        ap.Name,
-		Base:        ap.PackageBase,
-		Version:     ap.Version,
-		Description: ap.Description,
-		URL:         ap.URL,
-		License:     ap.License,
+func (p *Package) PacmanPkg() *pacman.Package {
+	return &pacman.Package{
+		Origin:      pacman.AUROrigin,
+		Name:        p.Name,
+		Base:        p.PackageBase,
+		Version:     p.Version,
+		Description: p.Description,
+		URL:         p.URL,
+		License:     p.License,
 	}
 }
 
 // DownloadURL returns the URL for downloading the PKGBUILD tarball.
-func (ap *AURPackage) DownloadURL() string {
-	return fmt.Sprintf("https://aur.archlinux.org%s", ap.URLPath)
+func (p *Package) DownloadURL() string {
+	return fmt.Sprintf("https://aur.archlinux.org%s", p.URLPath)
 }
 
 const (
@@ -126,11 +129,11 @@ func generateURL(args []string) string {
 	return fmt.Sprintf(apiURL, strings.Join(na, apiArg))
 }
 
-// ReadAUR reads package information from the Arch Linux User Repository (AUR)
+// Read reads package information from the Arch Linux User Repository (AUR)
 // online.
 //
 // If a package cannot be found, (nil, *NotFoundError) is returned.
-func ReadAUR(pkgname string) (*AURPackage, error) {
+func Read(pkgname string) (*Package, error) {
 	q := generateURL([]string{pkgname})
 	resp, err := http.Get(q)
 	if err != nil {
@@ -138,7 +141,7 @@ func ReadAUR(pkgname string) (*AURPackage, error) {
 	}
 	defer resp.Body.Close()
 
-	var msg aurResponse
+	var msg response
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&msg)
 	if err != nil {
@@ -150,31 +153,31 @@ func ReadAUR(pkgname string) (*AURPackage, error) {
 	return msg.Results[0], nil
 }
 
-type AURPackages []*AURPackage
+type Packages []*Package
 
-func (pkgs AURPackages) Len() int      { return len(pkgs) }
-func (pkgs AURPackages) Swap(i, j int) { pkgs[i], pkgs[j] = pkgs[j], pkgs[i] }
-func (pkgs AURPackages) Less(i, j int) bool {
+func (pkgs Packages) Len() int      { return len(pkgs) }
+func (pkgs Packages) Swap(i, j int) { pkgs[i], pkgs[j] = pkgs[j], pkgs[i] }
+func (pkgs Packages) Less(i, j int) bool {
 	if pkgs[i].Name != pkgs[j].Name {
 		return pkgs[i].Name < pkgs[j].Name
 	}
-	return VerCmp(pkgs[i].Version, pkgs[j].Version) == -1
+	return pacman.VerCmp(pkgs[i].Version, pkgs[j].Version) == -1
 }
 
-func (pkgs AURPackages) Packages() Packages {
-	results := make(Packages, len(pkgs))
+func (pkgs Packages) PacmanPkgs() pacman.Packages {
+	results := make(pacman.Packages, len(pkgs))
 	for i, p := range pkgs {
-		results[i] = p.Package()
+		results[i] = p.PacmanPkg()
 	}
 	return results
 }
 
-// ReadAllAUR reads multiple packages from the Arch Linux User Repository (AUR)
+// ReadAll reads multiple packages from the Arch Linux User Repository (AUR)
 // at once.
 //
-// If any packages cannot be found, (AURPackages, *NotFoundError) is returned.
+// If any packages cannot be found, (Packages, *NotFoundError) is returned.
 // That is, all successfully read packages are returned.
-func ReadAllAUR(pkgnames []string) (AURPackages, error) {
+func ReadAll(pkgnames []string) (Packages, error) {
 	q := generateURL(pkgnames)
 	resp, err := http.Get(q)
 	if err != nil {
@@ -182,7 +185,7 @@ func ReadAllAUR(pkgnames []string) (AURPackages, error) {
 	}
 	defer resp.Body.Close()
 
-	var msg aurResponse
+	var msg response
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&msg)
 	if err != nil {

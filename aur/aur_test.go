@@ -2,19 +2,19 @@
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 
-package pacman
+package aur
 
 import "testing"
 
 var (
-	aurExists    = []string{"repoctl", "fairsplit", "moped"}
-	aurNotExists = []string{"repoctl-34534", "arstaorsf", "911222234"}
-	aurInvalid   = []string{"-", "_", "*", "-1q"}
+	exists    = []string{"repoctl", "fairsplit", "moped"}
+	notExists = []string{"repoctl-34534", "arstaorsf", "911222234"}
+	invalid   = []string{"-", "_", "*", "-1q"}
 )
 
-func TestReadAUR1(z *testing.T) {
-	for _, n := range aurExists {
-		i, err := ReadAUR(n)
+func TestRead1(z *testing.T) {
+	for _, n := range exists {
+		i, err := Read(n)
 		if err != nil {
 			z.Errorf("unexpected error: %s", err)
 		}
@@ -26,9 +26,9 @@ func TestReadAUR1(z *testing.T) {
 	}
 }
 
-func TestReadAUR2(z *testing.T) {
-	for _, n := range aurNotExists {
-		i, err := ReadAUR(n)
+func TestRead2(z *testing.T) {
+	for _, n := range notExists {
+		i, err := Read(n)
 		if i != nil {
 			z.Errorf("expecting i to be nil")
 		}
@@ -46,8 +46,8 @@ func TestReadAUR2(z *testing.T) {
 	}
 }
 
-func TestReadAllAUR1(z *testing.T) {
-	is, err := ReadAllAUR(aurExists)
+func TestReadAll1(z *testing.T) {
+	is, err := ReadAll(exists)
 	if err != nil {
 		z.Errorf("unexpected error: %s", err)
 	}
@@ -56,18 +56,18 @@ func TestReadAllAUR1(z *testing.T) {
 	}
 }
 
-func TestReadAllAUR2(z *testing.T) {
-	is, err := ReadAllAUR(aurNotExists)
+func TestReadAll2(z *testing.T) {
+	is, err := ReadAll(notExists)
 	if len(is) != 0 {
 		z.Errorf("expecting is to have zero elements")
 	}
 	if err == nil {
 		z.Errorf("expecting error, got nil")
 	} else if nf, ok := err.(*NotFoundError); ok {
-		if len(nf.Names) != len(aurNotExists) {
+		if len(nf.Names) != len(notExists) {
 			z.Errorf("wrong number of names returned")
 		} else {
-			for i, n := range aurNotExists {
+			for i, n := range notExists {
 				if nf.Names[i] != n {
 					z.Errorf("wrong name returned")
 				}
@@ -79,12 +79,12 @@ func TestReadAllAUR2(z *testing.T) {
 }
 
 func TestDownloadURL(z *testing.T) {
-	i, err := ReadAUR("repoctl")
+	i, err := Read("repoctl")
 	if err != nil {
 		z.Errorf("unexpected error: %s", err)
 		z.FailNow()
 	}
-	if i.DownloadURL() != "https://aur4.archlinux.org/cgit/aur.git/snapshot/repoctl.tar.gz" {
+	if i.DownloadURL() != "https://aur.archlinux.org/cgit/aur.git/snapshot/repoctl.tar.gz" {
 		z.Errorf("download url incorrect: %s", i.DownloadURL())
 	}
 }

@@ -4,17 +4,7 @@
 
 package pacman
 
-import (
-	"bufio"
-	"bytes"
-	"fmt"
-	"io"
-	"strconv"
-	"strings"
-	"time"
-
-	"github.com/goulash/osutil"
-)
+import "time"
 
 // PackageOrigin exists to document which fields in the Package type can be
 // expected to be filled with data. Note that some fields may be blank
@@ -38,6 +28,7 @@ const (
 	// touched:
 	//
 	// 	Name
+	//  Base
 	// 	Version
 	// 	Description
 	// 	URL
@@ -81,11 +72,23 @@ type Package struct {
 	MakeOptions     []string  // makepkgopt
 }
 
+// Packages is merely a list of packages
+type Packages []*Package
+
+func (pkgs Packages) Len() int      { return len(pkgs) }
+func (pkgs Packages) Swap(i, j int) { pkgs[i], pkgs[j] = pkgs[j], pkgs[i] }
+func (pkgs Packages) Less(i, j int) bool {
+	if pkgs[i].Name != pkgs[j].Name {
+		return pkgs[i].Name < pkgs[j].Name
+	}
+	return VerCmp(pkgs[i].Version, pkgs[j].Version) == -1
+}
+
 // Check if one package is the same as another.
 //
 // The equality comparisons for the []string attributes
 // are set comparisons.
-func (p *Package) Equal(a *Package) bool {
+func (p *Package) Equals(a *Package) bool {
 	// If the pointer is the same, we are wasting time.
 	if p == a {
 		return true
@@ -161,175 +164,48 @@ func (p *Package) Equal(a *Package) bool {
 	return true
 }
 
-// OlderThan returns true if pkg's version is older than alt's.
-// It takes the Epoch value into account.
-//
+// Older returns true if pkg's version is older than alt's.
 // If alt is nil, then false is returned.
-func (pkg *Package) OlderThan(alt *Package) bool {
+// It takes the Epoch value into account.
+func (pkg *Package) Older(alt *Package) bool {
 	if pkg == nil {
 		panic("pkg is nil")
 	}
 	if alt == nil {
 		return false
 	}
-	return pkg.CompareVersion(alt) == -1
+	return VerCmp(pkg.Version, alt.Version) == -1
 }
 
-// NewerThan returns true if pkg's version is newer than alt's.
-// It takes the Epoch value into account.
-//
+// Newer returns true if pkg's version is newer than alt's.
 // If alt is nil, then true is returned.
-func (pkg *Package) NewerThan(alt *Package) bool {
+// It takes the Epoch value into account.
+func (pkg *Package) Newer(alt *Package) bool {
 	if pkg == nil {
 		panic("pkg is nil")
 	}
 	if alt == nil {
 		return true
 	}
-	return pkg.CompareVersion(alt) == 1
+	return VerCmp(pkg.Version, alt.Version) == 1
 }
 
-// CompareVersion compares the versions of two packages, taking the Epoch
-// value into account.
-func (pkg *Package) CompareVersion(alt *Package) int {
-	return VerCmp(pkg.Version, alt.Version)
+func isequalset(a, b []string) bool {
+	if &a == &b || (len(a) == 0 && len(b) == 0) {
+		return true
+	}
+	return issubset(a, b) && issubset(b, a)
 }
 
-// HasPackageFormat returns true if the filename matches a pacman package
-// format that we can do anything with.
-//
-// Currently, only the following formats are supported:
-//  .pkg.tar
-//	.pkg.tar.xz
-//	.pkg.tar.gz
-//	.pkg.tar.bz2
-//
-func HasPackageFormat(filename string) bool {
-	for _, ext := range []string{".pkg.tar", ".pkg.tar.xz", ".pkg.tar.gz", ".pkg.tar.bz2"} {
-		if strings.HasSuffix(filename, ext) {
-			return true
+func issubset(a, b []string) bool {
+	m := make(map[string]bool)
+	for _, k := range b {
+		m[k] = true
+	}
+	for _, k := range a {
+		if !m[k] {
+			return false
 		}
 	}
-	return false
-}
-
-// ReadPackage reads the package information from a pacman package
-// and returns it in the Package datatype.
-func ReadPackage(filename string) (*Package, error) {
-	bs, err := osutil.ReadFileFromArchive(filename, ".PKGINFO")
-	if err != nil {
-		return nil, err
-	}
-
-	r := bytes.NewReader(bs)
-	info, err := readFilePkgInfo(r)
-	if err != nil {
-		return nil, err
-	}
-
-	info.Filename = filename
-	info.Origin = FileOrigin
-	return info, nil
-}
-
-// readFilePkgInfo reads the package information from a pacman package.
-//
-// We don't do any specific controlling for you, so you should use
-// HasPackageFormat on a path string before using this function on it.
-// Even if you don't, nothing bad should happen, but just in case.
-func readFilePkgInfo(r io.Reader) (*Package, error) {
-	var (
-		info  Package
-		err   error
-		epoch int
-	)
-
-	scanner := bufio.NewScanner(r)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if strings.HasPrefix("#", line) {
-			continue
-		}
-
-		kv := strings.Split(line, " = ")
-		if len(kv) != 2 {
-			continue
-		}
-
-		switch kv[0] {
-		case "pkgname":
-			info.Name = kv[1]
-		case "pkgver":
-			info.Version = kv[1]
-		case "pkgdesc":
-			info.Description = kv[1]
-		case "pkgbase":
-			info.Base = kv[1]
-		case "epoch":
-			epoch, err = strconv.Atoi(kv[1])
-			if err != nil {
-				return nil, fmt.Errorf("cannot parse epoch value '%s'", kv[1])
-			}
-		case "url":
-			info.URL = kv[1]
-		case "builddate":
-			n, err := strconv.ParseInt(kv[1], 10, 64)
-			if err != nil {
-				return nil, fmt.Errorf("cannot parse build time '%s'", kv[1])
-			}
-			info.BuildDate = time.Unix(n, 0)
-		case "packager":
-			info.Packager = kv[1]
-		case "size":
-			info.Size, err = strconv.ParseUint(kv[1], 10, 64)
-			if err != nil {
-				return nil, fmt.Errorf("cannot parse size value '%s'", kv[1])
-			}
-		case "arch":
-			info.Arch = kv[1]
-		case "license":
-			info.License = kv[1]
-		case "depend":
-			info.Depends = append(info.Depends, kv[1])
-		case "optdepend":
-			info.OptionalDepends = append(info.OptionalDepends, kv[1])
-		case "makedepend":
-			info.MakeDepends = append(info.MakeDepends, kv[1])
-		case "checkdepend":
-			info.CheckDepends = append(info.CheckDepends, kv[1])
-		case "makepkgopt":
-			info.MakeOptions = append(info.MakeOptions, kv[1])
-		case "backup":
-			info.Backups = append(info.Backups, kv[1])
-		case "replaces":
-			info.Replaces = append(info.Replaces, kv[1])
-		case "provides":
-			info.Provides = append(info.Provides, kv[1])
-		case "conflict":
-			info.Conflicts = append(info.Conflicts, kv[1])
-		case "group":
-			info.Groups = append(info.Groups, kv[1])
-		default:
-			return nil, fmt.Errorf("unknown field '%s' in .PKGINFO", kv[0])
-		}
-	}
-	if err = scanner.Err(); err != nil {
-		return nil, err
-	}
-
-	// The Version field must include the epoch value. If it already has one,
-	// we compare and take the maximum value.
-	if epoch > 0 {
-		if i := strings.IndexByte(info.Version, ':'); i != -1 {
-			e, err := strconv.Atoi(info.Version[:i])
-			if err != nil {
-				return nil, fmt.Errorf("unable to read epoch from version '%s'", info.Version)
-			}
-			epoch = max(epoch, e)
-			info.Version = info.Version[i+1:]
-		}
-		info.Version = fmt.Sprintf("%d:%s", epoch, info.Version)
-	}
-
-	return &info, nil
+	return true
 }
