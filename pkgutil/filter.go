@@ -4,7 +4,16 @@
 
 package pkgutil
 
-import "github.com/goulash/pacman"
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
+
+	"github.com/goulash/osutil"
+	"github.com/goulash/pacman"
+)
 
 // FilterFunc is a function that given a package, returns true if the package
 // is ok, and false if it should not be included (filtered out).
@@ -94,7 +103,9 @@ func FilterAny(pkgs pacman.Packages, fs []FilterFunc) pacman.Packages {
 	return fps
 }
 
-func FilterNewest(pkgs pacman.Packages) pacman.Packages {
+// NewestFltr passes all packages through that are at least as new as the packages
+// given.
+func NewestFltr(pkgs pacman.Packages) FilterFunc {
 	m := make(map[string]*pacman.Package)
 	for _, p := range pkgs {
 		if p.Newer(m[p.Name]) {
@@ -102,9 +113,62 @@ func FilterNewest(pkgs pacman.Packages) pacman.Packages {
 		}
 	}
 
-	out := make(pacman.Packages, 0, len(m))
-	for _, p := range m {
-		out = append(out, p)
+	return func(p *pacman.Package) bool {
+		return p.Newer(m[p.Name])
 	}
-	return out
+}
+
+// WordFltr passes all packages through that contain the given word.
+func WordFltr(word string, mf MapFunc) FilterFunc {
+	return func(p *pacman.Package) bool {
+		return strings.Contains(mf(p), word)
+	}
+}
+
+// RegexFltr passes all packages through that match the regular expression.
+func RegexFltr(regex string, mf MapFunc) (FilterFunc, error) {
+	r, err := regexp.Compile(regex)
+	if err != nil {
+		return nil, err
+	}
+
+	return func(p *pacman.Package) bool {
+		return r.MatchString(mf(p))
+	}, nil
+}
+
+// MustRegexFltr is the same as RegexFltr, except that it quits the program
+// if regular expression is invalid.
+func MustRegexFltr(regex string, mf MapFunc) FilterFunc {
+	ff, err := RegexFltr(regex, mf)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Invalid regular expression:", err)
+		os.Exit(1)
+	}
+	return ff
+}
+
+// GlobFltr passes all packages through that match the glob pattern.
+func GlobFltr(glob string, mf MapFunc) FilterFunc {
+	return func(p *pacman.Package) bool {
+		matched, err := filepath.Match(glob, mf(p))
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Glob pattern malformed:", err)
+		}
+		return matched
+	}
+}
+
+// MissingFltr passes all packages through that do not exist in the filesystem.
+func MissingFltr() FilterFunc {
+	return func(p *pacman.Package) bool {
+		if p.Filename == "" {
+			return true
+		}
+		ex, err := osutil.FileExists(p.Filename)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error reading %s: %s", p.Filename, err)
+		}
+		return !ex
+	}
 }

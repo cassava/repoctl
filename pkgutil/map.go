@@ -5,6 +5,7 @@
 package pkgutil
 
 import (
+	"bytes"
 	"path"
 
 	"github.com/goulash/pacman"
@@ -60,4 +61,29 @@ func PkgName(p *pacman.Package) string {
 
 func PkgBase(p *pacman.Package) string {
 	return p.Base
+}
+
+// PkgFilter returns a combination of many fields, separated by a space.
+func PkgFilter(p *pacman.Package) string {
+	var buf bytes.Buffer
+
+	write := func(s string) {
+		buf.WriteRune(' ')
+		buf.WriteString(s)
+	}
+	writeAll := func(ss []string) {
+		for _, s := range ss {
+			write(s)
+		}
+	}
+
+	buf.WriteString(p.Name)
+	write(p.Base)
+	write(p.Description)
+	write(p.URL)
+	writeAll(p.Groups)
+	writeAll(p.Replaces)
+	writeAll(p.Provides)
+
+	return buf.String()
 }
