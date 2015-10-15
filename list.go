@@ -12,7 +12,7 @@ import (
 	"github.com/goulash/pacman/pkgutil"
 )
 
-func (r *Repo) ListDatabase(f func(*pacman.Package) string) ([]string, error) {
+func (r *Repo) ListDatabase(f pkgutil.MapFunc) ([]string, error) {
 	if f == nil {
 		f = pkgutil.PkgName
 	}
@@ -24,7 +24,7 @@ func (r *Repo) ListDatabase(f func(*pacman.Package) string) ([]string, error) {
 	return List(pkgs, f), nil
 }
 
-func (r *Repo) ListDirectory(h errs.Handler, f func(*pacman.Package) string) ([]string, error) {
+func (r *Repo) ListDirectory(h errs.Handler, f pkgutil.MapFunc) ([]string, error) {
 	errs.Init(&h)
 	if f == nil {
 		f = pkgutil.PkgName
