@@ -39,7 +39,7 @@ func (r *Repo) DatabaseRemove(pkgnames ...string) error {
 	}
 	return in(r.Directory, func() error {
 		for _, p := range pkgnames {
-			r.printf("removing package from database %s\n", p)
+			r.printf("removing package from database: %s\n", p)
 		}
 
 		args := joinArgs(r.RemoveParameters, r.Database, pkgnames)
