@@ -19,7 +19,7 @@ func (c *Configuration) Repo() *repoctl.Repo {
 	r := repoctl.New(c.Repository)
 	r.Backup = c.Backup
 	r.BackupDir = c.BackupDir
-	r.IgnoreUpgrades = c.IgnoreAUR
+	r.IgnoreAUR = c.IgnoreAUR
 	r.AddParameters = c.AddParameters
 	r.RemoveParameters = c.RemoveParameters
 	r.Error = os.Stderr
