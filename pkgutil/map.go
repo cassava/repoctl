@@ -2,6 +2,7 @@
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 
+// Package pkgutil provides useful functions for working with packages.
 package pkgutil
 
 import (
@@ -11,35 +12,53 @@ import (
 	"github.com/goulash/pacman"
 )
 
-type MapFunc func(*pacman.Package) string
+type MapFunc func(pacman.AnyPackage) string
 
 // Map maps pacman.Packages to some string characteristic of a pacman.Package.
 //
 // For example:
 //
 //  files := pkgutil.Map(ps, pkgutil.PkgFilename)
-func Map(pkgs pacman.Packages, f MapFunc) []string {
-	results := make([]string, len(pkgs))
-	for i, p := range pkgs {
+func Map(pkgs pacman.AnyPackages, f MapFunc) []string {
+	results := make([]string, pkgs.Len())
+	i := 0
+	pkgs.Iterate(func(p pacman.AnyPackage) {
 		results[i] = f(p)
-	}
+		i++
+	})
 	return results
 }
 
-func MapPkg(pkgs pacman.Packages, f MapFunc) map[string]*pacman.Package {
+func MapPkg(pkgs pacman.AnyPackages, f MapFunc) map[string]*pacman.Package {
 	m := make(map[string]*pacman.Package)
-	for _, p := range pkgs {
-		m[f(p)] = p
-	}
+	pkgs.Iterate(func(p pacman.AnyPackage) {
+		m[f(p)] = p.Pkg()
+	})
 	return m
 }
 
-func MapBool(pkgs pacman.Packages, f MapFunc) map[string]bool {
-	m := make(map[string]bool)
-	for _, p := range pkgs {
-		m[f(p)] = true
-	}
+func MapAny(pkgs pacman.AnyPackages, f MapFunc) map[string]pacman.AnyPackage {
+	m := make(map[string]pacman.AnyPackage)
+	pkgs.Iterate(func(p pacman.AnyPackage) {
+		m[f(p)] = p
+	})
 	return m
+}
+
+func MapBool(pkgs pacman.AnyPackages, f MapFunc) map[string]bool {
+	m := make(map[string]bool)
+	pkgs.Iterate(func(p pacman.AnyPackage) {
+		m[f(p)] = true
+	})
+	return m
+}
+
+func PkgName(ap pacman.AnyPackage) string {
+	return ap.PkgName()
+}
+
+func PkgBase(ap pacman.AnyPackage) string {
+	return ap.Pkg().Base
 }
 
 // PkgFilename gets the filename of the package. There is no normalization
@@ -47,24 +66,16 @@ func MapBool(pkgs pacman.Packages, f MapFunc) map[string]bool {
 // not have the same filename internally.
 //
 // If you need that, check out PkgBasename!
-func PkgFilename(p *pacman.Package) string {
-	return p.Filename
+func PkgFilename(ap pacman.AnyPackage) string {
+	return ap.Pkg().Filename
 }
 
-func PkgBasename(p *pacman.Package) string {
-	return path.Base(p.Filename)
-}
-
-func PkgName(p *pacman.Package) string {
-	return p.Name
-}
-
-func PkgBase(p *pacman.Package) string {
-	return p.Base
+func PkgBasename(ap pacman.AnyPackage) string {
+	return path.Base(ap.Pkg().Filename)
 }
 
 // PkgFilter returns a combination of many fields, separated by a space.
-func PkgFilter(p *pacman.Package) string {
+func PkgFilter(ap pacman.AnyPackage) string {
 	var buf bytes.Buffer
 
 	write := func(s string) {
@@ -77,6 +88,7 @@ func PkgFilter(p *pacman.Package) string {
 		}
 	}
 
+	p := ap.Pkg()
 	buf.WriteString(p.Name)
 	write(p.Base)
 	write(p.Description)

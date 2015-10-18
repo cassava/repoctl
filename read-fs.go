@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/goulash/errs"
+	"github.com/goulash/pacman/alpm"
 )
 
 // ReadDir reads all the packages it finds in a directory.
@@ -29,7 +30,7 @@ func ReadDir(h errs.Handler, dirpath string) (Packages, error) {
 			}
 			return filepath.SkipDir
 		}
-		if !info.Mode().IsDir() && HasPackageFormat(filename) {
+		if !info.Mode().IsDir() && alpm.HasPackageFormat(filename) {
 			p, err := Read(filename)
 			if err != nil && h != nil {
 				println(err)
@@ -76,7 +77,7 @@ func ReadNames(h errs.Handler, dirpath string, pkgnames ...string) (Packages, er
 
 	for _, n := range pkgnames {
 		var matches []string
-		matches, err = filepath.Glob(filepath.Join(dirpath, n+pkgGlob))
+		matches, err = filepath.Glob(filepath.Join(dirpath, n+alpm.PackageGlob))
 		if err != nil {
 			err = h(fmt.Errorf("cannot find package %q", n))
 			if err != nil {

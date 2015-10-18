@@ -14,7 +14,32 @@ import (
 	"strings"
 
 	"github.com/goulash/pacman"
+	"github.com/goulash/pacman/alpm"
 )
+
+type Packages []*Package
+
+func (pkgs Packages) Len() int      { return len(pkgs) }
+func (pkgs Packages) Swap(i, j int) { pkgs[i], pkgs[j] = pkgs[j], pkgs[i] }
+func (pkgs Packages) Less(i, j int) bool {
+	if pkgs[i].Name != pkgs[j].Name {
+		return pkgs[i].Name < pkgs[j].Name
+	}
+	return alpm.VerCmp(pkgs[i].Version, pkgs[j].Version) == -1
+}
+
+func (pkgs Packages) Pkgs() pacman.Packages {
+	results := make(pacman.Packages, len(pkgs))
+	for i, p := range pkgs {
+		results[i] = p.Pkg()
+	}
+	return results
+}
+func (pkgs Packages) Iterate(f func(pacman.AnyPackage)) {
+	for _, p := range pkgs {
+		f(p)
+	}
+}
 
 // NotFoundError is returned when a package could not be found on AUR.
 //
@@ -44,6 +69,11 @@ func (e NotFoundError) Error() string {
 	buf.WriteString(e.Names[n-1])
 	buf.WriteString(`" could not be found on AUR`)
 	return buf.String()
+}
+
+func IsNotFound(err error) bool {
+	_, ok := err.(*NotFoundError)
+	return ok
 }
 
 type response struct {
@@ -98,7 +128,7 @@ type Package struct {
 // Note that only a few fields in the resulting Package are actually filled in,
 // namely Origin, Name, Version, Description, URL, and License. This is all the
 // information that we are able to retrieve.
-func (p *Package) PacmanPkg() *pacman.Package {
+func (p *Package) Pkg() *pacman.Package {
 	return &pacman.Package{
 		Origin:      pacman.AUROrigin,
 		Name:        p.Name,
@@ -109,6 +139,8 @@ func (p *Package) PacmanPkg() *pacman.Package {
 		License:     p.License,
 	}
 }
+func (p *Package) PkgName() string    { return p.Name }
+func (p *Package) PkgVersion() string { return p.Version }
 
 // DownloadURL returns the URL for downloading the PKGBUILD tarball.
 func (p *Package) DownloadURL() string {
@@ -151,25 +183,6 @@ func Read(pkgname string) (*Package, error) {
 		return nil, &NotFoundError{Names: []string{pkgname}}
 	}
 	return msg.Results[0], nil
-}
-
-type Packages []*Package
-
-func (pkgs Packages) Len() int      { return len(pkgs) }
-func (pkgs Packages) Swap(i, j int) { pkgs[i], pkgs[j] = pkgs[j], pkgs[i] }
-func (pkgs Packages) Less(i, j int) bool {
-	if pkgs[i].Name != pkgs[j].Name {
-		return pkgs[i].Name < pkgs[j].Name
-	}
-	return pacman.VerCmp(pkgs[i].Version, pkgs[j].Version) == -1
-}
-
-func (pkgs Packages) PacmanPkgs() pacman.Packages {
-	results := make(pacman.Packages, len(pkgs))
-	for i, p := range pkgs {
-		results[i] = p.PacmanPkg()
-	}
-	return results
 }
 
 // ReadAll reads multiple packages from the Arch Linux User Repository (AUR)

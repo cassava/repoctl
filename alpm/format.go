@@ -2,11 +2,12 @@
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 
-package pacman
+package alpm
 
 import "strings"
 
-const pkgGlob = "-*.pkg.tar*"
+// PackageGlob is a glob that should only find packages.
+const PackageGlob = "-*.pkg.tar*"
 
 // HasDatabaseFormat returns true if the filename matches a pacman package
 // format that we can do anything with.

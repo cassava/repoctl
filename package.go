@@ -4,7 +4,30 @@
 
 package pacman
 
-import "time"
+import (
+	"time"
+
+	"github.com/goulash/pacman/alpm"
+)
+
+// Packages is merely a list of packages
+type Packages []*Package
+
+func (pkgs Packages) Len() int      { return len(pkgs) }
+func (pkgs Packages) Swap(i, j int) { pkgs[i], pkgs[j] = pkgs[j], pkgs[i] }
+func (pkgs Packages) Less(i, j int) bool {
+	if pkgs[i].Name != pkgs[j].Name {
+		return pkgs[i].Name < pkgs[j].Name
+	}
+	return alpm.VerCmp(pkgs[i].Version, pkgs[j].Version) == -1
+}
+
+func (pkgs Packages) Pkgs() Packages { return pkgs }
+func (pkgs Packages) Iterate(f func(AnyPackage)) {
+	for _, p := range pkgs {
+		f(p)
+	}
+}
 
 // PackageOrigin exists to document which fields in the Package type can be
 // expected to be filled with data. Note that some fields may be blank
@@ -72,17 +95,9 @@ type Package struct {
 	MakeOptions     []string  // makepkgopt
 }
 
-// Packages is merely a list of packages
-type Packages []*Package
-
-func (pkgs Packages) Len() int      { return len(pkgs) }
-func (pkgs Packages) Swap(i, j int) { pkgs[i], pkgs[j] = pkgs[j], pkgs[i] }
-func (pkgs Packages) Less(i, j int) bool {
-	if pkgs[i].Name != pkgs[j].Name {
-		return pkgs[i].Name < pkgs[j].Name
-	}
-	return VerCmp(pkgs[i].Version, pkgs[j].Version) == -1
-}
+func (p *Package) Pkg() *Package      { return p }
+func (p *Package) PkgName() string    { return p.Name }
+func (p *Package) PkgVersion() string { return p.Version }
 
 // Check if one package is the same as another.
 //
@@ -168,26 +183,20 @@ func (p *Package) Equals(a *Package) bool {
 // If alt is nil, then false is returned.
 // It takes the Epoch value into account.
 func (pkg *Package) Older(alt *Package) bool {
-	if pkg == nil {
-		panic("pkg is nil")
-	}
 	if alt == nil {
 		return false
 	}
-	return VerCmp(pkg.Version, alt.Version) == -1
+	return alpm.VerCmp(pkg.Version, alt.Version) == -1
 }
 
 // Newer returns true if pkg's version is newer than alt's.
 // If alt is nil, then true is returned.
 // It takes the Epoch value into account.
 func (pkg *Package) Newer(alt *Package) bool {
-	if pkg == nil {
-		panic("pkg is nil")
-	}
 	if alt == nil {
 		return true
 	}
-	return VerCmp(pkg.Version, alt.Version) == 1
+	return alpm.VerCmp(pkg.Version, alt.Version) == 1
 }
 
 func isequalset(a, b []string) bool {
