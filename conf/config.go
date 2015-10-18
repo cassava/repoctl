@@ -58,7 +58,7 @@ repo = {{printt .Repository}}
 backup = {{printt .Backup}}
 
 # backup_dir specifies which directory backups are stored in.
-# If a relative path is given, then 
+# If a relative path is given, then
 backup_dir = {{printt .BackupDir}}
 
 # interactive specifies that repoctl should ask before doing anything
@@ -91,7 +91,7 @@ type Configuration struct {
 	// RemoveParameters are parameters to add to the repo-remove command line.
 	RemoveParameters []string `toml:"rm_param"`
 	// Packages to ignore when doing AUR related tasks.
-	IgnoreAUR []string `toml:"ignore_aur`
+	IgnoreAUR []string `toml:"ignore_aur"`
 
 	// Backup causes older packages to be backed up rather than deleted.
 	Backup bool `toml:"backup"`
@@ -118,12 +118,9 @@ type Configuration struct {
 // Default acts as the default configuraton.
 func Default() *Configuration {
 	return &Configuration{
-		BackupDir:        "backup/",
-		Color:            "auto",
-		AddParameters:    make([]string, 0),
-		RemoveParameters: make([]string, 0),
-		IgnoreAUR:        make([]string, 0),
-		Unconfigured:     true,
+		BackupDir:    "backup/",
+		Color:        "auto",
+		Unconfigured: true,
 	}
 }
 
