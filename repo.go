@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/goulash/osutil"
+	"github.com/goulash/pacman/pkgutil"
 )
 
 type Repo struct {
@@ -81,14 +82,13 @@ func (r *Repo) Name() string {
 	return base[:strings.IndexByte(base, '.')]
 }
 
-// ignoreMap returns a map that is true for every package name that
-// should have upgrades ignored.
-func (r *Repo) ignoreMap() map[string]bool {
-	iu := make(map[string]bool)
-	for _, p := range r.IgnoreUpgrades {
-		iu[p] = true
-	}
-	return iu
+// ignoreFltr returns a FilterFunc for filtering out packages that should
+// be ignored. For example, for a list of meta.Packages:
+//
+//  pkgs = pkgutil.Filter(pkgs, r.ignoreFltr()).(meta.Packages)
+//
+func (r *Repo) ignoreFltr() pkgutil.FilterFunc {
+	return pkgutil.NameFltr(r.IgnoreUpgrades).Not()
 }
 
 // AssertSetup returns nil if a normal repository setup is present:

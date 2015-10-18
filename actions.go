@@ -10,7 +10,7 @@ import (
 
 	"github.com/goulash/errs"
 	"github.com/goulash/osutil"
-	"github.com/goulash/pacman/pkgutil"
+	pu "github.com/goulash/pacman/pkgutil"
 )
 
 // Copy copies the given files into the repository if they do not already
@@ -59,7 +59,7 @@ func (r *Repo) add(h errs.Handler, pkgfiles []string, ar func(string, string) er
 	}
 
 	pkgs, err := r.FindSimilar(h, added...)
-	return r.Dispatch(h, pkgutil.Map(pkgs, pkgutil.PkgFilename)...)
+	return r.Dispatch(h, pu.Map(pkgs, pu.PkgFilename)...)
 }
 
 // Remove removes the given names from the database and dispatches
@@ -75,11 +75,11 @@ func (r *Repo) Remove(h errs.Handler, pkgnames ...string) error {
 	if err != nil {
 		return err
 	}
-	err = h(r.DatabaseRemove(pkgutil.Map(pkgs, pkgutil.PkgName)...))
+	err = h(r.DatabaseRemove(pu.Map(pkgs, pu.PkgName)...))
 	if err != nil {
 		return err
 	}
-	return r.Dispatch(h, pkgutil.Map(pkgs, pkgutil.PkgFilename)...)
+	return r.Dispatch(h, pu.Map(pkgs, pu.PkgFilename)...)
 }
 
 // Dispatch either removes the given files or it backs them up.
@@ -139,7 +139,7 @@ func (r *Repo) unlink(h errs.Handler, pkgfiles []string) error {
 func (r *Repo) Update(h errs.Handler, pkgnames ...string) error {
 	errs.Init(&h)
 
-	pkgs, err := r.ReadMeta(h, false, pkgnames...)
+	pkgs, err := r.ReadMeta(h, pkgnames...)
 	if err != nil {
 		return err
 	}
@@ -153,10 +153,10 @@ func (r *Repo) Update(h errs.Handler, pkgnames ...string) error {
 			continue
 		}
 		if p.HasUpdate() || len(pkgnames) > 0 {
-			updates = append(updates, p.Package().Filename)
+			updates = append(updates, p.Pkg().Filename)
 		}
 		if p.HasObsolete() {
-			obsolete = append(obsolete, pkgutil.Map(p.Obsolete(), pkgutil.PkgFilename)...)
+			obsolete = append(obsolete, pu.Map(p.Obsolete(), pu.PkgFilename)...)
 		}
 	}
 

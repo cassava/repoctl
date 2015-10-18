@@ -30,49 +30,37 @@ func (r *Repo) ListDirectory(h errs.Handler, f pkgutil.MapFunc) ([]string, error
 		f = pkgutil.PkgName
 	}
 
-	pkgs, err := r.ReadDirectory(h)
+	pkgs, err := r.ReadDir(h)
 	if err != nil {
 		return nil, err
 	}
 	return List(pkgs, f), nil
 }
 
-func (r *Repo) ListMeta(h errs.Handler, aur bool, f func(*MetaPackage) string) ([]string, error) {
+func (r *Repo) ListMeta(h errs.Handler, aur bool, f func(pacman.AnyPackage) string) ([]string, error) {
 	errs.Init(&h)
 	if f == nil {
-		f = func(mp *MetaPackage) string { return mp.Name }
+		f = pkgutil.PkgName
 	}
 
-	pkgs, err := r.ReadMeta(h, aur)
+	pkgs, err := r.ReadMeta(h)
 	if err != nil {
 		return nil, err
 	}
-	return ListMeta(pkgs, f), nil
+	_ = pkgs.ReadAUR()
+	return List(pkgs, f), nil
 }
 
-func ListMeta(mpkgs MetaPackages, f func(*MetaPackage) string) []string {
-	sort.Sort(mpkgs)
-
-	ls := make([]string, 0, len(mpkgs))
-	for _, p := range mpkgs {
-		s := f(p)
-		if s != "" {
-			ls = append(ls, s)
-		}
-	}
-	return unique(ls)
-}
-
-func List(pkgs pacman.Packages, f pkgutil.MapFunc) []string {
+func List(pkgs pacman.AnyPackages, f pkgutil.MapFunc) []string {
 	sort.Sort(pkgs)
 
-	ls := make([]string, 0, len(pkgs))
-	for _, p := range pkgs {
+	ls := make([]string, 0, pkgs.Len())
+	pkgs.Iterate(func(p pacman.AnyPackage) {
 		s := f(p)
 		if s != "" {
 			ls = append(ls, s)
 		}
-	}
+	})
 	return unique(ls)
 }
 

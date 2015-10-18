@@ -11,7 +11,8 @@ import (
 	"github.com/goulash/osutil"
 	"github.com/goulash/pacman"
 	"github.com/goulash/pacman/aur"
-	"github.com/goulash/pacman/pkgutil"
+	"github.com/goulash/pacman/meta"
+	pu "github.com/goulash/pacman/pkgutil"
 )
 
 // ReadDatabase reads the database at r.Directory/r.Database.
@@ -29,9 +30,9 @@ func (r *Repo) ReadDatabase() (pacman.Packages, error) {
 	return pkgs, err
 }
 
-// ReadDirectory reads all packages that are found in the repository
+// ReadDir reads all packages that are found in the repository
 // directory.
-func (r *Repo) ReadDirectory(h errs.Handler) (pacman.Packages, error) {
+func (r *Repo) ReadDir(h errs.Handler) (pacman.Packages, error) {
 	errs.Init(&h)
 
 	pkgs, err := pacman.ReadDir(h, r.Directory)
@@ -39,52 +40,32 @@ func (r *Repo) ReadDirectory(h errs.Handler) (pacman.Packages, error) {
 	return pkgs, err
 }
 
-// ReadRepository reads all packages that are found in the repository
-// directory as well as all packages that are found in the database.
-// These packages are then merged as neccesary, so that you can see
-// which packages are synced, only in the database, and only as files.
-func (r *Repo) ReadRepository(h errs.Handler) (synced pacman.Packages, dbonly pacman.Packages, fsonly pacman.Packages, err error) {
-	errs.Init(&h)
-
-	dbpkgs, err := r.ReadDatabase()
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	filepkgs, err := r.ReadDirectory(h)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	synced = make(pacman.Packages, 0)
-	dbonly = make(pacman.Packages, 0)
-	fsonly = make(pacman.Packages, 0)
-
-	db := pkgutil.MapPkg(dbpkgs, pkgutil.PkgFilename)
-	for _, p := range filepkgs {
-		if db[p.Filename] != nil {
-			synced = append(synced, p)
-			delete(db, p.Filename)
-		} else {
-			fsonly = append(fsonly, p)
-		}
-	}
-	for _, p := range db {
-		dbonly = append(dbonly, p)
-	}
-	return
-}
-
 // ReadNames returns all packages in the repository that match the given
 // names. If no names are given, all packages found are returned.
 func (r *Repo) ReadNames(h errs.Handler, pkgnames ...string) (pacman.Packages, error) {
 	errs.Init(&h)
 	if len(pkgnames) == 0 {
-		return r.ReadDirectory(h)
+		return r.ReadDir(h)
 	}
 
 	pkgs, err := pacman.ReadNames(h, r.Directory, pkgnames...)
 	r.MakeAbs(pkgs)
 	return pkgs, err
+}
+
+// ReadMeta returns all meta packages in the repository that match the given
+// names.  If no names are given, all packages in repository are returned.
+func (r *Repo) ReadMeta(h errs.Handler, pkgnames ...string) (meta.Packages, error) {
+	errs.Init(&h)
+
+	pkgs, err := meta.Read(h, r.Directory, path.Join(r.Directory, r.Database))
+	if err != nil {
+		return nil, err
+	}
+	if len(pkgnames) == 0 {
+		return pkgs, nil
+	}
+	return pu.Filter(pkgs, pu.NameFltr(pkgnames)).(meta.Packages), nil
 }
 
 // ReadAUR reads the given package names from AUR. If no package names
