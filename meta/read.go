@@ -52,8 +52,9 @@ func ReadRepo(h errs.Handler, dirpath string) (Packages, error) {
 	return Read(h, dirpath, dbpath)
 }
 
-// Read reads a list of Packages. If pkgnames is empty, the entire
-// repository is loaded. Packages is returned sorted (ascending).
+// Read reads meta packages in dirpath and using the database at dpbath.
+// If dbpath == "", then no database is read. This function does not
+// recurse.
 func Read(h errs.Handler, dirpath, dbpath string) (Packages, error) {
 	errs.Init(&h)
 

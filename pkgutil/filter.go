@@ -13,6 +13,7 @@ import (
 
 	"github.com/goulash/osutil"
 	"github.com/goulash/pacman"
+	"github.com/goulash/pacman/alpm"
 	"github.com/goulash/pacman/aur"
 	"github.com/goulash/pacman/meta"
 )
@@ -112,7 +113,7 @@ func filterMetaPkgs(pkgs meta.Packages, f FilterFunc) meta.Packages {
 }
 
 // FilterAll filters the packages through all of the filter functions.
-func FilterAll(pkgs pacman.AnyPackages, fs []FilterFunc) pacman.AnyPackages {
+func FilterAll(pkgs pacman.AnyPackages, fs ...FilterFunc) pacman.AnyPackages {
 	return Filter(pkgs, func(p pacman.AnyPackage) bool {
 		for _, f := range fs {
 			if !f(p) {
@@ -125,7 +126,7 @@ func FilterAll(pkgs pacman.AnyPackages, fs []FilterFunc) pacman.AnyPackages {
 
 // FilterAny filters the packages through the filters in fs,
 // where at least one must return true for it to be included.
-func FilterAny(pkgs pacman.AnyPackages, fs []FilterFunc) pacman.AnyPackages {
+func FilterAny(pkgs pacman.AnyPackages, fs ...FilterFunc) pacman.AnyPackages {
 	return Filter(pkgs, func(p pacman.AnyPackage) bool {
 		for _, f := range fs {
 			if f(p) {
@@ -136,9 +137,23 @@ func FilterAny(pkgs pacman.AnyPackages, fs []FilterFunc) pacman.AnyPackages {
 	})
 }
 
-// NewestFltr passes all packages through that are at least as new as the packages
-// given.
-func NewestFltr(pkgs pacman.AnyPackages) FilterFunc {
+// FilterNewest returns the newest of the given packages.
+func FilterNewest(pkgs pacman.AnyPackages) pacman.AnyPackages {
+	m := make(map[string]pacman.AnyPackage)
+	pkgs.Iterate(func(p pacman.AnyPackage) {
+		if pacman.PkgNewer(p, m[p.PkgName()]) {
+			m[p.PkgName()] = p
+		}
+	})
+
+	return Filter(pkgs, func(p pacman.AnyPackage) bool {
+		return alpm.VerCmp(p.PkgVersion(), m[p.PkgName()].PkgVersion()) == 0
+	})
+}
+
+// NewerFltr passes all packages through that are really newer than the
+// packages given.
+func NewerFltr(pkgs pacman.AnyPackages) FilterFunc {
 	m := make(map[string]pacman.AnyPackage)
 	pkgs.Iterate(func(p pacman.AnyPackage) {
 		if pacman.PkgNewer(p, m[p.PkgName()]) {
@@ -148,6 +163,21 @@ func NewestFltr(pkgs pacman.AnyPackages) FilterFunc {
 
 	return func(p pacman.AnyPackage) bool {
 		return pacman.PkgNewer(p, m[p.PkgName()])
+	}
+}
+
+// NewestFltr passes all packages through that are at least as new as the
+// packages given; this is a superset of NewerFltr.
+func NewestFltr(pkgs pacman.AnyPackages) FilterFunc {
+	m := make(map[string]pacman.AnyPackage)
+	pkgs.Iterate(func(p pacman.AnyPackage) {
+		if pacman.PkgNewer(p, m[p.PkgName()]) {
+			m[p.PkgName()] = p
+		}
+	})
+
+	return func(p pacman.AnyPackage) bool {
+		return !pacman.PkgOlder(p, m[p.PkgName()])
 	}
 }
 
@@ -219,5 +249,17 @@ func MissingFltr() FilterFunc {
 		default:
 			return checkExistence(p.Pkg().Filename)
 		}
+	}
+}
+
+// NameFltr passes all packages through that have one of the names.
+func NameFltr(names []string) FilterFunc {
+	m := make(map[string]bool)
+	for _, n := range names {
+		m[n] = true
+	}
+
+	return func(p pacman.AnyPackage) bool {
+		return m[p.PkgName()]
 	}
 }
