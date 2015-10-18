@@ -19,6 +19,7 @@ import (
 	"github.com/goulash/pacman/pkgutil"
 	"github.com/goulash/pr"
 	"github.com/spf13/cobra"
+	"github.com/spf13/nitro"
 )
 
 // Repo lets us use the repoctl library to do the most of the work.
@@ -27,6 +28,9 @@ var Repo *repoctl.Repo
 // Conf loads and stores the configuration (apart from command line
 // configuration) of this program, including where the repository is.
 var Conf = conf.Default()
+
+// Timer
+var Timer *nitro.B
 
 // Colorizer is a pr.Colorizer instance, which you are able to customize.
 // In particular, it may be useful to turn off colorization when the
@@ -57,7 +61,7 @@ var StatusCmd = &cobra.Command{
 	Use:   "status [--aur]",
 	Short: "show pending changes and packages that can be upgraded",
 	Long: `Show pending changes to the database and packages that can be updated.
-    
+
   In particular, the following is shown:
 
     - obsolete package files that can be deleted (or backed up)
@@ -75,6 +79,7 @@ var StatusCmd = &cobra.Command{
 		dieOnError(Init())
 		col.Printf("On repo @{!y}%s\n\n", Repo.Name())
 
+		Timer.Step("read repository")
 		pkgs, err := Repo.ReadMeta(nil)
 		dieOnError(err)
 		if statusAUR {
@@ -88,6 +93,7 @@ var StatusCmd = &cobra.Command{
 		// then this is set to false.
 		var nothing = true
 
+		Timer.Step("output")
 		for _, p := range pkgs {
 			var flags []string
 			if p.HasUpgrade() {
@@ -227,7 +233,7 @@ var ResetCmd = &cobra.Command{
 	Use:   "reset",
 	Short: "recreate repository database",
 	Long: `Delete the repository database and re-add all packages in repository.
-    
+
   Essentially, this command deletes the repository database and
   recreates it by running the update command.
 `,
@@ -428,6 +434,7 @@ Note that in all of these commands, the following terminology is used:
 }
 
 func addConfFlags(cmd *cobra.Command) {
+	cmd.PersistentFlags().BoolVar(&nitro.AnalysisOn, "step-analysis", false, "display memory and timing of different steps")
 	cmd.PersistentFlags().BoolVarP(&Conf.Backup, "backup", "b", Conf.Backup, "backup obsolete files instead of deleting")
 	cmd.PersistentFlags().StringVarP(&Conf.BackupDir, "backup-dir", "B", Conf.BackupDir, "backup directory relative to repository path")
 	cmd.PersistentFlags().BoolVarP(&Conf.Columnate, "columns", "s", Conf.Columnate, "show items in columns rather than lines")
@@ -468,6 +475,9 @@ func Init() error {
 
 // main loads the configuration and executes the primary command.
 func main() {
+	Timer = nitro.Initialize()
+
+	Timer.Step("read configuration")
 	err := Conf.MergeAll()
 	if err != nil {
 		// We didn't manage to load any configuration, which means that repoctl
@@ -476,6 +486,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error: %s.\n", err)
 	}
 
+	Timer.Step("initialize main")
 	// Arguments from the command line override the configuration file,
 	// so we have to add the flags after loading the configuration.
 	//
