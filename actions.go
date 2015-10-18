@@ -41,7 +41,7 @@ func (r *Repo) add(h errs.Handler, pkgfiles []string, ar func(string, string) er
 	added := make([]string, 0, len(pkgfiles))
 	for _, src := range pkgfiles {
 		dst := path.Join(r.Directory, path.Base(src))
-		r.printf("%s and adding to repository: %s\n", lbl, dst)
+		r.printf("%s and adding to repository: %s\n", lbl, src)
 		err := ar(src, dst)
 		if err != nil {
 			err = h(err)

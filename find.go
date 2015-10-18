@@ -71,8 +71,8 @@ func (r *Repo) FindUpgrades(h errs.Handler, pkgnames ...string) (Upgrades, error
 		return nil, err
 	}
 
-	if len(pkgnames) == 0 && len(r.IgnoreUpgrades) != 0 {
-		pkgs = pu.Filter(pkgs, r.ignoreFltr()).(meta.Packages)
+	if len(pkgnames) == 0 && len(r.IgnoreAUR) != 0 {
+		pkgs = pu.Filter(pkgs, r.IgnoreFltr()).(meta.Packages)
 	}
 
 	err = pkgs.ReadAUR()

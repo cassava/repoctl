@@ -32,7 +32,7 @@ type Repo struct {
 	// IgnoreUpgrades specifies which packages to ignore when looking
 	// for upgrades. Explicitely specifying the file will override the
 	// ignore however.
-	IgnoreUpgrades []string
+	IgnoreAUR []string
 
 	// AddParameters are parameters to add to the repo-add
 	// command line.
@@ -69,7 +69,7 @@ func New(repo string) *Repo {
 		Info:  os.Stdout,
 		Debug: nil,
 
-		IgnoreUpgrades:   make([]string, 0),
+		IgnoreAUR:        make([]string, 0),
 		AddParameters:    make([]string, 0),
 		RemoveParameters: make([]string, 0),
 	}
@@ -82,13 +82,22 @@ func (r *Repo) Name() string {
 	return base[:strings.IndexByte(base, '.')]
 }
 
-// ignoreFltr returns a FilterFunc for filtering out packages that should
+// IgnoreFltr returns a FilterFunc for filtering out packages that should
 // be ignored. For example, for a list of meta.Packages:
 //
 //  pkgs = pkgutil.Filter(pkgs, r.ignoreFltr()).(meta.Packages)
 //
-func (r *Repo) ignoreFltr() pkgutil.FilterFunc {
-	return pkgutil.NameFltr(r.IgnoreUpgrades).Not()
+func (r *Repo) IgnoreFltr() pkgutil.FilterFunc {
+	return pkgutil.NameFltr(r.IgnoreAUR).Not()
+}
+
+// IgnoreMap returns a map of packages to ignore.
+func (r *Repo) IgnoreMap() map[string]bool {
+	m := make(map[string]bool)
+	for _, i := range r.IgnoreAUR {
+		m[i] = true
+	}
+	return m
 }
 
 // AssertSetup returns nil if a normal repository setup is present:
