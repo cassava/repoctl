@@ -14,6 +14,8 @@ import (
 	"github.com/cassava/repoctl"
 	"github.com/cassava/repoctl/conf"
 	"github.com/goulash/pacman"
+	"github.com/goulash/pacman/aur"
+	"github.com/goulash/pacman/meta"
 	"github.com/goulash/pacman/pkgutil"
 	"github.com/goulash/pr"
 	"github.com/spf13/cobra"
@@ -73,8 +75,14 @@ var StatusCmd = &cobra.Command{
 		dieOnError(Init())
 		col.Printf("On repo @{!y}%s\n\n", Repo.Name())
 
-		pkgs, err := Repo.ReadMeta(nil, statusAUR)
+		pkgs, err := Repo.ReadMeta(nil)
 		dieOnError(err)
+		if statusAUR {
+			err = pkgs.ReadAUR()
+			if err != nil && !aur.IsNotFound(err) {
+				dieOnError(err)
+			}
+		}
 
 		// We assume that there is nothing to do, and if there is,
 		// then this is set to false.
@@ -166,7 +174,8 @@ var ListCmd = &cobra.Command{
 			listSynchronize = true
 		}
 
-		pkgs, err := Repo.ListMeta(nil, listSynchronize, func(p *repoctl.MetaPackage) string {
+		pkgs, err := Repo.ListMeta(nil, listSynchronize, func(mp pacman.AnyPackage) string {
+			p := mp.(*meta.Package)
 			if listPending && !p.HasFiles() {
 				return fmt.Sprintf("-%s-", p.Name)
 			}
@@ -183,14 +192,14 @@ var ListCmd = &cobra.Command{
 				ap := p.AUR
 				if ap == nil {
 					buf.WriteString(" <?>")
-				} else if pacman.VerCmp(ap.Version, p.Version()) == 1 {
+				} else if pacman.PkgNewer(ap, p) {
 					if listVersioned {
 						buf.WriteString(" -> ")
 						buf.WriteString(ap.Version)
 					} else {
 						buf.WriteString(" <!>")
 					}
-				} else if pacman.VerCmp(ap.Version, p.Version()) == -1 {
+				} else if pacman.PkgOlder(ap, p) {
 					if listVersioned {
 						buf.WriteString(" <- ")
 						buf.WriteString(ap.Version)
