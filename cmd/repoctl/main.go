@@ -82,6 +82,7 @@ var StatusCmd = &cobra.Command{
 		Timer.Step("read repository")
 		pkgs, err := Repo.ReadMeta(nil)
 		dieOnError(err)
+		ignore := Repo.IgnoreMap()
 		if statusAUR {
 			err = pkgs.ReadAUR()
 			if err != nil && !aur.IsNotFound(err) {
@@ -96,7 +97,7 @@ var StatusCmd = &cobra.Command{
 		Timer.Step("output")
 		for _, p := range pkgs {
 			var flags []string
-			if p.HasUpgrade() {
+			if p.HasUpgrade() && !ignore[p.Name] {
 				flags = append(flags, col.Sprintf("@gupgrade(@|%s->%s@g)", p.Version(), p.AUR.Version))
 			}
 			if p.HasUpdate() {
@@ -108,7 +109,7 @@ var StatusCmd = &cobra.Command{
 			if o := p.Obsolete(); len(o) > 0 {
 				flags = append(flags, col.Sprintf("@yobsolete(@|%d@y)", len(o)))
 			}
-			if statusMissing && p.AUR == nil {
+			if statusMissing && p.AUR == nil && !ignore[p.Name] {
 				flags = append(flags, col.Sprint("@y!aur"))
 			}
 
