@@ -16,6 +16,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/goulash/osutil"
+	"github.com/goulash/xdg"
 )
 
 var (
@@ -26,7 +27,7 @@ var (
 	ErrRepoUnset    = errors.New("repository path must be set in configuration")
 )
 
-const configurationPostfix = "repoctl/config.toml"
+const configurationFile = "repoctl/config.toml"
 
 var configurationTmpl = template.Must(template.New("config").Funcs(template.FuncMap{
 	"printt": printt,
@@ -131,11 +132,7 @@ func HomeConf() string {
 	if p := os.Getenv("REPOCTL_CONFIG"); p != "" {
 		return p
 	} else {
-		home, err := xdgConfigHome(configurationPostfix)
-		if err != nil {
-			return ""
-		}
-		return home
+		return xdg.JoinConfig(configurationFile)
 	}
 }
 
@@ -227,59 +224,6 @@ func (c *Configuration) MergeFiles(filepaths []string) error {
 	return nil
 }
 
-// MergeXDG tries to merge configuration files according to the XDG specification.
-// First we merge all found files in XDG_CONFIG_DIRS in reverse order.
-// We finish off with XDG_CONFIG_HOME.
-func (c *Configuration) MergeXDG() error {
-	paths := xdgConfigDirs(configurationPostfix)
-	home, err := xdgConfigHome(configurationPostfix)
-	if err != nil {
-		if !c.Quiet {
-			fmt.Fprintf(os.Stderr, "Warning: %s.\n", err)
-		}
-	} else {
-		paths = append(paths, home)
-	}
-
-	return c.MergeFiles(paths)
-}
-
-// The last configuration is most important.
-func xdgConfigDirs(postfix string) []string {
-	sys := clean(strings.Split(os.Getenv("XDG_CONFIG_DIRS"), ":"))
-	if len(sys) == 0 {
-		return []string{path.Join("/etc/xdg", postfix)}
-	}
-	n := len(sys)
-	paths := make([]string, n)
-	for i := n - 1; i >= 0; i-- {
-		paths[i] = path.Join(sys[n-i-1], postfix)
-	}
-	return paths
-}
-
-func clean(xs []string) []string {
-	var s []string
-	for _, x := range xs {
-		if x != "" {
-			s = append(s, x)
-		}
-	}
-	return s
-}
-
-func xdgConfigHome(postfix string) (string, error) {
-	cfg := os.Getenv("XDG_CONFIG_HOME")
-	if cfg == "" {
-		home := os.Getenv("HOME")
-		if home == "" {
-			return "", ErrUnsetHOME
-		}
-		cfg = path.Join(home, ".config")
-	}
-	return path.Join(cfg, postfix), nil
-}
-
 // MergeAll performs the default configuration loading procedure,
 // and sets c.Unconfigured accordingly.
 func (c *Configuration) MergeAll() error {
@@ -295,7 +239,15 @@ func (c *Configuration) MergeAll() error {
 	if confpath != "" {
 		err = c.MergeFile(confpath)
 	} else {
-		err = c.MergeXDG()
+		err = xdg.MergeConfigFilesR(configurationFile, func(p string) {
+			err := c.MergeFile(p)
+			if err != nil {
+				if !c.Quiet {
+					fmt.Fprintf(os.Stderr, "Warning: %s.\n", err)
+				}
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		c.Unconfigured = true
