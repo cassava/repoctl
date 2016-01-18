@@ -11,7 +11,6 @@ import (
 	"io"
 	"os"
 	"path"
-	"strings"
 	"text/template"
 
 	"github.com/BurntSushi/toml"
@@ -132,7 +131,7 @@ func HomeConf() string {
 	if p := os.Getenv("REPOCTL_CONFIG"); p != "" {
 		return p
 	} else {
-		return xdg.JoinConfig(configurationFile)
+		return xdg.UserConfig(configurationFile)
 	}
 }
 
@@ -239,7 +238,7 @@ func (c *Configuration) MergeAll() error {
 	if confpath != "" {
 		err = c.MergeFile(confpath)
 	} else {
-		err = xdg.MergeConfigFilesR(configurationFile, func(p string) {
+		err = xdg.MergeConfigR(configurationFile, func(p string) error {
 			err := c.MergeFile(p)
 			if err != nil {
 				if !c.Quiet {

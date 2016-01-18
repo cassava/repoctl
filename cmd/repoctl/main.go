@@ -13,11 +13,11 @@ import (
 
 	"github.com/cassava/repoctl"
 	"github.com/cassava/repoctl/conf"
+	"github.com/goulash/color"
 	"github.com/goulash/pacman"
 	"github.com/goulash/pacman/aur"
 	"github.com/goulash/pacman/meta"
 	"github.com/goulash/pacman/pkgutil"
-	"github.com/goulash/pr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/nitro"
 )
@@ -29,21 +29,11 @@ var Repo *repoctl.Repo
 // configuration) of this program, including where the repository is.
 var Conf = conf.Default()
 
-// Timer
+// Timer helps us track how long things take.
 var Timer *nitro.B
 
-// Colorizer is a pr.Colorizer instance, which you are able to customize.
-// In particular, it may be useful to turn off colorization when the
-// terminal does not support it, or when redirecting output:
-//
-//	if colorState == "auto" {
-//		dungeon.Colorizer.SetFile(os.Stdout)
-//	} else if colorState == "always" {
-//		dungeon.Colorizer.SetEnabled(true)
-//	} else if colorState == "never" {
-//		dungeon.Colorizer.SetEnabled(false)
-//	}
-var col = pr.NewColorizer()
+// col lets us print in colors.
+var col = color.New()
 
 // Status ------------------------------------------------------------
 
@@ -441,7 +431,8 @@ func addConfFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().BoolVarP(&Conf.Columnate, "columns", "s", Conf.Columnate, "show items in columns rather than lines")
 	cmd.PersistentFlags().BoolVarP(&Conf.Quiet, "quiet", "q", Conf.Quiet, "show minimal amount of information")
 	cmd.PersistentFlags().BoolVar(&Conf.Debug, "debug", Conf.Debug, "show unnecessary debugging information")
-	cmd.PersistentFlags().StringVar(&Conf.Color, "color", Conf.Color, "when to use color (auto|never|always)")
+	col.Set(Conf.Color) // set default, which will be auto if Conf.Color is empty or invalid
+	cmd.PersistentFlags().Var(col, "color", "when to use color (auto|never|always)")
 }
 
 func addCommands(cmd *cobra.Command) {
@@ -459,14 +450,6 @@ func addCommands(cmd *cobra.Command) {
 
 // Init makes sure that Conf is configured, and sets Repo up.
 func Init() error {
-	if Conf.Color == "auto" {
-		col.SetFile(os.Stdout)
-	} else if Conf.Color == "always" {
-		col.SetEnabled(true)
-	} else if Conf.Color == "never" {
-		col.SetEnabled(false)
-	}
-
 	if Conf.Unconfigured {
 		return errors.New("repoctl is unconfigured, please create configuration")
 	}
