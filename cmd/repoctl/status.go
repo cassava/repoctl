@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	RepoctlCmd.AddCommand(statusCmd)
+	MainCmd.AddCommand(statusCmd)
 
 	statusCmd.Flags().BoolVarP(&statusAUR, "aur", "a", false, "check AUR for upgrades")
 	statusCmd.Flags().BoolVarP(&statusMissing, "missing", "m", false, "highlight packages missing in AUR")

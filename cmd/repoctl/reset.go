@@ -7,7 +7,7 @@ package main
 import "github.com/spf13/cobra"
 
 func init() {
-	RepoctlCmd.AddCommand(resetCmd)
+	MainCmd.AddCommand(resetCmd)
 }
 
 var resetCmd = &cobra.Command{

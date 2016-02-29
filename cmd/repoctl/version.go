@@ -12,7 +12,7 @@ import (
 )
 
 func init() {
-	RepoctlCmd.AddCommand(versionCmd)
+	MainCmd.AddCommand(versionCmd)
 }
 
 type programInfo struct {

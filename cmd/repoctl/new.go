@@ -18,7 +18,7 @@ import (
 )
 
 func init() {
-	RepoctlCmd.AddCommand(newCmd)
+	MainCmd.AddCommand(newCmd)
 }
 
 var (

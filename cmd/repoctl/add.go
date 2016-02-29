@@ -9,7 +9,7 @@ import "github.com/spf13/cobra"
 var movePackages bool
 
 func init() {
-	RepoctlCmd.AddCommand(addCmd)
+	MainCmd.AddCommand(addCmd)
 
 	addCmd.Flags().BoolVarP(&movePackages, "move", "m", false, "move packages into repository")
 }

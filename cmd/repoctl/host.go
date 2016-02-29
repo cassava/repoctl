@@ -14,7 +14,7 @@ import (
 var listen string
 
 func init() {
-	RepoctlCmd.AddCommand(hostCmd)
+	MainCmd.AddCommand(hostCmd)
 
 	hostCmd.Flags().StringVar(&listen, "listen", ":8080", "which address and port to listen on")
 }

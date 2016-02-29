@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	RepoctlCmd.AddCommand(downCmd)
+	MainCmd.AddCommand(downCmd)
 
 	downCmd.Flags().StringVarP(&downDest, "dest", "d", "", "output directory for tarballs")
 	downCmd.Flags().BoolVarP(&downClobber, "clobber", "l", false, "delete conflicting files and folders")

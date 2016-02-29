@@ -34,7 +34,7 @@ var (
 )
 
 func init() {
-	RepoctlCmd.AddCommand(listCmd)
+	MainCmd.AddCommand(listCmd)
 
 	listCmd.Flags().BoolVarP(&listVersioned, "versioned", "v", false, "show package versions along with name")
 	listCmd.Flags().BoolVarP(&listPending, "pending", "p", false, "mark pending changes to the database")

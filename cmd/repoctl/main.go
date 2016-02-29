@@ -24,7 +24,7 @@ var Conf = conf.Default()
 // col lets us print in colors.
 var col = color.New()
 
-var RepoctlCmd = &cobra.Command{
+var MainCmd = &cobra.Command{
 	Use:   "repoctl",
 	Short: "manage local Pacman repositories",
 	Long: `Repoctl helps manage local Pacman repositories, and acts in particular as
@@ -73,7 +73,7 @@ func main() {
 	//
 	// TODO: Maybe in the future we will make it possible to specify the
 	// configuration file via the command line; right now it is not a priority.
-	addConfFlags(RepoctlCmd)
+	addConfFlags(MainCmd)
 
-	RepoctlCmd.Execute()
+	MainCmd.Execute()
 }
