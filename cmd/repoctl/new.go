@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Ben Morgan. All rights reserved.
+// Copyright (c) 2016, Ben Morgan. All rights reserved.
 // Use of this source code is governed by an MIT license
 // that can be found in the LICENSE file.
 
@@ -17,6 +17,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func init() {
+	RepoctlCmd.AddCommand(newCmd)
+}
+
 var (
 	ErrInvalidConfPath = errors.New("invalid configuration path")
 )
@@ -26,7 +30,7 @@ var (
 // creation happen with repository creation?
 //
 // Also, profile creation?
-var NewCmd = &cobra.Command{
+var newCmd = &cobra.Command{
 	Use:   "new [command] [flags]",
 	Short: "create a new repository or configuration file",
 	Long: `Create a new repository or configuration file.
@@ -46,6 +50,9 @@ var NewCmd = &cobra.Command{
 
   See the respective commands for more information.
 `,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		// Don't try to load repoctl configuration
+	},
 }
 
 var (
@@ -53,12 +60,12 @@ var (
 )
 
 func init() {
-	NewCmd.PersistentFlags().StringVarP(&nConf, "config", "c", conf.HomeConf(), "path to configuration file")
+	newCmd.PersistentFlags().StringVarP(&nConf, "config", "c", conf.HomeConf(), "path to configuration file")
 }
 
 func init() {
-	NewCmd.AddCommand(newRepoCmd)
-	NewCmd.AddCommand(newConfigCmd)
+	newCmd.AddCommand(newRepoCmd)
+	newCmd.AddCommand(newConfigCmd)
 }
 
 var newRepoCmd = &cobra.Command{
@@ -114,12 +121,12 @@ var newConfigCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		err := NewConfig(nConf, args[0])
+		err := newConfig(nConf, args[0])
 		dieOnError(err)
 	},
 }
 
-func NewConfig(confpath, repo string) error {
+func newConfig(confpath, repo string) error {
 	if confpath == "" {
 		return ErrInvalidConfPath
 	}
