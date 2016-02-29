@@ -9,10 +9,14 @@ library to keep the main program small.
 
 This release changes the AUR lookup functionality to use AUR4 instead of AUR.
 When https://aur4.archlinux.org is the same as https://aur.archlinux.org, we
-will revert this change.
+will revert this change (done).
 
 With Go 1.5 allowing vendoring, we stop using gb (sorry).
 
+  - New: repoctl learned command `host` for temporarily serving the repository
+    on the network on a specified address and port. Something like darkhttpd may
+    be better suited if the repository is to be hosted for longer periods of
+    time.
   - New: repoctl learned command `down` with several flags. See the help
     message for more information on this. In short, we can download and extract
     tarballs for updated packages, all packages, and specified packages.
