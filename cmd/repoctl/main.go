@@ -90,9 +90,11 @@ func main() {
 
 	err = MainCmd.Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-		if e, ok := err.(*UsageError); ok {
-			e.Usage()
+		if MainCmd.SilenceErrors {
+			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+			if e, ok := err.(*UsageError); ok {
+				e.Usage()
+			}
 		}
 		os.Exit(1)
 	}
