@@ -7,10 +7,11 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"os"
+	"sort"
 
 	"github.com/goulash/pacman"
 	"github.com/goulash/pacman/meta"
+	"github.com/goulash/pr"
 	"github.com/spf13/cobra"
 )
 
@@ -51,10 +52,9 @@ var listCmd = &cobra.Command{
 	Long: `List packages that belong to the managed repository.
 
   Note that they don't need to be registered with the database.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) > 0 {
-			cmd.Usage()
-			os.Exit(1)
+			return &UsageError{"list", "list command does not take any arguments", cmd.Usage}
 		}
 
 		if listAllOptions {
@@ -105,9 +105,31 @@ var listCmd = &cobra.Command{
 
 			return buf.String()
 		})
-		dieOnError(err)
+		if err != nil {
+			return err
+		}
 
 		// Print packages to stdout
 		printSet(pkgs, "", Conf.Columnate)
+		return nil
 	},
+}
+
+// printSet prints a set of items and optionally a header.
+func printSet(list []string, h string, cols bool) {
+	sort.Strings(list)
+	if h != "" {
+		fmt.Printf("\n%s\n", h)
+	}
+	if cols {
+		pr.PrintFlex(list)
+	} else if h != "" {
+		for _, j := range list {
+			fmt.Println(" ", j)
+		}
+	} else {
+		for _, j := range list {
+			fmt.Println(j)
+		}
+	}
 }

@@ -22,8 +22,7 @@ var removeCmd = &cobra.Command{
   backup directory.
 `,
 	Example: `  repoctl rm fairsplit`,
-	Run: func(cmd *cobra.Command, args []string) {
-		err := Repo.Remove(nil, args...)
-		dieOnError(err)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return Repo.Remove(nil, args...)
 	},
 }

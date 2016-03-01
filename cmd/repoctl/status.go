@@ -6,7 +6,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/goulash/pacman/aur"
 	"github.com/spf13/cobra"
@@ -37,21 +36,22 @@ var statusCmd = &cobra.Command{
     - packages unavailable in AUR
     - packages with updates in AUR
 `,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) > 0 {
-			cmd.Usage()
-			os.Exit(1)
+			return &UsageError{"status", "status command takes no arguments", cmd.Usage}
 		}
 
 		col.Printf("On repo @{!y}%s\n\n", Repo.Name())
 
 		pkgs, err := Repo.ReadMeta(nil)
-		dieOnError(err)
+		if err != nil {
+			return err
+		}
 		ignore := Repo.IgnoreMap()
 		if statusAUR {
 			err = pkgs.ReadAUR()
 			if err != nil && !aur.IsNotFound(err) {
-				dieOnError(err)
+				return err
 			}
 		}
 
@@ -90,5 +90,6 @@ var statusCmd = &cobra.Command{
 		if nothing {
 			fmt.Println("Everything up-to-date.")
 		}
+		return nil
 	},
 }

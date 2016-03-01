@@ -23,8 +23,7 @@ var updateCmd = &cobra.Command{
   updates.
 `,
 	Example: `  repoctl update fairsplit`,
-	Run: func(cmd *cobra.Command, args []string) {
-		err := Repo.Update(nil, args...)
-		dieOnError(err)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return Repo.Update(nil, args...)
 	},
 }

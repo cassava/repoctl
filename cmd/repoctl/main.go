@@ -5,6 +5,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -24,6 +25,16 @@ var Conf = conf.Default()
 // col lets us print in colors.
 var col = color.New()
 
+type UsageError struct {
+	Cmd   string
+	Msg   string
+	Usage func() error
+}
+
+func (e *UsageError) Error() string {
+	return fmt.Sprintf("%s", e.Msg)
+}
+
 var MainCmd = &cobra.Command{
 	Use:   "repoctl",
 	Short: "manage local Pacman repositories",
@@ -38,13 +49,15 @@ Note that in all of these commands, the following terminology is used:
     pkgname: is the name of the package, e.g. pacman
     pkgfile: is the path to a package file, e.g. pacman-3.5.3-i686.pkg.tar.xz
 `,
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// This function can be overriden if it's not necessary for a command.
+		cmd.SilenceErrors = true
+		cmd.SilenceUsage = true
 		if Conf.Unconfigured {
-			fmt.Fprintln(os.Stderr, "Error: repoctl is unconfigured, please create configuration.")
-			os.Exit(1)
+			return errors.New("repoctl is unconfigured, please create configuration")
 		}
 		Repo = Conf.Repo()
+		return nil
 	},
 }
 
@@ -65,7 +78,7 @@ func main() {
 		// We didn't manage to load any configuration, which means that repoctl
 		// is unconfigured. There are some commands that work nonetheless, so
 		// we can't stop now -- which is why we don't os.Exit(1).
-		fmt.Fprintf(os.Stderr, "Error: %s.\n", err)
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 	}
 
 	// Arguments from the command line override the configuration file,
@@ -75,5 +88,12 @@ func main() {
 	// configuration file via the command line; right now it is not a priority.
 	addConfFlags(MainCmd)
 
-	MainCmd.Execute()
+	err = MainCmd.Execute()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		if e, ok := err.(*UsageError); ok {
+			e.Usage()
+		}
+		os.Exit(1)
+	}
 }

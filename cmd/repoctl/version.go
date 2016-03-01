@@ -48,12 +48,10 @@ var progInfo = programInfo{
 }
 
 var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "show version and date information",
-	Long:  "Show the official version number of repoctl, as well as the release date.",
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		// Don't try to load repoctl configuration
-	},
+	Use:               "version",
+	Short:             "show version and date information",
+	Long:              "Show the official version number of repoctl, as well as the release date.",
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error { return nil },
 	Run: func(cmd *cobra.Command, args []string) {
 		template.Must(template.New("version").Parse(versionTmpl)).Execute(os.Stdout, progInfo)
 	},

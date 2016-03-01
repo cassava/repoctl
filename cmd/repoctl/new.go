@@ -50,9 +50,7 @@ var newCmd = &cobra.Command{
 
   See the respective commands for more information.
 `,
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		// Don't try to load repoctl configuration
-	},
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error { return nil },
 }
 
 var (
@@ -75,8 +73,8 @@ var newRepoCmd = &cobra.Command{
 
   FIXME: This function still needs to be implemented.
 `,
-	Run: func(cmd *cobra.Command, args []string) {
-		panic("not implemented")
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return errors.New("not implemented")
 	},
 }
 
@@ -115,14 +113,12 @@ var newConfigCmd = &cobra.Command{
   repoctl new config /srv/abs/atlas
   repoctl new config -c /etc/xdg/repoctl/config.toml /srv/abs/atlas
   REPOCTL_CONFIG=/etc/repoctl.conf repoctl new config /srv/abs/atlas`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			cmd.Usage()
-			os.Exit(1)
+			return &UsageError{"new config", "new config command takes only one argument", cmd.Usage}
 		}
 
-		err := newConfig(nConf, args[0])
-		dieOnError(err)
+		return newConfig(nConf, args[0])
 	},
 }
 

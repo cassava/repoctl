@@ -18,8 +18,7 @@ var resetCmd = &cobra.Command{
   Essentially, this command deletes the repository database and
   recreates it by running the update command.
 `,
-	Run: func(cmd *cobra.Command, args []string) {
-		err := Repo.Reset(nil)
-		dieOnError(err)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return Repo.Reset(nil)
 	},
 }

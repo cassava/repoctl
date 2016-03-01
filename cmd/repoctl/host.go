@@ -8,15 +8,16 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/goulash/osutil"
 	"github.com/spf13/cobra"
 )
 
-var listen string
+var hostListen string
 
 func init() {
 	MainCmd.AddCommand(hostCmd)
 
-	hostCmd.Flags().StringVar(&listen, "listen", ":8080", "which address and port to listen on")
+	hostCmd.Flags().StringVar(&hostListen, "listen", ":8080", "which address and port to listen on")
 }
 
 var hostCmd = &cobra.Command{
@@ -29,9 +30,11 @@ var hostCmd = &cobra.Command{
   address and port, and is only meant for temporary use. If you want
   to run something like this for longer, consider using darkhttpd.
 `,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Serving %q on %s...\n", Repo.Directory, listen)
-		err := http.ListenAndServe(listen, http.FileServer(http.Dir(Repo.Directory)))
-		dieOnError(err)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if ok, _ := osutil.DirExists(Repo.Directory); !ok {
+			return fmt.Errorf("repo directory %q does not exist", Repo.Directory)
+		}
+		fmt.Printf("Serving %s on %s...\n", Repo.Directory, hostListen)
+		return http.ListenAndServe(hostListen, http.FileServer(http.Dir(Repo.Directory)))
 	},
 }

@@ -33,13 +33,11 @@ var addCmd = &cobra.Command{
         changed. See the update command for the old behavior.
 `,
 	Example: `  repoctl add -m ./fairsplit-1.0.pkg.tar.gz`,
-	Run: func(cmd *cobra.Command, args []string) {
-		var err error
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if movePackages {
-			err = Repo.Move(nil, args...)
+			return Repo.Move(nil, args...)
 		} else {
-			err = Repo.Copy(nil, args...)
+			return Repo.Copy(nil, args...)
 		}
-		dieOnError(err)
 	},
 }

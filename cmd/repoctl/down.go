@@ -39,17 +39,17 @@ By default, tarballs are deleted after being extracted, and are placed
 in the current directory.
 `,
 	Example: `  repoctl down -u`,
-	Run: func(cmd *cobra.Command, args []string) {
-		var err error
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if downAll {
 			names, err := Repo.ReadNames(nil)
-			dieOnError(err)
-			err = Repo.Download(nil, downDest, downExtract, downClobber, pkgutil.Map(names, pkgutil.PkgName)...)
+			if err != nil {
+				return err
+			}
+			return Repo.Download(nil, downDest, downExtract, downClobber, pkgutil.Map(names, pkgutil.PkgName)...)
 		} else if downUpgrades {
-			err = Repo.DownloadUpgrades(nil, downDest, downExtract, downClobber, args...)
+			return Repo.DownloadUpgrades(nil, downDest, downExtract, downClobber, args...)
 		} else {
-			err = Repo.Download(nil, downDest, downExtract, downClobber, args...)
+			return Repo.Download(nil, downDest, downExtract, downClobber, args...)
 		}
-		dieOnError(err)
 	},
 }
