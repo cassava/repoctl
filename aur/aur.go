@@ -76,9 +76,42 @@ func IsNotFound(err error) bool {
 	return ok
 }
 
+// response is what the AUR api returns:
+//
+//  {
+//      "version":5,
+//      "type":"multiinfo",
+//      "resultcount":1,
+//      "results": [
+//          {
+//              "ID":279276,
+//              "Name":"telegram-desktop",
+//              "PackageBaseID":95783,
+//              "PackageBase":"telegram-desktop",
+//              "Version":"0.9.28-1",
+//              "Description":"Official desktop version of Telegram messaging app.",
+//              "URL":"https:\/\/desktop.telegram.org\/",
+//              "NumVotes":43,
+//              "Popularity":8.94582,
+//              "OutOfDate":null,
+//              "Maintainer":"eduardosm",
+//              "FirstSubmitted":1436478182,
+//              "LastModified":1456515415,
+//              "URLPath":"\/cgit\/aur.git\/snapshot\/telegram-desktop.tar.gz",
+//              "Depends":["ffmpeg","icu","jasper","libexif","libmng","libwebp",
+//                         "libxkbcommon-x11","libinput","libproxy","mtdev",
+//                         "openal","libva","desktop-file-utils","gtk-update-icon-cache"],
+//              "MakeDepends":["git","patch","libunity","libappindicator-gtk2"]
+//              "License":["GPL3"]
+//              "Keywords":[]
+//          }
+//      ]
+//  }
 type response struct {
-	ResultCount int
-	Results     []*Package
+	Version     int        `json:"version"`
+	Type        string     `json:"type"`
+	ResultCount int        `json:"resultcount"`
+	Results     []*Package `json:"results"`
 }
 
 // Package is the information that we can retrieve about a package that is
@@ -113,14 +146,16 @@ type Package struct {
 	Description    string
 	URL            string
 	NumVotes       int
+	Popularity     float64
 	OutOfDate      int
 	Maintainer     string
 	FirstSubmitted uint64
 	LastModified   uint64
-	License        string
 	URLPath        string
-	CategoryID     int
-	Popularity     float64
+	Depends        []string
+	MakeDepends    []string
+	License        []string
+	Keywords       []string
 }
 
 // PacmanPkg converts an aur.Package into a pacman.Package.
@@ -136,7 +171,11 @@ func (p *Package) Pkg() *pacman.Package {
 		Version:     p.Version,
 		Description: p.Description,
 		URL:         p.URL,
-		License:     p.License,
+		// TODO: License is string, but p.License is []string
+		// Has there been a format change?
+		//License:     p.License,
+		Depends:     p.Depends,
+		MakeDepends: p.MakeDepends,
 	}
 }
 func (p *Package) PkgName() string    { return p.Name }
@@ -148,7 +187,7 @@ func (p *Package) DownloadURL() string {
 }
 
 const (
-	apiURL = "https://aur.archlinux.org/rpc.php?type=multiinfo&arg[]=%s"
+	apiURL = "https://aur.archlinux.org/rpc.php?v=5&type=multiinfo&arg[]=%s"
 	apiArg = "&arg[]="
 )
 
