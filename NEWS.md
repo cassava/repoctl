@@ -1,7 +1,7 @@
 Repoctl Releases
 ================
 
-## Version 0.14 (-)
+## Version 0.14 (26 April 2016)
 This release rewrites repoctl to use the cobra library from spf13. Several
 new commands are defined: `down` and `reset`, as well as two commands being
 redefined `update` and `add`. Also, the core functionality is put into a
@@ -10,6 +10,8 @@ library to keep the main program small.
 This release changes the AUR lookup functionality to use AUR4 instead of AUR.
 When https://aur4.archlinux.org is the same as https://aur.archlinux.org, we
 will revert this change (done).
+
+Sorry this release has taken a while, that was not to annoy you. ;-)
 
 With Go 1.5 allowing vendoring, we stop using gb (sorry).
 
