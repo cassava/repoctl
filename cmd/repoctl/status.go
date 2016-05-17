@@ -33,8 +33,8 @@ var statusCmd = &cobra.Command{
     - obsolete package files that can be deleted (or backed up)
     - database entries that should be deleted (no package files)
     - database entries that can be updated/added (new package files)
-    - packages unavailable in AUR
-    - packages with updates in AUR
+    - packages unavailable in AUR (only with -m)
+    - packages with updates in AUR (only with -a)
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) > 0 {
@@ -48,7 +48,7 @@ var statusCmd = &cobra.Command{
 			return err
 		}
 		ignore := Repo.IgnoreMap()
-		if statusAUR {
+		if statusAUR || statusMissing {
 			err = pkgs.ReadAUR()
 			if err != nil && !aur.IsNotFound(err) {
 				return err

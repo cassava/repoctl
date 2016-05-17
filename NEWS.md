@@ -1,9 +1,12 @@
 Repoctl Releases
 ================
 
-## Version 0.15 (~)
+## Version 0.15 (17 May 2016)
+This release fixes a small bug with the status command. Otherwise nothing in
+functionality has changed.
 
   - Update: documentation of list command improved.
+  - Bugfix: status -m should read AUR
 
 ## Version 0.14 (26 April 2016)
 This release rewrites repoctl to use the cobra library from spf13. Several
