@@ -1,6 +1,10 @@
 Repoctl Releases
 ================
 
+## Version 0.15 (~)
+
+  - Update: documentation of list command improved.
+
 ## Version 0.14 (26 April 2016)
 This release rewrites repoctl to use the cobra library from spf13. Several
 new commands are defined: `down` and `reset`, as well as two commands being
