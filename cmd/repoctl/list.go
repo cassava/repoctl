@@ -51,7 +51,22 @@ var listCmd = &cobra.Command{
 	Short:   "list packages that belong to the managed repository",
 	Long: `List packages that belong to the managed repository.
 
-  Note that they don't need to be registered with the database.`,
+  All packages that are in the managed repository are listed,
+  whether or not they are registered with the database.
+  If you want to filter packages, see the filter command.
+  
+  When marking entries, the following symbols are used:
+
+    -package-           package will be deleted
+    package <?>         no AUR information could be found
+    package <!>         local package is out-of-date
+    package <*>         local package is newer than AUR package
+    package (n)         there are n extra versions of package
+
+  When versions are shown, local version is adjacent to package name:
+
+    package 1.0 -> 2.0  local package is out-of-date
+    package 2.0 <- 1.0  local package is newer than AUR package`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) > 0 {
 			return &UsageError{"list", "list command does not take any arguments", cmd.Usage}
@@ -82,20 +97,20 @@ var listCmd = &cobra.Command{
 			if listSynchronize {
 				ap := p.AUR
 				if ap == nil {
-					buf.WriteString(" <?>")
+					buf.WriteString(" <?>") // no aur info
 				} else if pacman.PkgNewer(ap, p) {
 					if listVersioned {
-						buf.WriteString(" -> ")
+						buf.WriteString(" -> ") // new version
 						buf.WriteString(ap.Version)
 					} else {
-						buf.WriteString(" <!>")
+						buf.WriteString(" <!>") // local version older than aur
 					}
 				} else if pacman.PkgOlder(ap, p) {
 					if listVersioned {
-						buf.WriteString(" <- ")
+						buf.WriteString(" <- ") // old version
 						buf.WriteString(ap.Version)
 					} else {
-						buf.WriteString(" <*>")
+						buf.WriteString(" <*>") // local version newer than aur
 					}
 				}
 			}
