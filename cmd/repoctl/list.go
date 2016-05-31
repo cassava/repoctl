@@ -7,6 +7,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"regexp"
 	"sort"
 
 	"github.com/goulash/pacman"
@@ -32,6 +33,8 @@ var (
 	listSynchronize bool
 	// Same as all of the above.
 	listAllOptions bool
+
+	searchPOSIX bool
 )
 
 func init() {
@@ -43,10 +46,11 @@ func init() {
 	listCmd.Flags().BoolVarP(&listInstalled, "installed", "l", false, "mark packages that are locally installed")
 	listCmd.Flags().BoolVarP(&listSynchronize, "outdated", "o", false, "mark packages that are newer in AUR")
 	listCmd.Flags().BoolVarP(&listAllOptions, "all", "a", false, "all information; same as -vpdlo")
+	listCmd.Flags().BoolVar(&searchPOSIX, "posix", false, "use POSIX-style regular expressions")
 }
 
 var listCmd = &cobra.Command{
-	Use:     "list",
+	Use:     "list [regex]",
 	Aliases: []string{"ls"},
 	Short:   "list packages that belong to the managed repository",
 	Long: `List packages that belong to the managed repository.
@@ -66,10 +70,13 @@ var listCmd = &cobra.Command{
   When versions are shown, local version is adjacent to package name:
 
     package 1.0 -> 2.0  local package is out-of-date
-    package 2.0 <- 1.0  local package is newer than AUR package`,
+    package 2.0 <- 1.0  local package is newer than AUR package
+
+  If a valid regular expression is supplied, only packages that match
+  the expression will be listed.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) > 0 {
-			return &UsageError{"list", "list command does not take any arguments", cmd.Usage}
+		if len(args) > 1 {
+			return &UsageError{"list", "list command takes at most one argument", cmd.Usage}
 		}
 
 		if listAllOptions {
@@ -80,8 +87,25 @@ var listCmd = &cobra.Command{
 			listSynchronize = true
 		}
 
+		var regex *regexp.Regexp
+		if len(args) == 1 {
+			var err error
+			if searchPOSIX {
+				regex, err = regexp.Compile(args[0])
+			} else {
+				regex, err = regexp.CompilePOSIX(args[0])
+			}
+			if err != nil {
+				return err
+			}
+		}
+
 		pkgs, err := Repo.ListMeta(nil, listSynchronize, func(mp pacman.AnyPackage) string {
 			p := mp.(*meta.Package)
+			if regex != nil && !regex.MatchString(p.PkgName()) {
+				return ""
+			}
+
 			if listPending && !p.HasFiles() {
 				return fmt.Sprintf("-%s-", p.Name)
 			}
