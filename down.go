@@ -9,7 +9,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path"
 	"strings"
 
 	"github.com/goulash/errs"
@@ -103,14 +102,6 @@ func DownloadExtractAUR(ap *aur.Package, destdir string, clobber bool) error {
 	gr, err := gzip.NewReader(response.Body)
 	if err != nil {
 		return err
-	}
-
-	// FIXME: This is a workaround for a bug somewhere in the chain of
-	// command starting from UntarFiles which extracts the header in
-	// the tar file.
-	paxf := path.Join(destdir, "pax_global_header")
-	if ex, _ := osutil.FileExists(paxf); !ex {
-		defer os.Remove(paxf)
 	}
 
 	return tar.UntarFiles(gr, destdir)
