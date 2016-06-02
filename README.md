@@ -26,6 +26,14 @@ important of which are:
 There are more features than this, have a look at the command line help for
 more examples.
 
+### Installation
+Either install `repoctl` from AUR using your preferred method, or if you have
+`go` already installed, then:
+
+```
+go get github.com/cassava/repoctl
+```
+
 ### Usage
 Once you have created a configuration file (just run `repoctl new` and it will
 create one for you; you may need to edit the config afterwards though). Once you
