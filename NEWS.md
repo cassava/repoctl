@@ -1,12 +1,15 @@
 Repoctl Releases
 ================
 
-## Version 0.15 (17 May 2016)
-This release fixes a small bug with the status command. Otherwise nothing in
-functionality has changed.
+## Version 0.15 (2 June 2016)
+This release adds regex filtering support to the `list` command. A small
+bug in the `status` command has been fixed, as well as with the pacman library.
+Nothing major however.
 
+  - New: `list` command learned to filter with regex argument
   - Update: documentation of list command improved.
-  - Bugfix: status -m should read AUR
+  - Bugfix: status -m does not read AUR
+  - Bugfix: reading repository without database failing
 
 ## Version 0.14 (26 April 2016)
 This release rewrites repoctl to use the cobra library from spf13. Several
