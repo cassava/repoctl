@@ -6,10 +6,11 @@ package loggo
 import (
 	"fmt"
 	"io"
-	"os"
-	"sync"
 	"time"
 )
+
+// defaultWriterName is the name of the writer default writer.
+const defaultWriterName = "default"
 
 // Writer is implemented by any recipient of log messages.
 type Writer interface {
@@ -22,116 +23,37 @@ type Writer interface {
 	Write(level Level, name, filename string, line int, timestamp time.Time, message string)
 }
 
-type registeredWriter struct {
+// MinLevelWriter is a writer that exposes its minimum log level.
+type MinLevelWriter interface {
+	Writer
+	HasMinLevel
+}
+
+type minLevelWriter struct {
 	writer Writer
 	level  Level
 }
 
-// defaultName is the name of a writer that is registered
-// by default that writes to stderr.
-const defaultName = "default"
-
-var (
-	writerMutex sync.Mutex
-	writers     = map[string]*registeredWriter{
-		defaultName: &registeredWriter{
-			writer: NewSimpleWriter(os.Stderr, &DefaultFormatter{}),
-			level:  TRACE,
-		},
+// NewMinLevelWriter returns a MinLevelWriter that wraps the given
+// writer with the provided min log level.
+func NewMinLevelWriter(writer Writer, minLevel Level) MinLevelWriter {
+	return &minLevelWriter{
+		writer: writer,
+		level:  minLevel,
 	}
-	globalMinLevel = TRACE
-)
-
-// ResetWriters puts the list of writers back into the initial state.
-func ResetWriters() {
-	writerMutex.Lock()
-	defer writerMutex.Unlock()
-	writers = map[string]*registeredWriter{
-		"default": &registeredWriter{
-			writer: NewSimpleWriter(os.Stderr, &DefaultFormatter{}),
-			level:  TRACE,
-		},
-	}
-	findMinLevel()
 }
 
-// ReplaceDefaultWriter is a convenience method that does the equivalent of
-// RemoveWriter and then RegisterWriter with the name "default".  The previous
-// default writer, if any is returned.
-func ReplaceDefaultWriter(writer Writer) (Writer, error) {
-	if writer == nil {
-		return nil, fmt.Errorf("Writer cannot be nil")
-	}
-	writerMutex.Lock()
-	defer writerMutex.Unlock()
-	reg, found := writers[defaultName]
-	if !found {
-		return nil, fmt.Errorf("there is no %q writer", defaultName)
-	}
-	oldWriter := reg.writer
-	reg.writer = writer
-	return oldWriter, nil
-
+// MinLogLevel returns the writer's log level.
+func (w minLevelWriter) MinLogLevel() Level {
+	return w.level
 }
 
-// RegisterWriter adds the writer to the list of writers that get notified
-// when logging.  When registering, the caller specifies the minimum logging
-// level that will be written, and a name for the writer.  If there is already
-// a registered writer with that name, an error is returned.
-func RegisterWriter(name string, writer Writer, minLevel Level) error {
-	if writer == nil {
-		return fmt.Errorf("Writer cannot be nil")
+// Write writes the log record.
+func (w minLevelWriter) Write(level Level, module, filename string, line int, timestamp time.Time, message string) {
+	if !IsLevelEnabled(&w, level) {
+		return
 	}
-	writerMutex.Lock()
-	defer writerMutex.Unlock()
-	if _, found := writers[name]; found {
-		return fmt.Errorf("there is already a Writer registered with the name %q", name)
-	}
-	writers[name] = &registeredWriter{writer: writer, level: minLevel}
-	findMinLevel()
-	return nil
-}
-
-// RemoveWriter removes the Writer identified by 'name' and returns it.
-// If the Writer is not found, an error is returned.
-func RemoveWriter(name string) (Writer, Level, error) {
-	writerMutex.Lock()
-	defer writerMutex.Unlock()
-	registered, found := writers[name]
-	if !found {
-		return nil, UNSPECIFIED, fmt.Errorf("Writer %q is not registered", name)
-	}
-	delete(writers, name)
-	findMinLevel()
-	return registered.writer, registered.level, nil
-}
-
-func findMinLevel() {
-	// We assume the lock is already held
-	minLevel := CRITICAL
-	for _, registered := range writers {
-		if registered.level < minLevel {
-			minLevel = registered.level
-		}
-	}
-	globalMinLevel.set(minLevel)
-}
-
-// WillWrite returns whether there are any writers registered
-// at or above the given severity level. If it returns
-// false, a log message at the given level will be discarded.
-func WillWrite(level Level) bool {
-	return level >= globalMinLevel.get()
-}
-
-func writeToWriters(level Level, module, filename string, line int, timestamp time.Time, message string) {
-	writerMutex.Lock()
-	defer writerMutex.Unlock()
-	for _, registered := range writers {
-		if level >= registered.level {
-			registered.writer.Write(level, module, filename, line, timestamp, message)
-		}
-	}
+	w.writer.Write(level, module, filename, line, timestamp, message)
 }
 
 type simpleWriter struct {

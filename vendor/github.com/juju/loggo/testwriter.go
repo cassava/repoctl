@@ -9,6 +9,9 @@ import (
 	"time"
 )
 
+// TODO(ericsnow) Everything in this file can go away once everything
+// is switched over to use loggotest.
+
 // TestLogValues represents a single logging call.
 type TestLogValues struct {
 	Level     Level

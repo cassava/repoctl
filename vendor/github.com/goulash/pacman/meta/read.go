@@ -55,6 +55,9 @@ func ReadRepo(h errs.Handler, dirpath string) (Packages, error) {
 // Read reads meta packages in dirpath and using the database at dpbath.
 // If dbpath == "", then no database is read. This function does not
 // recurse.
+//
+// If no database can be read, the function still continues reading
+// packages from the directory.
 func Read(h errs.Handler, dirpath, dbpath string) (Packages, error) {
 	errs.Init(&h)
 
@@ -64,12 +67,15 @@ func Read(h errs.Handler, dirpath, dbpath string) (Packages, error) {
 	if dbpath != "" {
 		dbpkgs, err := pacman.ReadDatabase(dbpath)
 		if err != nil {
-			return nil, err
-		}
-		for _, p := range dbpkgs {
-			// This is the same as unlinking the database
-			// and then running Update.
-			mps[p.Name] = &Package{Name: p.Name, Database: p}
+			// Ignore this error, it's probably just a missing database.
+			// It doesn't affect the results anyway.
+			h(err)
+		} else {
+			for _, p := range dbpkgs {
+				// This is the same as unlinking the database
+				// and then running Update.
+				mps[p.Name] = &Package{Name: p.Name, Database: p}
+			}
 		}
 	}
 
