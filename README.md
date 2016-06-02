@@ -27,11 +27,11 @@ There are more features than this, have a look at the command line help for
 more examples.
 
 ### Installation
-Either install `repoctl` from AUR using your preferred method, or if you have
-`go` already installed, then:
+Either install `repoctl` from [AUR](https://aur.archlinux.org/packages/repoctl) using your preferred method, or if you have
+`go` installed, then you can install or update with:
 
 ```
-go get github.com/cassava/repoctl
+go get -u github.com/cassava/repoctl
 ```
 
 ### Usage
