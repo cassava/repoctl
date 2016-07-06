@@ -72,6 +72,8 @@ The source code of {{.Name}} is licensed under the {{.License}} license.
     color       = {{printt .Conf.Color}}
     quiet       = {{printt .Conf.Quiet}}
     debug       = {{printt .Conf.Debug}}
+    pre_action  = {{printt .Conf.PreAction}}
+    post_action = {{printt .Conf.PostAction}}
 `))
 
 // printt returns a TOML representation of the value.

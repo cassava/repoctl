@@ -75,6 +75,14 @@ color = {{printt .Color}}
 # quiet specifies whether repoctl should print more information or less.
 # I prefer to know what happens, but if you don't like it, you can change it.
 quiet = {{printt .Quiet}}
+
+# pre_action is a command that should be executed before doing anything
+# with the repository, like reading or modifying it. Useful for mounting
+# a remote filesystem.
+#pre_action = {{printt .PreAction}}
+
+# post_action is a command that should be executed before exiting.
+#post_action = {{printt .PostAction}}
 `))
 
 // Configuration doubles as configuration file format and the global configuration set.
@@ -113,6 +121,9 @@ type Configuration struct {
 	Debug bool `toml:"-"`
 	// When Unconfigured is true, the program should fail.
 	Unconfigured bool `toml:"unconfigured"`
+
+	PreAction  string `toml:"pre_action"`
+	PostAction string `toml:"post_action"`
 }
 
 // Default acts as the default configuraton.

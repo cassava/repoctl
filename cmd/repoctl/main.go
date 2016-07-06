@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 
 	"github.com/cassava/repoctl"
 	"github.com/cassava/repoctl/conf"
@@ -57,6 +58,18 @@ Note that in all of these commands, the following terminology is used:
 			return errors.New("repoctl is unconfigured, please create configuration")
 		}
 		Repo = Conf.Repo()
+
+		if Conf.PreAction != "" {
+			return exec.Command("sh", "-c", Conf.PreAction).Run()
+		}
+		return nil
+	},
+	PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+		// If PersistentPreRunE was overridden, then don't execute this step.
+		// We can determine this by looking to see if Repo was set.
+		if Conf.PostAction != "" && Repo != nil {
+			return exec.Command("sh", "-c", Conf.PostAction).Run()
+		}
 		return nil
 	},
 }
