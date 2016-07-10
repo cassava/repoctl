@@ -1,6 +1,19 @@
 Repoctl Releases
 ================
 
+## Version 0.16 (10 July 2016)
+This release adds action hooks to the configuration, and shows the configuration
+when the `version` command is used.
+
+  - New: `pre_action` and `post_action` string options have been added to the
+    configuration. These commands are run in a local shell. They can be used
+    to mount a remote filesystem where the database is located and dismount
+    it afterwards.
+  - Change: `version` command prints the values of the active configuration.
+  - Change: `new config` command doesn't try to be smart about database
+    extension anymore. It's just confusing.
+  - Update: removing unnecessary error messages during repository creation.
+
 ## Version 0.15 (2 June 2016)
 This release adds regex filtering support to the `list` command. A small
 bug in the `status` command has been fixed, as well as with the pacman library.

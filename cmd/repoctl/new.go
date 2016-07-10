@@ -8,10 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
-	"strings"
+	"path/filepath"
 
-	"github.com/cassava/repoctl"
 	"github.com/cassava/repoctl/conf"
 	"github.com/goulash/osutil"
 	"github.com/spf13/cobra"
@@ -41,7 +39,7 @@ var newCmd = &cobra.Command{
 
   If you already have a repository, creating a new config is sufficient:
 
-    repoctl new config /path/to/repository
+    repoctl new config /path/to/repository/database.db.tar.gz
 
   If you do not have a repository, you can create both repository and
   configuration file in one step:
@@ -86,7 +84,6 @@ var newConfigCmd = &cobra.Command{
   The minimal configuration of repoctl is read from a configuration
   file, which tells repoctl where your repositories are. The absolute
   path to the repository database must be given as the only argument.
-  If the suffix "db.tar.gz" is omitted, it is appended automatically.
 
   There are several places that repoctl reads its configuration from.
   If $REPOCTL_CONFIG is set, then only this path is loaded. Otherwise,
@@ -110,9 +107,8 @@ var newConfigCmd = &cobra.Command{
   existing files. You have been warned.
 `,
 	Example: `  repoctl new config /srv/abs/atlas.db.tar.gz
-  repoctl new config /srv/abs/atlas
-  repoctl new config -c /etc/xdg/repoctl/config.toml /srv/abs/atlas
-  REPOCTL_CONFIG=/etc/repoctl.conf repoctl new config /srv/abs/atlas`,
+  repoctl new config -c /etc/xdg/repoctl/config.toml /srv/abs/atlas.db.tar.gz
+  REPOCTL_CONFIG=/etc/repoctl.conf repoctl new config /srv/abs/atlas.db.tar.gz`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return &UsageError{"new config", "new config command takes only one argument", cmd.Usage}
@@ -127,14 +123,15 @@ func newConfig(confpath, repo string) error {
 		return ErrInvalidConfPath
 	}
 
-	if !path.IsAbs(repo) {
-		return repoctl.ErrRepoDirRelative
-	}
-	if !strings.HasSuffix(repo, ".db.tar.gz") {
-		repo += ".db.tar.gz"
+	if !filepath.IsAbs(repo) {
+		var err error
+		repo, err = filepath.Abs(repo)
+		if err != nil {
+			return err
+		}
 	}
 
-	dir := path.Dir(confpath)
+	dir := filepath.Dir(confpath)
 	if ex, _ := osutil.DirExists(dir); !ex {
 		if Conf.Debug {
 			fmt.Println("Creating directory structure", dir, "...")
@@ -145,7 +142,7 @@ func newConfig(confpath, repo string) error {
 		}
 	}
 
-	fmt.Println("writing new configuration file at", confpath, "...")
+	fmt.Println("Writing new configuration file at", confpath, "...")
 	Conf.Repository = repo
 	Conf.Unconfigured = false
 	return Conf.WriteFile(confpath)

@@ -264,7 +264,7 @@ func (c *Configuration) MergeAll() error {
 		return err
 	} else if c.Repository == "" {
 		c.Unconfigured = true
-		return ErrRepoUnset
+		return nil
 	} else if err = c.Init(); err != nil {
 		c.Unconfigured = true
 		return err

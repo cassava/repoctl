@@ -56,6 +56,8 @@ Note that in all of these commands, the following terminology is used:
 		cmd.SilenceUsage = true
 		if Conf.Unconfigured {
 			return errors.New("repoctl is unconfigured, please create configuration")
+		} else if Conf.Repository == "" {
+			return conf.ErrRepoUnset
 		}
 		Repo = Conf.Repo()
 
@@ -103,11 +105,9 @@ func main() {
 
 	err = MainCmd.Execute()
 	if err != nil {
-		if MainCmd.SilenceErrors {
-			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-			if e, ok := err.(*UsageError); ok {
-				e.Usage()
-			}
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		if e, ok := err.(*UsageError); ok {
+			e.Usage()
 		}
 		os.Exit(1)
 	}
