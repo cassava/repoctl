@@ -30,11 +30,11 @@ var statusCmd = &cobra.Command{
 
   In particular, the following is shown:
 
-    - obsolete package files that can be deleted (or backed up)
-    - database entries that should be deleted (no package files)
-    - database entries that can be updated/added (new package files)
-    - packages unavailable in AUR (only with -m)
-    - packages with updates in AUR (only with -a)
+    "updated":  database entries that can be updated/added (new package files)
+    "obsolete": package files that can be deleted (or backed up)
+    "removal":  database entries that should be deleted (no package files)
+    "upgrade":  packages with updates in AUR (only with -a)
+    "!aur":     packages unavailable in AUR (only with -m)
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) > 0 {
@@ -65,7 +65,7 @@ var statusCmd = &cobra.Command{
 				flags = append(flags, col.Sprintf("@gupgrade(@|%s->%s@g)", p.Version(), p.AUR.Version))
 			}
 			if p.HasUpdate() {
-				flags = append(flags, col.Sprintf("@gupdate(@|%s->%s@g)", p.VersionRegistered(), p.Version()))
+				flags = append(flags, col.Sprintf("@gupdated(@|%s->%s@g)", p.VersionRegistered(), p.Version()))
 			}
 			if !p.HasFiles() {
 				flags = append(flags, col.Sprint("@rremoval"))
