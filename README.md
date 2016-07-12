@@ -1,12 +1,12 @@
 repoctl
 ========
 
-**repoctl** is a program to help you manage your local repository of Pacman
+The **repoctl** program helps you manage your local repository of Pacman
 packages (as found on Arch Linux and derivatives). It is especially useful when
 used together with tools such as [cower](https://github.com/falconindy/cower),
 that help you find and download AUR packages.
 
-The program *repoctl* is distributed under the MIT License (see `LICENSE`).
+The repoctl program is distributed under the [MIT License](LICENSE).
 
 ### Installation
 
