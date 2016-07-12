@@ -7,6 +7,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 
 	"github.com/cassava/repoctl/conf"
 	"github.com/goulash/errs"
@@ -34,27 +35,48 @@ func main() {
 		os.Exit(1)
 	}
 
+	// This is all probably a bad idea.
+	if conf.PreAction != "" {
+		err := exec.Command("sh", "-c", conf.PreAction).Run()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Error: post action %q failed.\n", conf.PreAction)
+		}
+	}
+	var postAction = func() {
+		if conf.PostAction != "" {
+			err := exec.Command("sh", "-c", conf.PostAction).Run()
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "Error: post action %q failed.\n", conf.PostAction)
+			}
+		}
+	}
+
 	switch args[0] {
 	case "fs":
 		names, err := repo.ListDirectory(nil, nil)
+		postAction()
 		dieOnError(err)
 		printList(names)
 	case "db":
 		names, err := repo.ListDatabase(nil)
+		postAction()
 		dieOnError(err)
 		printList(names)
 	case "files", "filesystem":
 		filenames, err := repo.ListDirectory(nil, pkgutil.PkgFilename)
+		postAction()
 		dieOnError(err)
 		printList(filenames)
 	case "database":
 		filenames, err := repo.ListDatabase(pkgutil.PkgFilename)
+		postAction()
 		dieOnError(err)
 		printList(filenames)
 	default:
+		postAction()
 		fmt.Println("Usage: repols <fs|db|files|database>")
-		os.Exit(1)
 	}
+
 }
 
 func printList(ls []string) {
@@ -65,7 +87,7 @@ func printList(ls []string) {
 
 func dieOnError(err error) {
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "error:", err)
+		fmt.Fprintln(os.Stderr, "Error:", err)
 		os.Exit(1)
 	}
 }
