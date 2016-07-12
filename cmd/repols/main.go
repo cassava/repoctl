@@ -41,14 +41,14 @@ func main() {
 	}
 
 	// This is all probably a bad idea.
-	if conf.PreAction != "" {
+	if conf.PreAction != "" && conf.ActionOnCompletion {
 		err := exec.Command("sh", "-c", conf.PreAction).Run()
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Error: post action %q failed.\n", conf.PreAction)
 		}
 	}
 	var postAction = func() {
-		if conf.PostAction != "" {
+		if conf.PostAction != "" && conf.ActionOnCompletion {
 			err := exec.Command("sh", "-c", conf.PostAction).Run()
 			if err != nil {
 				fmt.Fprintln(os.Stderr, "Error: post action %q failed.\n", conf.PostAction)

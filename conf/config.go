@@ -84,6 +84,10 @@ quiet = {{printt .Quiet}}
 
 # post_action is a command that should be executed before exiting.
 #post_action = {{printt .PostAction}}
+
+# action_on_completion determines whether repols should perform the
+# actions or not. By default, this is disallowed.
+#action_on_completion = {{printt .ActionOnCompletion}}
 `))
 
 // Configuration doubles as configuration file format and the global configuration set.
@@ -123,8 +127,14 @@ type Configuration struct {
 	// When Unconfigured is true, the program should fail.
 	Unconfigured bool `toml:"unconfigured"`
 
+	// PreAction and PostAction are run every time that the database or
+	// filesystem is accessed.
 	PreAction  string `toml:"pre_action"`
 	PostAction string `toml:"post_action"`
+
+	// ActionOnCompletion determines whether the action should be
+	// run in completion scripts or programs, such as repols.
+	ActionOnCompletion bool `toml:"action_on_completion"`
 }
 
 // Default acts as the default configuraton.
