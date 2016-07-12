@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/cassava/repoctl/conf"
 	"github.com/goulash/osutil"
@@ -84,6 +85,12 @@ var newConfigCmd = &cobra.Command{
   The minimal configuration of repoctl is read from a configuration
   file, which tells repoctl where your repositories are. The absolute
   path to the repository database must be given as the only argument.
+  The database file specified must have an extension of one of:
+
+    - ".db.tar"             - ".db.tar.gz"
+    - ".db.tar.xz"          - ".db.tar.bz2"
+
+  The recommended database extension to use is ".db.tar.gz".
 
   There are several places that repoctl reads its configuration from.
   If $REPOCTL_CONFIG is set, then only this path is loaded. Otherwise,
@@ -129,6 +136,18 @@ func newConfig(confpath, repo string) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	var extOk bool
+	for _, ext := range []string{".db.tar", ".db.tar.gz", ".db.tar.xz", ".db.tar.bz2"} {
+		if strings.HasSuffix(repo, ext) {
+			extOk = true
+			break
+		}
+	}
+	if !extOk {
+		fmt.Fprintf(os.Stderr, "Warning: specified repository database %q has an unexpected extension.\n", repo)
+		fmt.Fprintf(os.Stderr, "Should be one of \".db.tar\", \".db.tar.gz\", \".db.tar.xz\", or \"db.tar.bz2\".\n")
 	}
 
 	dir := filepath.Dir(confpath)

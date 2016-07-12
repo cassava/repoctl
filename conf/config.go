@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"strings"
 	"text/template"
 
 	"github.com/BurntSushi/toml"
@@ -185,6 +186,20 @@ func (c *Configuration) Init() error {
 	}
 	c.database = path.Base(c.Repository)
 	c.repodir = path.Dir(c.Repository)
+
+	// Perform a check on database extension.
+	var extOk bool
+	for _, ext := range []string{".db.tar", ".db.tar.gz", ".db.tar.xz", ".db.tar.bz2"} {
+		if strings.HasSuffix(c.database, ext) {
+			extOk = true
+			break
+		}
+	}
+	if !extOk {
+		fmt.Fprintf(os.Stderr, "Warning: specified repository database %q has an unexpected extension.\n", c.database)
+		fmt.Fprintf(os.Stderr, "Should be one of \".db.tar\", \".db.tar.gz\", \".db.tar.xz\", or \"db.tar.bz2\".\n")
+	}
+
 	return nil
 }
 
@@ -265,12 +280,13 @@ func (c *Configuration) MergeAll() error {
 	} else if c.Repository == "" {
 		c.Unconfigured = true
 		return nil
-	} else if err = c.Init(); err != nil {
-		c.Unconfigured = true
-		return err
 	}
 
-	return c.Init()
+	err = c.Init()
+	if err != nil {
+		c.Unconfigured = true
+	}
+	return err
 }
 
 // printt returns a TOML representation of the value.
