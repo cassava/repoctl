@@ -132,7 +132,7 @@ post_action = "fusermount -u ~/localmnt"
 The configuration file is normally located at `~/.config/repoctl/config.toml`,
 and is in the [TOML](https://github.com/toml-lang/toml) format:
 
-```
+```toml
 # repoctl configuration
 
 # repo is the full path to the repository that will be managed by repoctl.
@@ -142,16 +142,18 @@ repo = "/srv/abs/graphite.db.tar.gz"
 
 # add_params is the set of parameters that will be passed to repo-add
 # when it is called. Specify one time for each parameter.
-#add_params = []
+add_params = [
+  "-v"
+]
 
 # rm_params is the set of parameters that will be passed to repo-remove
 # when it is called. Specify one time for each parameter.
-#rm_params = []
+rm_params = []
 
 # ignore_aur is a set of package names that are ignored in conjunction
 # with AUR related tasks, such as determining if there is an update or not.
 ignore_aur = [
-    "colemak-bm",
+    "dropbox",
 ]
 
 # backup specifies whether package files should be backed up or deleted.
@@ -159,7 +161,7 @@ ignore_aur = [
 backup = false
 
 # backup_dir specifies which directory backups are stored in.
-# If a relative path is given, then 
+# If a relative path is given, then it is relative to the repository.
 backup_dir = "backup/"
 
 # interactive specifies that repoctl should ask before doing anything
@@ -177,9 +179,9 @@ quiet = false
 # pre_action is a command that should be executed before doing anything
 # with the repository, like reading or modifying it. Useful for mounting
 # a remote filesystem.
-#pre_action = ""
+pre_action = "sshfs host:www/pkgs.me ~/mnt"
 
 # post_action is a command that should be executed before exiting.
-#post_action = ""
+post_action = "fusermount -u ~/mnt"
 ```
 
