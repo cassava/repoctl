@@ -23,6 +23,11 @@ func main() {
 		os.Exit(1)
 	}
 	repo := conf.Repo()
+	if repo == nil {
+		fmt.Fprintf(os.Stderr, "Error: repository is unconfigured.")
+		os.Exit(1)
+	}
+
 	// TODO: Does this work? Because we're still testing:
 	errs.Default = errs.Print(os.Stderr)
 	repo.Debug = os.Stderr
