@@ -1,7 +1,7 @@
 Repoctl Releases
 ================
 
-## Version 0.16 (10 July 2016)
+## Version 0.16 (22 November 2016)
 This release adds action hooks to the configuration, and shows the configuration
 when the `version` command is used.
 
