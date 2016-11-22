@@ -14,12 +14,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/goulash/osutil"
+	"github.com/goulash/archive"
 )
 
 // ReadDatabase reads all the packages from a database file.
 func ReadDatabase(dbpath string) (Packages, error) {
-	dr, err := osutil.NewDecompressor(dbpath)
+	dr, err := archive.NewDecompressor(dbpath)
 	if err != nil {
 		return nil, err
 	}
@@ -35,10 +35,10 @@ func ReadDatabase(dbpath string) (Packages, error) {
 			return nil, fmt.Errorf("unexpected file '%s'", hdr.Name)
 		}
 
-		pr := osutil.DirReader(tr, &hdr)
+		pr := archive.DirReader(tr, &hdr)
 		pkg, err := readDatabasePkgInfo(pr, dbpath)
 		if err != nil {
-			if err == osutil.EOA {
+			if err == archive.EOA {
 				break
 			}
 			return nil, err

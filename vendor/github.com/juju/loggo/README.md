@@ -45,6 +45,38 @@ logger, but have it emit all logging levels you need to do the following.
 
 
 
+## Constants
+``` go
+const DefaultWriterName = "default"
+```
+DefaultWriterName is the name of the default writer for
+a Context.
+
+
+## Variables
+``` go
+var (
+    // SeverityColor defines the colors for the levels output by the ColorWriter.
+    SeverityColor = map[Level]*ansiterm.Context{
+        TRACE:   ansiterm.Foreground(ansiterm.Default),
+        DEBUG:   ansiterm.Foreground(ansiterm.Green),
+        INFO:    ansiterm.Foreground(ansiterm.BrightBlue),
+        WARNING: ansiterm.Foreground(ansiterm.Yellow),
+        ERROR:   ansiterm.Foreground(ansiterm.BrightRed),
+        CRITICAL: &ansiterm.Context{
+            Foreground: ansiterm.White,
+            Background: ansiterm.Red,
+        },
+    }
+    // LocationColor defines the colors for the location output by the ColorWriter.
+    LocationColor = ansiterm.Foreground(ansiterm.BrightBlue)
+)
+```
+``` go
+var TimeFormat = initTimeFormat()
+```
+TimeFormat is the time format used for the default writer.
+This can be set with the environment variable LOGGO_TIME_FORMAT.
 
 
 ## func ConfigureLoggers
@@ -64,27 +96,80 @@ An example specification:
 	`<root>=ERROR; foo.bar=WARNING`
 
 
+## func DefaultFormatter
+``` go
+func DefaultFormatter(entry Entry) string
+```
+DefaultFormatter returns the parameters separated by spaces except for
+filename and line which are separated by a colon.  The timestamp is shown
+to second resolution in UTC. For example:
+
+
+	2016-07-02 15:04:05
+
+
 ## func LoggerInfo
 ``` go
 func LoggerInfo() string
 ```
-LoggerInfo returns information about the configured loggers and their logging
-levels.  The information is returned in the format expected by
-ConfigureModules. Loggers with UNSPECIFIED level will not
+LoggerInfo returns information about the configured loggers and their
+logging levels. The information is returned in the format expected by
+ConfigureLoggers. Loggers with UNSPECIFIED level will not
 be included.
 
 
-## func ParseConfigurationString
+## func RegisterWriter
 ``` go
-func ParseConfigurationString(specification string) (map[string]Level, error)
+func RegisterWriter(name string, writer Writer) error
 ```
-ParseConfigurationString parses a logger configuration string into a map of
-logger names and their associated log level. This method is provided to
-allow other programs to pre-validate a configuration string rather than
-just calling ConfigureLoggers.
+RegisterWriter adds the writer to the list of writers in the DefaultContext
+that get notified when logging.  If there is already a registered writer
+with that name, an error is returned.
 
-Loggers are colon- or semicolon-separated; each module is specified as
-<modulename>=<level>.  White space outside of module names and levels is
+
+## func ResetLogging
+``` go
+func ResetLogging()
+```
+ResetLogging iterates through the known modules and sets the levels of all
+to UNSPECIFIED, except for <root> which is set to WARNING. The call also
+removes all writers in the DefaultContext and puts the original default
+writer back as the only writer.
+
+
+## func ResetWriters
+``` go
+func ResetWriters()
+```
+ResetWriters puts the list of writers back into the initial state.
+
+
+
+## type Config
+``` go
+type Config map[string]Level
+```
+Config is a mapping of logger module names to logging severity levels.
+
+
+
+
+
+
+
+
+
+### func ParseConfigString
+``` go
+func ParseConfigString(specification string) (Config, error)
+```
+ParseConfigString parses a logger configuration string into a map of logger
+names and their associated log level. This method is provided to allow
+other programs to pre-validate a configuration string rather than just
+calling ConfigureLoggers.
+
+Logging modules are colon- or semicolon-separated; each module is specified
+as <modulename>=<level>.  White space outside of module names and levels is
 ignored.  The root module is specified with the name "<root>".
 
 As a special case, a log level may be specified on its own.
@@ -97,75 +182,150 @@ An example specification:
 	`<root>=ERROR; foo.bar=WARNING`
 
 
-## func RegisterWriter
+
+
+### func (Config) String
 ``` go
-func RegisterWriter(name string, writer Writer, minLevel Level) error
+func (c Config) String() string
 ```
-RegisterWriter adds the writer to the list of writers that get notified
-when logging.  When registering, the caller specifies the minimum logging
-level that will be written, and a name for the writer.  If there is already
-a registered writer with that name, an error is returned.
+String returns a logger configuration string that may be parsed
+using ParseConfigurationString.
 
 
-## func ResetLoggers
+
+## type Context
 ``` go
-func ResetLoggers()
-```
-ResetLogging iterates through the known modules and sets the levels of all
-to UNSPECIFIED, except for <root> which is set to WARNING.
-
-
-## func ResetWriters
-``` go
-func ResetWriters()
-```
-ResetWriters puts the list of writers back into the initial state.
-
-
-## func WillWrite
-``` go
-func WillWrite(level Level) bool
-```
-WillWrite returns whether there are any writers registered
-at or above the given severity level. If it returns
-false, a log message at the given level will be discarded.
-
-
-
-## type DefaultFormatter
-``` go
-type DefaultFormatter struct{}
-```
-DefaultFormatter provides a simple concatenation of all the components.
-
-
-
-
-
-
-
-
-
-
-
-### func (\*DefaultFormatter) Format
-``` go
-func (*DefaultFormatter) Format(level Level, module, filename string, line int, timestamp time.Time, message string) string
-```
-Format returns the parameters separated by spaces except for filename and
-line which are separated by a colon.  The timestamp is shown to second
-resolution in UTC.
-
-
-
-## type Formatter
-``` go
-type Formatter interface {
-    Format(level Level, module, filename string, line int, timestamp time.Time, message string) string
+type Context struct {
+    // contains filtered or unexported fields
 }
 ```
-Formatter defines the single method Format, which takes the logging
-information, and converts it to a string.
+Context produces loggers for a hierarchy of modules. The context holds
+a collection of hierarchical loggers and their writers.
+
+
+
+
+
+
+
+
+
+### func DefaultContext
+``` go
+func DefaultContext() *Context
+```
+DefaultContext returns the global default logging context.
+
+
+### func NewContext
+``` go
+func NewContext(rootLevel Level) *Context
+```
+NewLoggers returns a new Context with no writers set.
+If the root level is UNSPECIFIED, WARNING is used.
+
+
+
+
+### func (\*Context) AddWriter
+``` go
+func (c *Context) AddWriter(name string, writer Writer) error
+```
+AddWriter adds a writer to the list to be called for each logging call.
+The name cannot be empty, and the writer cannot be nil. If an existing
+writer exists with the specified name, an error is returned.
+
+
+
+### func (\*Context) ApplyConfig
+``` go
+func (c *Context) ApplyConfig(config Config)
+```
+ApplyConfig configures the logging modules according to the provided config.
+
+
+
+### func (\*Context) CompleteConfig
+``` go
+func (c *Context) CompleteConfig() Config
+```
+CompleteConfig returns all the loggers and their defined levels,
+even if that level is UNSPECIFIED.
+
+
+
+### func (\*Context) Config
+``` go
+func (c *Context) Config() Config
+```
+Config returns the current configuration of the Loggers. Loggers
+with UNSPECIFIED level will not be included.
+
+
+
+### func (\*Context) GetLogger
+``` go
+func (c *Context) GetLogger(name string) Logger
+```
+GetLogger returns a Logger for the given module name, creating it and
+its parents if necessary.
+
+
+
+### func (\*Context) RemoveWriter
+``` go
+func (c *Context) RemoveWriter(name string) (Writer, error)
+```
+RemoveWriter remotes the specified writer. If a writer is not found with
+the specified name an error is returned. The writer that was removed is also
+returned.
+
+
+
+### func (\*Context) ReplaceWriter
+``` go
+func (c *Context) ReplaceWriter(name string, writer Writer) (Writer, error)
+```
+ReplaceWriter is a convenience method that does the equivalent of RemoveWriter
+followed by AddWriter with the same name. The replaced writer is returned.
+
+
+
+### func (\*Context) ResetLoggerLevels
+``` go
+func (c *Context) ResetLoggerLevels()
+```
+ResetLoggerLevels iterates through the known logging modules and sets the
+levels of all to UNSPECIFIED, except for <root> which is set to WARNING.
+
+
+
+### func (\*Context) ResetWriters
+``` go
+func (c *Context) ResetWriters()
+```
+ResetWriters is generally only used in testing and removes all the writers.
+
+
+
+## type Entry
+``` go
+type Entry struct {
+    // Level is the severity of the log message.
+    Level Level
+    // Module is the dotted module name from the logger.
+    Module string
+    // Filename is the full path the file that logged the message.
+    Filename string
+    // Line is the line number of the Filename.
+    Line int
+    // Timestamp is when the log message was created
+    Timestamp time.Time
+    // Message is the formatted string from teh log call.
+    Message string
+}
+```
+Entry represents a single log message.
 
 
 
@@ -215,10 +375,21 @@ Level. It returns the level and whether it was valid or not.
 
 
 
+### func (Level) Short
+``` go
+func (level Level) Short() string
+```
+Short returns a five character string to use in
+aligned logging output.
+
+
+
 ### func (Level) String
 ``` go
 func (level Level) String() string
 ```
+String implements Stringer.
+
 
 
 ## type Logger
@@ -273,7 +444,7 @@ Debugf logs the printf-formatted message at debug level.
 ``` go
 func (logger Logger) EffectiveLogLevel() Level
 ```
-EffectiveLogLevel returns the effective log level of
+EffectiveLogLevel returns the effective min log level of
 the receiver - that is, messages with a lesser severity
 level will be discarded.
 
@@ -371,7 +542,7 @@ are less than their registered minimum severity level.
 ``` go
 func (logger Logger) LogLevel() Level
 ```
-LogLevel returns the configured log level of the logger.
+LogLevel returns the configured min log level of the logger.
 
 
 
@@ -422,29 +593,6 @@ Warningf logs the printf-formatted message at warning level.
 
 
 
-## type TestLogValues
-``` go
-type TestLogValues struct {
-    Level     Level
-    Module    string
-    Filename  string
-    Line      int
-    Timestamp time.Time
-    Message   string
-}
-```
-TestLogValues represents a single logging call.
-
-
-
-
-
-
-
-
-
-
-
 ## type TestWriter
 ``` go
 type TestWriter struct {
@@ -474,7 +622,7 @@ Clear removes any saved log messages.
 
 ### func (\*TestWriter) Log
 ``` go
-func (writer *TestWriter) Log() []TestLogValues
+func (writer *TestWriter) Log() []Entry
 ```
 Log returns a copy of the current logged values.
 
@@ -482,7 +630,7 @@ Log returns a copy of the current logged values.
 
 ### func (\*TestWriter) Write
 ``` go
-func (writer *TestWriter) Write(level Level, module, filename string, line int, timestamp time.Time, message string)
+func (writer *TestWriter) Write(entry Entry)
 ```
 Write saves the params as members in the TestLogValues struct appended to the Log array.
 
@@ -491,13 +639,12 @@ Write saves the params as members in the TestLogValues struct appended to the Lo
 ## type Writer
 ``` go
 type Writer interface {
-    // Write writes a message to the Writer with the given
-    // level and module name. The filename and line hold
-    // the file name and line number of the code that is
-    // generating the log message; the time stamp holds
-    // the time the log message was generated, and
-    // message holds the log message itself.
-    Write(level Level, name, filename string, line int, timestamp time.Time, message string)
+    // Write writes a message to the Writer with the given level and module
+    // name. The filename and line hold the file name and line number of the
+    // code that is generating the log message; the time stamp holds the time
+    // the log message was generated, and message holds the log message
+    // itself.
+    Write(entry Entry)
 }
 ```
 Writer is implemented by any recipient of log messages.
@@ -510,18 +657,34 @@ Writer is implemented by any recipient of log messages.
 
 
 
+### func NewColorWriter
+``` go
+func NewColorWriter(writer io.Writer) Writer
+```
+NewColorWriter will write out colored severity levels if the writer is
+outputting to a terminal.
+
+
+### func NewMinimumLevelWriter
+``` go
+func NewMinimumLevelWriter(writer Writer, minLevel Level) Writer
+```
+NewMinLevelWriter returns a Writer that will only pass on the Write calls
+to the provided writer if the log level is at or above the specified
+minimum level.
+
+
 ### func NewSimpleWriter
 ``` go
-func NewSimpleWriter(writer io.Writer, formatter Formatter) Writer
+func NewSimpleWriter(writer io.Writer, formatter func(entry Entry) string) Writer
 ```
-NewSimpleWriter returns a new writer that writes
-log messages to the given io.Writer formatting the
-messages with the given formatter.
+NewSimpleWriter returns a new writer that writes log messages to the given
+io.Writer formatting the messages with the given formatter.
 
 
 ### func RemoveWriter
 ``` go
-func RemoveWriter(name string) (Writer, Level, error)
+func RemoveWriter(name string) (Writer, error)
 ```
 RemoveWriter removes the Writer identified by 'name' and returns it.
 If the Writer is not found, an error is returned.

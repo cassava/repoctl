@@ -1,7 +1,7 @@
 default: check
 
 check:
-	go test && go test -compiler gccgo
+	go test
 
 docs:
 	godoc2md github.com/juju/loggo > README.md

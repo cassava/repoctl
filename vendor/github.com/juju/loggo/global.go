@@ -3,79 +3,67 @@
 
 package loggo
 
-import (
-	"os"
+var (
+	defaultContext = newDefaultContxt()
 )
 
-func defaultWriters() map[string]MinLevelWriter {
-	return map[string]MinLevelWriter{
-		defaultWriterName: NewMinLevelWriter(
-			NewSimpleWriter(os.Stderr, &DefaultFormatter{}),
-			TRACE,
-		),
-	}
+func newDefaultContxt() *Context {
+	ctx := NewContext(WARNING)
+	ctx.AddWriter(DefaultWriterName, defaultWriter())
+	return ctx
 }
 
-var (
-	globalWriters = NewWriters(defaultWriters())
-	globalLoggers = NewLoggers(WARNING, globalWriters)
-)
+// DefaultContext returns the global default logging context.
+func DefaultContext() *Context {
+	return defaultContext
+}
 
 // LoggerInfo returns information about the configured loggers and their
 // logging levels. The information is returned in the format expected by
 // ConfigureLoggers. Loggers with UNSPECIFIED level will not
 // be included.
 func LoggerInfo() string {
-	return globalLoggers.Config().String()
+	return defaultContext.Config().String()
 }
 
 // GetLogger returns a Logger for the given module name,
 // creating it and its parents if necessary.
 func GetLogger(name string) Logger {
-	return globalLoggers.Get(name)
+	return defaultContext.GetLogger(name)
 }
 
 // ResetLogging iterates through the known modules and sets the levels of all
-// to UNSPECIFIED, except for <root> which is set to WARNING.
-func ResetLoggers() {
-	globalLoggers.resetLevels()
+// to UNSPECIFIED, except for <root> which is set to WARNING. The call also
+// removes all writers in the DefaultContext and puts the original default
+// writer back as the only writer.
+func ResetLogging() {
+	defaultContext.ResetLoggerLevels()
+	defaultContext.ResetWriters()
 }
 
 // ResetWriters puts the list of writers back into the initial state.
 func ResetWriters() {
-	globalWriters.reset(defaultWriters())
+	defaultContext.ResetWriters()
 }
 
 // ReplaceDefaultWriter is a convenience method that does the equivalent of
 // RemoveWriter and then RegisterWriter with the name "default".  The previous
 // default writer, if any is returned.
 func ReplaceDefaultWriter(writer Writer) (Writer, error) {
-	return globalWriters.replace(defaultWriterName, writer)
+	return defaultContext.ReplaceWriter(DefaultWriterName, writer)
 }
 
-// RegisterWriter adds the writer to the list of writers that get notified
-// when logging.  When registering, the caller specifies the minimum logging
-// level that will be written, and a name for the writer.  If there is already
-// a registered writer with that name, an error is returned.
-func RegisterWriter(name string, writer Writer, minLevel Level) error {
-	return globalWriters.AddWithLevel(name, writer, minLevel)
+// RegisterWriter adds the writer to the list of writers in the DefaultContext
+// that get notified when logging.  If there is already a registered writer
+// with that name, an error is returned.
+func RegisterWriter(name string, writer Writer) error {
+	return defaultContext.AddWriter(name, writer)
 }
 
 // RemoveWriter removes the Writer identified by 'name' and returns it.
 // If the Writer is not found, an error is returned.
-func RemoveWriter(name string) (Writer, Level, error) {
-	registered, err := globalWriters.remove(name)
-	if err != nil {
-		return nil, UNSPECIFIED, err
-	}
-	return registered, registered.MinLogLevel(), nil
-}
-
-// WillWrite returns whether there are any writers registered
-// at or above the given severity level. If it returns
-// false, a log message at the given level will be discarded.
-func WillWrite(level Level) bool {
-	return IsLevelEnabled(globalWriters, level)
+func RemoveWriter(name string) (Writer, error) {
+	return defaultContext.RemoveWriter(name)
 }
 
 // ConfigureLoggers configures loggers according to the given string
@@ -88,10 +76,10 @@ func WillWrite(level Level) bool {
 // An example specification:
 //	`<root>=ERROR; foo.bar=WARNING`
 func ConfigureLoggers(specification string) error {
-	configs, err := ParseLoggersConfig(specification)
+	config, err := ParseConfigString(specification)
 	if err != nil {
 		return err
 	}
-	globalLoggers.ApplyConfig(configs)
+	defaultContext.ApplyConfig(config)
 	return nil
 }

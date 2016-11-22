@@ -5,25 +5,34 @@ package loggo
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"time"
 )
 
-// Formatter defines the single method Format, which takes the logging
-// information, and converts it to a string.
-type Formatter interface {
-	Format(level Level, module, filename string, line int, timestamp time.Time, message string) string
+// DefaultFormatter returns the parameters separated by spaces except for
+// filename and line which are separated by a colon.  The timestamp is shown
+// to second resolution in UTC. For example:
+//   2016-07-02 15:04:05
+func DefaultFormatter(entry Entry) string {
+	ts := entry.Timestamp.In(time.UTC).Format("2006-01-02 15:04:05")
+	// Just get the basename from the filename
+	filename := filepath.Base(entry.Filename)
+	return fmt.Sprintf("%s %s %s %s:%d %s", ts, entry.Level, entry.Module, filename, entry.Line, entry.Message)
 }
 
-// DefaultFormatter provides a simple concatenation of all the components.
-type DefaultFormatter struct{}
+// TimeFormat is the time format used for the default writer.
+// This can be set with the environment variable LOGGO_TIME_FORMAT.
+var TimeFormat = initTimeFormat()
 
-// Format returns the parameters separated by spaces except for filename and
-// line which are separated by a colon.  The timestamp is shown to second
-// resolution in UTC.
-func (*DefaultFormatter) Format(level Level, module, filename string, line int, timestamp time.Time, message string) string {
-	ts := timestamp.In(time.UTC).Format("2006-01-02 15:04:05")
-	// Just get the basename from the filename
-	filename = filepath.Base(filename)
-	return fmt.Sprintf("%s %s %s %s:%d %s", ts, level, module, filename, line, message)
+func initTimeFormat() string {
+	format := os.Getenv("LOGGO_TIME_FORMAT")
+	if format != "" {
+		return format
+	}
+	return "15:04:05"
+}
+
+func formatTime(ts time.Time) string {
+	return ts.Format(TimeFormat)
 }

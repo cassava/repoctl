@@ -13,13 +13,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/goulash/osutil"
+	"github.com/goulash/archive"
 )
 
 // Read reads the package information from a pacman package
 // and returns it in the Package datatype.
 func Read(filename string) (*Package, error) {
-	bs, err := osutil.ReadFileFromArchive(filename, ".PKGINFO")
+	bs, err := archive.ReadFileFromArchive(filename, ".PKGINFO")
 	if err != nil {
 		return nil, err
 	}

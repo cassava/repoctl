@@ -26,6 +26,8 @@
 //      return nil
 //  }
 //
+// Additionally, the MultipleErrors type is provided to wrap multiple
+// errors, in case no error handler is desired.
 package errs
 
 import (
