@@ -1,6 +1,10 @@
 Repoctl Releases
 ================
 
+## Version 0.17 (24 October 2017)
+This release fixes a bug that occurs when trying to update a repository that
+has more than 63 packages.
+
 ## Version 0.16 (22 November 2016)
 This release adds action hooks to the configuration, and shows the configuration
 when the `version` command is used.
