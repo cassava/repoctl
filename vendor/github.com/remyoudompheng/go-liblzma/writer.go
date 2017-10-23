@@ -8,6 +8,12 @@ package xz
 #cgo LDFLAGS: -llzma
 #include <lzma.h>
 #include <stdlib.h>
+int go_lzma_code(
+    lzma_stream* handle,
+    void* next_in,
+    void* next_out,
+    lzma_action action
+);
 */
 import "C"
 import (
@@ -26,7 +32,6 @@ var _ io.WriteCloser = &Compressor{}
 
 func allocLzmaStream(t *C.lzma_stream) *C.lzma_stream {
 	return (*C.lzma_stream)(C.calloc(1, (C.size_t)(unsafe.Sizeof(*t))))
-
 }
 
 func NewWriter(w io.Writer, preset Preset) (*Compressor, error) {
@@ -63,12 +68,14 @@ func NewWriterCustom(w io.Writer, preset Preset, check Checksum, bufsize int) (*
 
 func (enc *Compressor) Write(in []byte) (n int, er error) {
 	for n < len(in) {
-		enc.handle.next_in = (*C.uint8_t)(unsafe.Pointer(&in[n]))
 		enc.handle.avail_in = C.size_t(len(in) - n)
-		enc.handle.next_out = (*C.uint8_t)(unsafe.Pointer(&enc.buffer[0]))
 		enc.handle.avail_out = C.size_t(len(enc.buffer))
-
-		ret := C.lzma_code(enc.handle, C.lzma_action(Run))
+		ret := C.go_lzma_code(
+			enc.handle,
+			unsafe.Pointer(&in[n]),
+			unsafe.Pointer(&enc.buffer[0]),
+			C.lzma_action(Run),
+		)
 		switch Errno(ret) {
 		case Ok:
 			break
@@ -92,9 +99,16 @@ func (enc *Compressor) Flush() error {
 	enc.handle.avail_in = 0
 
 	for {
-		enc.handle.next_out = (*C.uint8_t)(unsafe.Pointer(&enc.buffer[0]))
 		enc.handle.avail_out = C.size_t(len(enc.buffer))
-		ret := C.lzma_code(enc.handle, C.lzma_action(Finish))
+		// If Flush is invoked after Write produced an error, avail_in and next_in will point to
+		// the bytes previously provided to Write, which may no longer be valid.
+		enc.handle.avail_in = 0
+		ret := C.go_lzma_code(
+			enc.handle,
+			nil,
+			unsafe.Pointer(&enc.buffer[0]),
+			C.lzma_action(Finish),
+		)
 
 		// Write back result.
 		produced := len(enc.buffer) - int(enc.handle.avail_out)

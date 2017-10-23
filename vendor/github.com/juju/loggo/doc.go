@@ -36,7 +36,12 @@ logger, but have it emit all logging levels you need to do the following.
 
 	writer, _, err := loggo.RemoveWriter("default")
 	// err is non-nil if and only if the name isn't found.
-	loggo.RegisterWriter("default", writer, loggo.TRACE)
+	loggo.RegisterWriter("default", writer)
 
+To make loggo produce colored output, you can do the following,
+having imported github.com/juju/loggo/loggocolor:
+
+	loggo.RemoveWriter("default")
+	loggo.RegisterWriter("default", loggocolor.NewWriter(os.Stderr))
 */
 package loggo

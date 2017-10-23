@@ -8,6 +8,17 @@ package xz
 #cgo LDFLAGS: -llzma
 #include <lzma.h>
 #include <stdlib.h>
+
+int go_lzma_code(
+    lzma_stream* handle,
+    void* next_in,
+    void* next_out,
+    lzma_action action
+) {
+    handle->next_in = next_in;
+    handle->next_out = next_out;
+    return lzma_code(handle, action);
+}
 */
 import "C"
 
@@ -20,8 +31,9 @@ import (
 type Decompressor struct {
 	handle *C.lzma_stream
 	rd     io.Reader
-	buffer []byte
-	offset int
+	buffer []byte // buffer allocated when the Decompressor was created to hold data read from rd
+	offset int    // offset of the next byte in the buffer to read
+	length int    // number of actual bytes in the buffer from the reader
 }
 
 var _ io.ReadCloser = &Decompressor{}
@@ -42,19 +54,23 @@ func NewReader(r io.Reader) (*Decompressor, error) {
 }
 
 func (r *Decompressor) Read(out []byte) (out_count int, er error) {
-	if r.offset == len(r.buffer) {
+	if r.offset >= r.length {
 		var n int
 		n, er = r.rd.Read(r.buffer)
 		if n == 0 {
 			return 0, er
 		}
-		r.offset = 0
-		r.handle.next_in = (*C.uint8_t)(unsafe.Pointer(&r.buffer[0]))
+		r.offset, r.length = 0, n
 		r.handle.avail_in = C.size_t(n)
 	}
-	r.handle.next_out = (*C.uint8_t)(unsafe.Pointer(&out[0]))
 	r.handle.avail_out = C.size_t(len(out))
-	ret := C.lzma_code(r.handle, C.lzma_action(Run))
+	ret := C.go_lzma_code(
+		r.handle,
+		unsafe.Pointer(&r.buffer[r.offset]),
+		unsafe.Pointer(&out[0]),
+		C.lzma_action(Run),
+	)
+	r.offset = r.length - int(r.handle.avail_in)
 	switch Errno(ret) {
 	case Ok:
 		break
@@ -63,8 +79,6 @@ func (r *Decompressor) Read(out []byte) (out_count int, er error) {
 	default:
 		er = Errno(ret)
 	}
-
-	r.offset = len(r.buffer) - int(r.handle.avail_in)
 
 	return len(out) - int(r.handle.avail_out), er
 }

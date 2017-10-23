@@ -7,9 +7,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
-
-	"github.com/juju/ansiterm"
 )
 
 // DefaultWriterName is the name of the default writer for
@@ -69,45 +66,5 @@ func (simple *simpleWriter) Write(entry Entry) {
 }
 
 func defaultWriter() Writer {
-	return NewColorWriter(os.Stderr)
-}
-
-type colorWriter struct {
-	writer *ansiterm.Writer
-}
-
-var (
-	// SeverityColor defines the colors for the levels output by the ColorWriter.
-	SeverityColor = map[Level]*ansiterm.Context{
-		TRACE:   ansiterm.Foreground(ansiterm.Default),
-		DEBUG:   ansiterm.Foreground(ansiterm.Green),
-		INFO:    ansiterm.Foreground(ansiterm.BrightBlue),
-		WARNING: ansiterm.Foreground(ansiterm.Yellow),
-		ERROR:   ansiterm.Foreground(ansiterm.BrightRed),
-		CRITICAL: &ansiterm.Context{
-			Foreground: ansiterm.White,
-			Background: ansiterm.Red,
-		},
-	}
-	// LocationColor defines the colors for the location output by the ColorWriter.
-	LocationColor = ansiterm.Foreground(ansiterm.BrightBlue)
-)
-
-// NewColorWriter will write out colored severity levels if the writer is
-// outputting to a terminal.
-func NewColorWriter(writer io.Writer) Writer {
-	return &colorWriter{ansiterm.NewWriter(writer)}
-}
-
-// Write implements Writer.
-func (w *colorWriter) Write(entry Entry) {
-	ts := formatTime(entry.Timestamp)
-	// Just get the basename from the filename
-	filename := filepath.Base(entry.Filename)
-
-	fmt.Fprintf(w.writer, "%s ", ts)
-	SeverityColor[entry.Level].Fprintf(w.writer, entry.Level.Short())
-	fmt.Fprintf(w.writer, " %s ", entry.Module)
-	LocationColor.Fprintf(w.writer, "%s:%d ", filename, entry.Line)
-	fmt.Fprintln(w.writer, entry.Message)
+	return NewSimpleWriter(os.Stderr, DefaultFormatter)
 }
