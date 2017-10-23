@@ -10,6 +10,106 @@ var (
 	exists    = []string{"repoctl", "fairsplit", "moped"}
 	notExists = []string{"repoctl-34534", "arstaorsf", "911222234"}
 	invalid   = []string{"-", "_", "*", "-1q"}
+	many      = []string{
+		"a2ps",
+		"a52dec",
+		"aalib",
+		"abcde",
+		"abs",
+		"abuse",
+		"acl",
+		"acpi",
+		"acpid",
+		"acroread",
+		"adobe-source-code-pro-fonts",
+		"adwaita-icon-theme",
+		"aircrack-ng",
+		"akonadi",
+		"akonadi-contacts",
+		"alacritty-git",
+		"alex",
+		"alsa-lib",
+		"alsa-plugins",
+		"android-sdk-platform-tools",
+		"apache",
+		"apache-ant",
+		"apm",
+		"apr",
+		"apr-util",
+		"aqbanking",
+		"archlinux-keyring",
+		"ardour",
+		"arpack",
+		"asciidoc",
+		"aspell",
+		"aspell-de",
+		"aspell-en",
+		"asunder",
+		"at",
+		"at-spi2-atk",
+		"at-spi2-core",
+		"atk",
+		"atkmm",
+		"atom",
+		"attica-qt4",
+		"attica-qt5",
+		"attr",
+		"aubio",
+		"audacity",
+		"audiofile",
+		"autoconf",
+		"autoconf-archive",
+		"automake",
+		"avahi",
+		"avidemux-cli",
+		"avidemux-qt",
+		"awesome-git",
+		"awmtt",
+		"aws-cli",
+		"babl",
+		"baloo",
+		"baloo4-akonadi",
+		"bash",
+		"batterymon-clone",
+		"bc",
+		"biber",
+		"bind-tools",
+		"binutils",
+		"bison",
+		"blas",
+		"bless",
+		"bluez",
+		"bluez-cups",
+		"bluez-firmware",
+		"bluez-libs",
+		"bluez-plugins",
+		"bluez-tools",
+		"bluez-utils",
+		"boost",
+		"boost-libs",
+		"brasero",
+		"bridge-utils",
+		"bsdiff",
+		"btrfs-progs",
+		"bubblewrap",
+		"bzip2",
+		"bzr",
+		"c++utilities",
+		"c-ares",
+		"ca-certificates",
+		"ca-certificates-cacert",
+		"ca-certificates-mozilla",
+		"ca-certificates-utils",
+		"cabal-install",
+		"cabextract",
+		"cairo",
+		"cairo-perl",
+		"cairomm",
+		"calc",
+		"calibre",
+		"calligra",
+		"cantata-git",
+	}
 )
 
 func TestRead1(z *testing.T) {
@@ -72,6 +172,38 @@ func TestReadAll2(z *testing.T) {
 					z.Errorf("wrong name returned")
 				}
 			}
+		}
+	} else {
+		z.Errorf("unexpected error: %s", err)
+	}
+}
+
+func TestReadMany(z *testing.T) {
+	is, err := ReadAll(many)
+	if len(is) == 0 {
+		z.Errorf("expecting to have more than zero elements")
+	}
+	if err == nil {
+		z.Errorf("expecting error, got nil")
+	} else if nf, ok := err.(*NotFoundError); ok {
+	next_package:
+		for _, n := range many {
+			// Either the package was found:
+			for _, p := range is {
+				if p.Name == n {
+					continue next_package
+				}
+			}
+
+			// Or the package was not found:
+			for _, p := range nf.Names {
+				if p == n {
+					continue next_package
+				}
+			}
+
+			// Otherwise something is wrong!
+			z.Errorf("expected package %s to be found or not found", n)
 		}
 	} else {
 		z.Errorf("unexpected error: %s", err)

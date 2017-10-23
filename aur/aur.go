@@ -230,6 +230,46 @@ func Read(pkgname string) (*Package, error) {
 // If any packages cannot be found, (Packages, *NotFoundError) is returned.
 // That is, all successfully read packages are returned.
 func ReadAll(pkgnames []string) (Packages, error) {
+	// We can only query at most 63 packages at a time.
+	max := 63
+	if len(pkgnames) <= max {
+		return readAll(pkgnames)
+	}
+
+	// len(pkgnames) must be greater or equal to 64, so let's split it up.
+	var pkgs Packages
+	var err *NotFoundError
+	for len(pkgnames) > 0 {
+		// Select next slice of messages
+		var slice []string
+		if len(pkgnames) > max {
+			slice = pkgnames[:max]
+			pkgnames = pkgnames[max:]
+		} else {
+			slice = pkgnames
+			pkgnames = []string{}
+		}
+
+		// Query selected slice of messages
+		p, e := readAll(slice)
+		if e != nil {
+			nfe, ok := e.(*NotFoundError)
+			if !ok {
+				return nil, e
+			}
+
+			if err == nil {
+				err = nfe
+			} else {
+				err.Names = append(err.Names, nfe.Names...)
+			}
+		}
+		pkgs = append(pkgs, p...)
+	}
+	return pkgs, err
+}
+
+func readAll(pkgnames []string) (Packages, error) {
 	q := generateURL(pkgnames)
 	resp, err := http.Get(q)
 	if err != nil {
