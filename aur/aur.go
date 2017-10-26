@@ -17,6 +17,8 @@ import (
 	"github.com/goulash/pacman/alpm"
 )
 
+// Packages is a slice of Package with several methods facilitating
+// sorting, iterating, and converting to pacman.Packages.
 type Packages []*Package
 
 func (pkgs Packages) Len() int      { return len(pkgs) }
@@ -28,6 +30,7 @@ func (pkgs Packages) Less(i, j int) bool {
 	return alpm.VerCmp(pkgs[i].Version, pkgs[j].Version) == -1
 }
 
+// Pkgs returns the entire slice as pacman.Packages.
 func (pkgs Packages) Pkgs() pacman.Packages {
 	results := make(pacman.Packages, len(pkgs))
 	for i, p := range pkgs {
@@ -35,6 +38,8 @@ func (pkgs Packages) Pkgs() pacman.Packages {
 	}
 	return results
 }
+
+// Iterate calls f for each package in the list of packages.
 func (pkgs Packages) Iterate(f func(pacman.AnyPackage)) {
 	for _, p := range pkgs {
 		f(p)
@@ -71,6 +76,7 @@ func (e NotFoundError) Error() string {
 	return buf.String()
 }
 
+// IsNotFound returns true if the error is an instance of NotFoundError.
 func IsNotFound(err error) bool {
 	_, ok := err.(*NotFoundError)
 	return ok
@@ -158,7 +164,7 @@ type Package struct {
 	Keywords       []string
 }
 
-// PacmanPkg converts an aur.Package into a pacman.Package.
+// Pkg converts an aur.Package into a pacman.Package.
 //
 // Note that only a few fields in the resulting Package are actually filled in,
 // namely Origin, Name, Version, Description, URL, and License. This is all the
@@ -178,7 +184,11 @@ func (p *Package) Pkg() *pacman.Package {
 		MakeDepends: p.MakeDepends,
 	}
 }
-func (p *Package) PkgName() string    { return p.Name }
+
+// PkgName returns the unique name of the package.
+func (p *Package) PkgName() string { return p.Name }
+
+// PkgVersion returns the version string of the package.
 func (p *Package) PkgVersion() string { return p.Version }
 
 // DownloadURL returns the URL for downloading the PKGBUILD tarball.
@@ -230,21 +240,21 @@ func Read(pkgname string) (*Package, error) {
 // If any packages cannot be found, (Packages, *NotFoundError) is returned.
 // That is, all successfully read packages are returned.
 func ReadAll(pkgnames []string) (Packages, error) {
-	// We can only query at most 63 packages at a time.
-	max := 63
-	if len(pkgnames) <= max {
+	// We only query at most 200 packages at a time, the limit currently
+	// appears to be 250, but we'll stay well beneath that for now.
+	const limit = 200
+	if len(pkgnames) <= limit {
 		return readAll(pkgnames)
 	}
 
-	// len(pkgnames) must be greater or equal to 64, so let's split it up.
 	var pkgs Packages
 	var err *NotFoundError
 	for len(pkgnames) > 0 {
 		// Select next slice of messages
 		var slice []string
-		if len(pkgnames) > max {
-			slice = pkgnames[:max]
-			pkgnames = pkgnames[max:]
+		if len(pkgnames) > limit {
+			slice = pkgnames[:limit]
+			pkgnames = pkgnames[limit:]
 		} else {
 			slice = pkgnames
 			pkgnames = []string{}
