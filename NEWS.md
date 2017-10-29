@@ -1,9 +1,13 @@
 Repoctl Releases
 ================
 
-## Version 0.17 (24 October 2017)
-This release fixes a bug that occurs when trying to update a repository that
-has more than 63 packages.
+## Version 0.17 (29 October 2017)
+This release primarily fixes a bug that occurs when trying to update
+a repository that has more than 250 packages.
+
+  - Bugfix: issue #28, in which AUR queries for a local database with more
+    than 250 packages failed.
+  - Update: better error messages when pre/post command actions fail.
 
 ## Version 0.16 (22 November 2016)
 This release adds action hooks to the configuration, and shows the configuration

@@ -36,6 +36,29 @@ func (e *UsageError) Error() string {
 	return fmt.Sprintf("%s", e.Msg)
 }
 
+type ExecError struct {
+	Err     error
+	Output  string
+	Command string
+}
+
+func (err *ExecError) Error() string { return err.Err.Error() }
+
+// runShellCommand runs the cmd in a shell and returns whether an error occurred.
+// If an error is returned, it is of type *ExecError, which contains the field
+// `Output` that contains the commands stdout and stderr output.
+func runShellCommand(cmd string) error {
+	bs, err := exec.Command("sh", "-c", cmd).CombinedOutput()
+	if err != nil {
+		return &ExecError{
+			Err:     err,
+			Output:  string(bs),
+			Command: cmd,
+		}
+	}
+	return nil
+}
+
 var MainCmd = &cobra.Command{
 	Use:   "repoctl",
 	Short: "manage local Pacman repositories",
@@ -62,7 +85,7 @@ Note that in all of these commands, the following terminology is used:
 		Repo = Conf.Repo()
 
 		if Conf.PreAction != "" {
-			return exec.Command("sh", "-c", Conf.PreAction).Run()
+			return runShellCommand(Conf.PreAction)
 		}
 		return nil
 	},
@@ -70,7 +93,7 @@ Note that in all of these commands, the following terminology is used:
 		// If PersistentPreRunE was overridden, then don't execute this step.
 		// We can determine this by looking to see if Repo was set.
 		if Conf.PostAction != "" && Repo != nil {
-			return exec.Command("sh", "-c", Conf.PostAction).Run()
+			return runShellCommand(Conf.PostAction)
 		}
 		return nil
 	},
@@ -105,6 +128,14 @@ func main() {
 
 	err = MainCmd.Execute()
 	if err != nil {
+		// If this is an ExecError, we deal with it specially:
+		if e, ok := err.(*ExecError); ok {
+			fmt.Fprintf(os.Stderr, "Error: command %q failed: %s\n", e.Command, e.Err)
+			fmt.Fprintf(os.Stderr, "Command output:\n%s", e.Output)
+			os.Exit(1)
+		}
+
+		// All other errors:
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 		if e, ok := err.(*UsageError); ok {
 			e.Usage()
