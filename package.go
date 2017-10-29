@@ -47,6 +47,9 @@ const (
 	// available.
 	DatabaseOrigin
 
+	// LocalOrigin specifies local origin. Not sure what fields are filled in.
+	LocalOrigin
+
 	// AUROrigin specifies AUR search origin. Only the following fields are
 	// touched:
 	//
