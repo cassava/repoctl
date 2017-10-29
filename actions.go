@@ -173,7 +173,7 @@ func (r *Repo) Update(h errs.Handler, pkgnames ...string) error {
 	return r.Dispatch(h, obsolete...)
 }
 
-// Delete the repository database and readd all the packages.
+// Reset deletes the repository database and readd all the packages.
 // This is the same as unlinking the database and then running Update.
 func (r *Repo) Reset(h errs.Handler) error {
 	errs.Init(&h)
@@ -186,7 +186,7 @@ func (r *Repo) Reset(h errs.Handler) error {
 	return r.Update(h)
 }
 
-// Delete the repository database (but not the files).
+// DeleteDatabase deletes the repository database (but not the files).
 func (r *Repo) DeleteDatabase() error {
 	db := path.Join(r.Directory, r.Database)
 	r.printf("deleting database: %s\n", db)
