@@ -37,7 +37,9 @@ type Node struct {
 
 	*pacman.Package
 	fromAUR bool
-	deps    map[string]bool
+
+	// TODO: Refactor this out.
+	deps map[string]bool
 }
 
 // ID returns the unique (within the graph) ID of the node.
@@ -69,13 +71,12 @@ type Graph struct {
 
 	// For the interface:
 	names     map[string]*Node
-	ids       map[int]*Node
+	nodes     []graph.Node
+	nodeIDs   map[int]graph.Node
 	edgesFrom map[int][]graph.Node
 	edgesTo   map[int][]graph.Node
-
-	// Cached:
-	nodes  []graph.Node
-	nextID int
+	edges     map[int]map[int]graph.Edge
+	nextID    int
 
 	// Statistics
 	aurCalls int
@@ -92,9 +93,17 @@ type Graph struct {
 // dependencies.
 func NewGraph(ignore ...string) (*Graph, error) {
 	g := Graph{
-		names:    make(map[string]*Node),
-		ids:      make(map[int]*Node),
-		nextID:   0,
+		// local will be init in this function
+		// sync will be init in this function
+
+		names:     make(map[string]*Node),
+		nodes:     make([]graph.Node, 0),
+		nodeIDs:   make(map[int]graph.Node),
+		edgesFrom: make(map[int][]graph.Node),
+		edgesTo:   make(map[int][]graph.Node),
+		edges:     make(map[int]map[int]graph.Edge),
+		nextID:    0,
+
 		aurCalls: 0,
 	}
 
@@ -137,12 +146,12 @@ func NewGraph(ignore ...string) (*Graph, error) {
 	return &g, nil
 }
 
-// NewNodeFromAUR returns a new node that has not yet been added.
+// NewNodeFromAUR returns a new node but does not otherwise modify the graph.
 func (g *Graph) NewNodeFromAUR(pkg *aur.Package) *Node {
 	return g.NewNode(pkg.Pkg(), true)
 }
 
-// NewNode returns a new node that has not yet been added.
+// NewNode returns a new node but does not otherwise modify the graph.
 func (g *Graph) NewNode(pkg *pacman.Package, fromAUR bool) *Node {
 	n := &Node{
 		id:      g.NewNodeID(),
@@ -199,8 +208,8 @@ func (g *Graph) AddNode(node graph.Node) error {
 	// dependency, we add the node now to the graph before resolving
 	// dependencies.
 	g.names[n.PkgName()] = n
-	g.ids[n.ID()] = n
 	g.nodes = append(g.nodes, n)
+	g.nodeIDs[n.ID()] = n
 
 	// Resolving dependencies:
 	unavailable := make([]string, 0)
@@ -261,9 +270,16 @@ func (g *Graph) addEdgeFromTo(from, to *Node) {
 	g.edgesFrom[fid] = append(g.edgesFrom[fid], to)
 	tid := to.ID()
 	g.edgesTo[tid] = append(g.edgesTo[tid], from)
+	// FIXME: Continue here by adding g.edges entry!
 }
 
+// setEdgesFrom should be called only once per node.
 func (g *Graph) setEdgesFrom(v *Node) {
+	if g.edges[v.ID()] != nil {
+		panic("setEdgesFrom should only be called once per node")
+	}
+
+	g.edges[v.ID()] = make(map[int]graph.Edge)
 	dnodes := make([]graph.Node, 0, len(v.deps))
 	for d := range v.deps {
 		dn := g.names[d]
@@ -312,7 +328,7 @@ func (g *Graph) fixDependenciesFromAUR() {
 
 // Has returns whether the node exists within the graph.
 func (g *Graph) Has(n graph.Node) bool {
-	_, ok := g.ids[n.ID()]
+	_, ok := g.nodeIDs[n.ID()]
 	return ok
 }
 
@@ -328,11 +344,13 @@ func (g *Graph) Nodes() []graph.Node {
 }
 
 // From returns all nodes that can be reached directly from the given node.
-func (g *Graph) From(n graph.Node) []graph.Node
+func (g *Graph) From(v graph.Node) []graph.Node {
+	return g.edgesFrom[v.ID()]
+}
 
 // To returns all nodes that can reach directly to the given node.
-func (g *Graph) To(n graph.Node) []graph.Node {
-	return g.edgesTo[n.ID()]
+func (g *Graph) To(v graph.Node) []graph.Node {
+	return g.edgesTo[v.ID()]
 }
 
 // HasEdgeBetween returns whether an edge exists between nodes u and v
@@ -348,13 +366,14 @@ func (g *Graph) HasEdgeFromTo(u, v graph.Node) bool {
 			return true
 		}
 	}
+	return false
 }
 
 // Edge returns the edge from u to v if such an edge exists and nil
 // otherwise. The node v must be directly reachable from u as defined
 // by the From method.
 func (g *Graph) Edge(u, v graph.Node) graph.Edge {
-	return g.edges[u][v]
+
 }
 
 func (g *Graph) Dependencies() []string {
