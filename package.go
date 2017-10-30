@@ -28,6 +28,13 @@ func (pkgs Packages) Iterate(f func(AnyPackage)) {
 		f(p)
 	}
 }
+func (pkgs Packages) ToMap() map[string]*Package {
+	m := make(map[string]*Package)
+	for _, p := range pkgs {
+		m[p.Name] = p
+	}
+	return m
+}
 
 // PackageOrigin exists to document which fields in the Package type can be
 // expected to be filled with data. Note that some fields may be blank
