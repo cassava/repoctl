@@ -57,6 +57,22 @@ func (mp *Package) Pkg() *pacman.Package {
 func (mp *Package) PkgName() string    { return mp.Name }
 func (mp *Package) PkgVersion() string { return mp.Version() }
 
+// PkgDepends returns the dependencies of the package.
+func (mp *Package) PkgDepends() []string {
+	if p := mp.Pkg(); p != nil {
+		return p.Depends
+	}
+	return nil
+}
+
+// PkgMakeDepends returns the make dependenciess of the package.
+func (mp *Package) PkgMakeDepends() []string {
+	if p := mp.Pkg(); p != nil {
+		return p.MakeDepends
+	}
+	return nil
+}
+
 // Version returns the newest actual package version available. This
 // disregards whatever is in the database. If there are no files, then
 // an empty string is returned.

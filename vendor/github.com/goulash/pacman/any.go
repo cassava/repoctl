@@ -19,6 +19,8 @@ type AnyPackage interface {
 	Pkg() *Package
 	PkgName() string
 	PkgVersion() string
+	PkgDepends() []string
+	PkgMakeDepends() []string
 }
 
 // PkgOlder returns true if a's version is older than b's.

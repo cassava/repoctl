@@ -28,6 +28,13 @@ func (pkgs Packages) Iterate(f func(AnyPackage)) {
 		f(p)
 	}
 }
+func (pkgs Packages) ToMap() map[string]*Package {
+	m := make(map[string]*Package)
+	for _, p := range pkgs {
+		m[p.Name] = p
+	}
+	return m
+}
 
 // PackageOrigin exists to document which fields in the Package type can be
 // expected to be filled with data. Note that some fields may be blank
@@ -46,6 +53,9 @@ const (
 	// DatabaseOrigin specifies database origin. All fields are filled in as
 	// available.
 	DatabaseOrigin
+
+	// LocalOrigin specifies local origin. Not sure what fields are filled in.
+	LocalOrigin
 
 	// AUROrigin specifies AUR search origin. Only the following fields are
 	// touched:
@@ -95,9 +105,11 @@ type Package struct {
 	MakeOptions     []string  // makepkgopt
 }
 
-func (p *Package) Pkg() *Package      { return p }
-func (p *Package) PkgName() string    { return p.Name }
-func (p *Package) PkgVersion() string { return p.Version }
+func (p *Package) Pkg() *Package            { return p }
+func (p *Package) PkgName() string          { return p.Name }
+func (p *Package) PkgVersion() string       { return p.Version }
+func (p *Package) PkgDepends() []string     { return p.Depends }
+func (p *Package) PkgMakeDepends() []string { return p.MakeDepends }
 
 // Check if one package is the same as another.
 //
