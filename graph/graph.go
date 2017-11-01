@@ -23,6 +23,8 @@
 package graph
 
 import (
+	"fmt"
+
 	"github.com/gonum/graph"
 	"github.com/goulash/pacman"
 )
@@ -56,6 +58,10 @@ func (n *Node) NumDependencies() int {
 	return len(n.Package.Depends) + len(n.Package.MakeDepends)
 }
 
+func (n *Node) String() string {
+	return n.PkgName()
+}
+
 // Edge implements the graph.Edge interface.
 type Edge struct {
 	from *Node
@@ -73,6 +79,8 @@ func (e *Edge) Weight() float64 { return 0.0 }
 
 // IsFromAUR returns true if the dependency needs to be fetched from AUR.
 func (e *Edge) IsFromAUR() bool { return e.to.IsFromAUR() }
+
+func (e *Edge) String() string { return fmt.Sprintf("%s -> %s", e.from, e.to) }
 
 // Graph implements graph.Graph.
 type Graph struct {
