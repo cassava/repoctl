@@ -5,6 +5,10 @@
 package main
 
 import (
+	"fmt"
+	"os"
+
+	"github.com/goulash/pacman/graph"
 	"github.com/goulash/pacman/pkgutil"
 	"github.com/spf13/cobra"
 )
@@ -15,6 +19,8 @@ var (
 	downExtract  bool
 	downUpgrades bool
 	downAll      bool
+	downRecurse  bool
+	downOrder    string
 )
 
 func init() {
@@ -24,6 +30,8 @@ func init() {
 	downCmd.Flags().BoolVarP(&downClobber, "clobber", "l", false, "delete conflicting files and folders")
 	downCmd.Flags().BoolVarP(&downExtract, "extract", "e", true, "extract the downloaded tarballs")
 	downCmd.Flags().BoolVarP(&downUpgrades, "upgrades", "u", false, "download tarballs for all upgrades")
+	downCmd.Flags().BoolVarP(&downRecurse, "recursive", "r", false, "download any necessary dependencies")
+	downCmd.Flags().StringVarP(&downOrder, "order", "o", "", "write the order of compilation based on dependency tree into a file, implies -r")
 	downCmd.Flags().BoolVarP(&downAll, "all", "a", false, "download tarballs for all packages in database")
 }
 
@@ -40,16 +48,50 @@ in the current directory.
 `,
 	Example: `  repoctl down -u`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// First, populate the initial list of packages to download.
+		var list []string
 		if downAll {
 			names, err := Repo.ReadNames(nil)
 			if err != nil {
 				return err
 			}
-			return Repo.Download(nil, downDest, downExtract, downClobber, pkgutil.Map(names, pkgutil.PkgName)...)
+			list = pkgutil.Map(names, pkgutil.PkgName)
 		} else if downUpgrades {
-			return Repo.DownloadUpgrades(nil, downDest, downExtract, downClobber, args...)
+			upgrades, err := Repo.FindUpgrades(nil, args...)
+			if err != nil {
+				return err
+			}
+			for _, u := range upgrades {
+				list = append(list, u.New.Name)
+			}
 		} else {
-			return Repo.Download(nil, downDest, downExtract, downClobber, args...)
+			list = args
 		}
+
+		// If no dependencies are wanted, then get to it right away:
+		if !downRecurse && downOrder == "" {
+			return Repo.Download(nil, downDest, downExtract, downClobber, list...)
+		}
+
+		// Otherwise, get the dependencies:
+		g, err := Repo.DependencyGraph(nil, list...)
+		if err != nil {
+			return err
+		}
+		_, aps, ups := graph.Dependencies(g)
+		if downOrder != "" {
+			f, err := os.Create(downOrder)
+			if err != nil {
+				return err
+			}
+			for _, p := range aps {
+				fmt.Fprintln(f, p.Name)
+			}
+			f.Close()
+		}
+		for _, u := range ups {
+			fmt.Fprintf(os.Stderr, "Warning: unknown package %s\n", u)
+		}
+		return Repo.DownloadPackages(nil, aps, downDest, downExtract, downClobber)
 	},
 }

@@ -9,13 +9,33 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/goulash/errs"
 	"github.com/goulash/osutil"
 	"github.com/goulash/pacman/aur"
+	"github.com/goulash/pacman/graph"
 	"github.com/juju/utils/tar"
 )
+
+// DependencyGraph returns a dependency graph of the given package names.
+func (r *Repo) DependencyGraph(h errs.Handler, pkgnames ...string) (*graph.Graph, error) {
+	errs.Init(&h)
+
+	aurpkgs, err := r.ReadAUR(h, pkgnames...)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get dependencies
+	f, err := graph.NewFactory()
+	if err != nil {
+		return nil, err
+	}
+
+	f.SetSkipInstalled(true)
+	f.SetTruncate(true)
+	return f.NewGraph(uniqueBases(aurpkgs))
+}
 
 // Download downloads and extracts the given package tarballs.
 func (r *Repo) Download(h errs.Handler, destdir string, extract bool, clobber bool, pkgnames ...string) error {
@@ -30,41 +50,19 @@ func (r *Repo) Download(h errs.Handler, destdir string, extract bool, clobber bo
 	if err != nil {
 		return err
 	}
-	aurpkgs = uniqueBases(aurpkgs)
-	for _, ap := range aurpkgs {
-		r.printf("downloading: %s\n", ap.Name)
-		download := DownloadTarballAUR
-		if extract {
-			download = DownloadExtractAUR
-		}
-		err = h(download(ap, destdir, clobber))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return r.DownloadPackages(h, uniqueBases(aurpkgs), destdir, extract, clobber)
 }
 
-// DownloadUpgrades downloads all available upgrades for the given
-// package names.
-//
-// If pkgnames is empty, all available upgrades are downloaded.
-func (r *Repo) DownloadUpgrades(h errs.Handler, destdir string, extract bool, clobber bool, pkgnames ...string) error {
+// DownloadPackages downloads the given AUR packages, printing messages for each one.
+func (r *Repo) DownloadPackages(h errs.Handler, pkgs aur.Packages, destdir string, extract bool, clobber bool) error {
 	errs.Init(&h)
-
-	upgrades, err := r.FindUpgrades(h, pkgnames...)
-	if err != nil {
-		return err
-	}
-
-	upgrades = uniqueUpgrades(upgrades)
-	for _, u := range upgrades {
-		r.printf("downloading: %s\n", u.Name())
+	for _, p := range pkgs {
+		r.printf("downloading: %s\n", p.Name)
 		download := DownloadTarballAUR
 		if extract {
 			download = DownloadExtractAUR
 		}
-		err = h(download(u.New, destdir, clobber))
+		err := h(download(p, destdir, clobber))
 		if err != nil {
 			return err
 		}
@@ -107,6 +105,7 @@ func DownloadExtractAUR(ap *aur.Package, destdir string, clobber bool) error {
 	return tar.UntarFiles(gr, destdir)
 }
 
+// DownloadTarballAUR downloads the given package from AUR.
 func DownloadTarballAUR(ap *aur.Package, destdir string, clobber bool) error {
 	var err error
 	if destdir == "" {
@@ -117,8 +116,7 @@ func DownloadTarballAUR(ap *aur.Package, destdir string, clobber bool) error {
 	}
 
 	url := ap.DownloadURL()
-	tokens := strings.Split(url, "/")
-	of := tokens[len(tokens)-1]
+	of := ap.Name + ".tar.gz"
 
 	// Make sure we don't clobber anything.
 	if !clobber {
@@ -166,17 +164,10 @@ func uniqueBases(aurpkgs aur.Packages) aur.Packages {
 	return bases
 }
 
-// uniqueBases returns a subset of the given aurpkgs where the package bases
-// are the same.
-func uniqueUpgrades(us Upgrades) Upgrades {
-	bases := make(Upgrades, 0, len(us))
-	mp := make(map[string]bool)
-	for _, u := range us {
-		if mp[u.New.PackageBase] {
-			continue
-		}
-		mp[u.New.PackageBase] = true
-		bases = append(bases, u)
+func upgradesToPackages(us Upgrades) aur.Packages {
+	pkgs := make(aur.Packages, len(us))
+	for i, p := range us {
+		pkgs[i] = p.New
 	}
-	return bases
+	return pkgs
 }
