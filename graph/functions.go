@@ -3,40 +3,40 @@ package graph
 import (
 	"github.com/gonum/graph"
 	"github.com/gonum/graph/traverse"
+	"github.com/goulash/pacman"
+	"github.com/goulash/pacman/aur"
 )
 
-// Dependencies returns a list of all dependencies in the graph.
-func Dependencies(g *Graph) []string {
-	nodes := AllNodesBottomUp(g)
-	list := make([]string, len(nodes))
-	for i, n := range nodes {
-		list[i] = n.(*Node).PkgName()
-	}
-	return list
-}
+// Dependencies returns a list of all dependencies in the graph,
+// those in repositories, those from AUR, and those unknown.
+func Dependencies(g *Graph) (pacman.Packages, aur.Packages, []string) {
+	rps := make(pacman.Packages, 0)
+	aps := make(aur.Packages, 0)
+	ups := make([]string, 0)
 
-// AURDependencies returns a list of dependencies that need to be fetched from AUR.
-func AURDependencies(g *Graph) []string {
+	names := make(map[string]bool)
 	nodes := AllNodesBottomUp(g)
-	list := make([]string, 0, len(nodes))
-	for _, n := range nodes {
-		if n.(*Node).IsFromAUR() {
-			list = append(list, n.(*Node).PkgName())
+	for _, vn := range nodes {
+		n := vn.(*Node)
+		if names[n.PkgName()] {
+			continue
+		}
+
+		names[n.PkgName()] = true
+		switch p := n.AnyPackage.(type) {
+		case *aur.Package:
+			aps = append(aps, p)
+		case *pacman.Package:
+			if p.Origin == pacman.UnknownOrigin {
+				ups = append(ups, p.Name)
+			} else {
+				rps = append(rps, p)
+			}
+		default:
+			panic("unexpected type of package in graph")
 		}
 	}
-	return list
-}
-
-// RepoDependencies returns a list of dependencies that can be installed with pacman.
-func RepoDependencies(g *Graph) []string {
-	nodes := AllNodesBottomUp(g)
-	list := make([]string, 0, len(nodes))
-	for _, n := range nodes {
-		if n.(*Node).IsFromAUR() {
-			list = append(list, n.(*Node).PkgName())
-		}
-	}
-	return list
+	return rps, aps, ups
 }
 
 // Roots returns all the root nodes for a directed graph.

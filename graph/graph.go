@@ -15,11 +15,9 @@
 //   }
 //
 // Once you have a graph, you can then get the ordered dependency list
-// with one of the following functions:
+// with the following function:
 //
-//   g.Dependencies()
-//   g.DependenciesFromAUR()
-//   g.DependenciesFromRepos()
+//   graph.Dependencies(g)
 package graph
 
 import (
@@ -46,17 +44,17 @@ func (n *Node) IsFromAUR() bool {
 	return ok
 }
 
-// Dependencies returns a (newly created) string slice of the installation
+// AllDepends returns a (newly created) string slice of the installation
 // and make dependencies of this package.
-func (n *Node) Dependencies() []string {
-	deps := make([]string, 0, len(n.PkgDepends())+len(n.PkgMakeDepends()))
+func (n *Node) AllDepends() []string {
+	deps := make([]string, 0, n.NumAllDepends())
 	deps = append(deps, n.PkgDepends()...)
 	deps = append(deps, n.PkgMakeDepends()...)
 	return deps
 }
 
-// NumDependencies returns the number of make and installation dependencies the package has.
-func (n *Node) NumDependencies() int {
+// NumDepends returns the number of make and installation dependencies the package has.
+func (n *Node) NumAllDepends() int {
 	return len(n.PkgDepends()) + len(n.PkgMakeDepends())
 }
 
@@ -196,7 +194,7 @@ func (g *Graph) AddNode(v graph.Node) {
 	g.nodes = append(g.nodes, n)
 	id := n.ID()
 	g.nodeIDs[id] = n
-	g.edgesFrom[id] = make([]graph.Node, 0, n.NumDependencies())
+	g.edgesFrom[id] = make([]graph.Node, 0, n.NumAllDepends())
 	g.edgesTo[id] = make([]graph.Node, 0)
 	g.edges[id] = make(map[int]graph.Edge)
 }

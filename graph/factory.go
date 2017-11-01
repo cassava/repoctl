@@ -22,6 +22,7 @@ type Factory struct {
 	skipInstalled bool
 	truncate      bool
 	noUnknown     bool
+	depFunc       func(pacman.AnyPackage) []string
 
 	// Statistics
 	aurCalls int
@@ -37,7 +38,17 @@ type Factory struct {
 // as a leaf in the graph, since we assume that pacman can resolve those
 // dependencies.
 func NewFactory(ignoreRepos ...string) (*Factory, error) {
-	f := Factory{}
+	f := Factory{
+		skipInstalled: false,
+		truncate:      false,
+		noUnknown:     false,
+		depFunc: func(p pacman.AnyPackage) []string {
+			deps := make([]string, 0, len(p.PkgDepends())+len(p.PkgMakeDepends()))
+			deps = append(deps, p.PkgDepends()...)
+			deps = append(deps, p.PkgMakeDepends()...)
+			return deps
+		},
+	}
 
 	// Read local database
 	lpkgs, err := pacman.ReadLocalDatabase(errs.Print(os.Stderr))
@@ -89,6 +100,19 @@ func (f *Factory) SetTruncate(yes bool) {
 	f.truncate = yes
 }
 
+// SetNoUnknown controls whether unknown packages (i.e., not on AUR) are
+// injected into the graph. If this is set to true, NewGraph will fail if any
+// unknown packages are found.
+func (f *Factory) SetNoUnknown(yes bool) {
+	f.noUnknown = yes
+}
+
+// SetDependencyFunc controls which dependency list is used.
+// By default, make and install dependencies are included.
+func (f *Factory) SetDependencyFunc(fn func(pacman.AnyPackage) []string) {
+	f.depFunc = fn
+}
+
 // NumRequestsAUR returns the number of requests made to AUR.
 func (f *Factory) NumRequestsAUR() int {
 	return f.aurCalls
@@ -116,7 +140,7 @@ func (f *Factory) NewGraph(pkgs aur.Packages) (*Graph, error) {
 		// For each package to add edges for:
 		for _, v := range lst {
 			//
-			for _, d := range v.Dependencies() {
+			for _, d := range f.depFunc(v.AnyPackage) {
 				if g.HasName(d) {
 					// Dependency already in the graph, so add the edge:
 					u := g.NodeWithName(d)
