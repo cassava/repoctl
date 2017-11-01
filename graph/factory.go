@@ -139,7 +139,6 @@ func (f *Factory) NewGraph(pkgs aur.Packages) (*Graph, error) {
 
 		// For each package to add edges for:
 		for _, v := range lst {
-			//
 			for _, d := range f.depFunc(v.AnyPackage) {
 				if g.HasName(d) {
 					// Dependency already in the graph, so add the edge:
