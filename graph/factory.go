@@ -47,7 +47,7 @@ func NewFactory(ignoreRepos ...string) (*Factory, error) {
 
 	// Read available packages
 	var pkgs pacman.Packages
-	if len(ignore) == 0 {
+	if len(ignoreRepos) == 0 {
 		pkgs, err = pacman.ReadAllSyncDatabases()
 		if err != nil {
 			return nil, err
@@ -59,7 +59,7 @@ func NewFactory(ignoreRepos ...string) (*Factory, error) {
 		}
 	nextRepo:
 		for _, repo := range enabled {
-			for _, ig := range ignore {
+			for _, ig := range ignoreRepos {
 				if repo == ig {
 					continue nextRepo
 				}
@@ -106,15 +106,16 @@ func (f *Factory) NewGraph(pkgs aur.Packages) (*Graph, error) {
 		g.AddNode(v)
 	}
 
+	// As long as we have new packages to process, continue.
 	for len(lst) == 0 {
 		new := make([]*Node, 0)
 		unavailable := make(map[string]bool, 0)
 		pending := make(map[string][]*Node)
 
 		// For each package to add edges for:
-		for _, v := range work {
+		for _, v := range lst {
 			//
-			for _, d := range n.Dependencies() {
+			for _, d := range v.Dependencies() {
 				if g.HasName(d) {
 					// Dependency already in the graph, so add the edge:
 					u := g.NodeWithName(d)
@@ -123,16 +124,16 @@ func (f *Factory) NewGraph(pkgs aur.Packages) (*Graph, error) {
 				}
 
 				if f.skipInstalled {
-					if p, ok := g.local[d]; ok {
+					if _, ok := f.local[d]; ok {
 						continue
 					}
 				}
 
-				if p, ok := g.sync[d]; ok {
+				if p, ok := f.sync[d]; ok {
 					u := g.NewNode(p)
 					if !f.truncate {
 						// Process this package for dependencies
-						new = append(new, p)
+						new = append(new, u)
 					}
 					g.AddEdgeFromTo(v, u)
 					continue
@@ -140,19 +141,25 @@ func (f *Factory) NewGraph(pkgs aur.Packages) (*Graph, error) {
 
 				// If we got this fas, then d is an unknown dependency,
 				// and therefore must be in AUR (otherwise we're in trouble).
-				unavailable = append(unavailable, d)
 				// We haven't added an edge for this yet, so we need to remember that.
+				unavailable[d] = true
 				pending[d] = append(pending[d], v)
 			}
 		}
 
 		// Get all unavailable packages from AUR:
+		fromAUR := make([]string, len(unavailable))
+		for k := range unavailable {
+			fromAUR = append(fromAUR, k)
+		}
 		f.aurCalls++
-		pkgs, err := aur.ReadAll(unavailable)
+		pkgs, err := aur.ReadAll(fromAUR)
 		if err != nil {
 			return nil, err
 		}
 
+		// Add the AUR packages to the graph and to the list of new packages.
+		// Also add the edges that we remembered.
 		for _, p := range pkgs {
 			u := g.NewNode(p.Pkg())
 			new = append(new, u)

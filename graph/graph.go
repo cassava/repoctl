@@ -76,6 +76,7 @@ func (e *Edge) IsFromAUR() bool { return e.to.IsFromAUR() }
 
 // Graph implements graph.Graph.
 type Graph struct {
+	names     map[string]*Node
 	nodes     []graph.Node
 	nodeIDs   map[int]graph.Node
 	edgesFrom map[int][]graph.Node
@@ -103,9 +104,9 @@ func (g *Graph) Has(n graph.Node) bool {
 	return ok
 }
 
-// HasPkgName returns whether the package with the given name exists within the
+// HasName returns whether the package with the given name exists within the
 // graph.
-func (g *Graph) HasPkgName(name string) bool {
+func (g *Graph) HasName(name string) bool {
 	_, ok := g.names[name]
 	return ok
 }
@@ -150,7 +151,7 @@ func (g *Graph) HasEdgeFromTo(u, v graph.Node) bool {
 // otherwise. The node v must be directly reachable from u as defined
 // by the From method.
 func (g *Graph) Edge(u, v graph.Node) graph.Edge {
-	return g.edges[u][v]
+	return g.edges[u.ID()][v.ID()]
 }
 
 // NewNodeID returns a unique ID for a new node.
@@ -177,11 +178,11 @@ func (g *Graph) AddNode(v graph.Node) {
 	if g.HasName(n.PkgName()) {
 		panic("package name already in graph")
 	}
-	if g.Has(node) {
+	if g.Has(v) {
 		panic("node id already here")
 	}
 
-	g.names[n.Pkgname()] = n
+	g.names[n.PkgName()] = n
 	g.nodes = append(g.nodes, n)
 	id := n.ID()
 	g.nodeIDs[id] = n
@@ -192,7 +193,8 @@ func (g *Graph) AddNode(v graph.Node) {
 
 // AddEdgeFromTo adds an edge betwewen the two nodes.
 func (g *Graph) AddEdgeFromTo(u, v graph.Node) {
-	g.edges[uid][vid] = &Edge{from: u, to: v}
+	uid, vid := u.ID(), v.ID()
+	g.edges[uid][vid] = &Edge{from: u.(*Node), to: v.(*Node)}
 	g.edgesFrom[uid] = append(g.edgesFrom[uid], u)
 	g.edgesTo[vid] = append(g.edgesTo[vid], v)
 }
