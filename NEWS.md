@@ -1,10 +1,13 @@
 Repoctl Releases
 ================
 
-## Version 0.17 (29 October 2017)
-This release primarily fixes a bug that occurs when trying to update
-a repository that has more than 250 packages.
+## Version 0.17 (1 November 2017)
+This release adds dependency resolution for the `down` command
+and fixes a bug that occurs when trying to update a repository that
+has more than 250 packages.
 
+  - New: `down` command learned `-r` and `-o` flags that resolve dependencies
+    and write a recommended order of compilation for any downloaded packages.
   - Bugfix: issue #28, in which AUR queries for a local database with more
     than 250 packages failed.
   - Update: better error messages when pre/post command actions fail.
