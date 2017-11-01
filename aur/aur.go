@@ -191,6 +191,12 @@ func (p *Package) PkgName() string { return p.Name }
 // PkgVersion returns the version string of the package.
 func (p *Package) PkgVersion() string { return p.Version }
 
+// PkgDepends returns the dependencies of the package.
+func (p *Package) PkgDepends() []string { return p.Depends }
+
+// PkgMakeDepends returns the make dependenciess of the package.
+func (p *Package) PkgMakeDepends() []string { return p.MakeDepends }
+
 // DownloadURL returns the URL for downloading the PKGBUILD tarball.
 func (p *Package) DownloadURL() string {
 	return fmt.Sprintf("https://aur.archlinux.org%s", p.URLPath)

@@ -27,13 +27,14 @@ import (
 
 	"github.com/gonum/graph"
 	"github.com/goulash/pacman"
+	"github.com/goulash/pacman/aur"
 )
 
 // Node implements graph.Node.
 type Node struct {
 	id int
 
-	*pacman.Package
+	pacman.AnyPackage
 }
 
 // ID returns the unique (within the graph) ID of the node.
@@ -41,21 +42,22 @@ func (n *Node) ID() int { return n.id }
 
 // IsFromAUR returns whether the node comes from AUR.
 func (n *Node) IsFromAUR() bool {
-	return n.Package.Origin == pacman.AUROrigin
+	_, ok := n.AnyPackage.(*aur.Package)
+	return ok
 }
 
 // Dependencies returns a (newly created) string slice of the installation
 // and make dependencies of this package.
 func (n *Node) Dependencies() []string {
-	deps := make([]string, 0, len(n.Package.Depends)+len(n.Package.MakeDepends))
-	deps = append(deps, n.Package.Depends...)
-	deps = append(deps, n.Package.MakeDepends...)
+	deps := make([]string, 0, len(n.PkgDepends())+len(n.PkgMakeDepends()))
+	deps = append(deps, n.PkgDepends()...)
+	deps = append(deps, n.PkgMakeDepends()...)
 	return deps
 }
 
 // NumDependencies returns the number of make and installation dependencies the package has.
 func (n *Node) NumDependencies() int {
-	return len(n.Package.Depends) + len(n.Package.MakeDepends)
+	return len(n.PkgDepends()) + len(n.PkgMakeDepends())
 }
 
 func (n *Node) String() string {
@@ -169,10 +171,10 @@ func (g *Graph) NewNodeID() int {
 }
 
 // NewNode returns a new node.
-func (g *Graph) NewNode(pkg *pacman.Package) *Node {
+func (g *Graph) NewNode(pkg pacman.AnyPackage) *Node {
 	return &Node{
-		id:      g.NewNodeID(),
-		Package: pkg,
+		id:         g.NewNodeID(),
+		AnyPackage: pkg,
 	}
 }
 

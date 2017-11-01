@@ -105,9 +105,11 @@ type Package struct {
 	MakeOptions     []string  // makepkgopt
 }
 
-func (p *Package) Pkg() *Package      { return p }
-func (p *Package) PkgName() string    { return p.Name }
-func (p *Package) PkgVersion() string { return p.Version }
+func (p *Package) Pkg() *Package            { return p }
+func (p *Package) PkgName() string          { return p.Name }
+func (p *Package) PkgVersion() string       { return p.Version }
+func (p *Package) PkgDepends() []string     { return p.Depends }
+func (p *Package) PkgMakeDepends() []string { return p.MakeDepends }
 
 // Check if one package is the same as another.
 //

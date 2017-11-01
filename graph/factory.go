@@ -21,6 +21,7 @@ type Factory struct {
 	// Options
 	skipInstalled bool
 	truncate      bool
+	noUnknown     bool
 
 	// Statistics
 	aurCalls int
@@ -101,7 +102,7 @@ func (f *Factory) NewGraph(pkgs aur.Packages) (*Graph, error) {
 
 	lst := make([]*Node, 0, len(pkgs))
 	for _, p := range pkgs {
-		v := g.NewNode(p.Pkg())
+		v := g.NewNode(p)
 		lst = append(lst, v)
 		g.AddNode(v)
 	}
@@ -147,6 +148,16 @@ func (f *Factory) NewGraph(pkgs aur.Packages) (*Graph, error) {
 			}
 		}
 
+		// This may be called for AUR or unknown packages
+		addFetchedPkg := func(p pacman.AnyPackage) {
+			u := g.NewNode(p)
+			new = append(new, u)
+			g.AddNode(u)
+			for _, v := range pending[u.PkgName()] {
+				g.AddEdgeFromTo(v, u)
+			}
+		}
+
 		// Get all unavailable packages from AUR:
 		fromAUR := make([]string, len(unavailable))
 		for k := range unavailable {
@@ -154,19 +165,26 @@ func (f *Factory) NewGraph(pkgs aur.Packages) (*Graph, error) {
 		}
 		f.aurCalls++
 		pkgs, err := aur.ReadAll(fromAUR)
-		if err != nil {
-			return nil, err
-		}
 
 		// Add the AUR packages to the graph and to the list of new packages.
 		// Also add the edges that we remembered.
-		for _, p := range pkgs {
-			u := g.NewNode(p.Pkg())
-			new = append(new, u)
-			g.AddNode(u)
-			for _, v := range pending[u.PkgName()] {
-				g.AddEdgeFromTo(v, u)
+		if err != nil {
+			if !f.noUnknown && aur.IsNotFound(err) {
+				// the unknown packages are not found in AUR...
+				for _, p := range err.(*aur.NotFoundError).Names {
+					addFetchedPkg(&pacman.Package{
+						Name:        p,
+						Origin:      pacman.UnknownOrigin,
+						Depends:     make([]string, 0),
+						MakeDepends: make([]string, 0),
+					})
+				}
+			} else {
+				return nil, err
 			}
+		}
+		for _, p := range pkgs {
+			addFetchedPkg(p)
 		}
 
 		lst = new
