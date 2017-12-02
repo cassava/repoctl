@@ -14,7 +14,7 @@ function _repoctl_complete_actions {
 			"version[show version and date information]"
 }
 
-function _rpeoctl_complete_action_args {
+function _repoctl_complete_action_args {
 	case $words[((CURRENT - 1))] in
 		add)
 			_files -g "*.pkg.tar.xz"
@@ -28,7 +28,7 @@ function _rpeoctl_complete_action_args {
 
 function _repoctl {
 	_arguments  "1: :_repoctl_complete_actions" \
-				"2: :_rpeoctl_complete_action_args" \
+				"2: :_repoctl_complete_action_args" \
 				{-b,--backup}"[backup obsolete files instead of deleting]" \
 				{-B,--backup-dir}"[backup directory relative to repository path (default \"backup/\")]: :_files -/" \
 				"--color[when to use color (auto|never|always) (default auto)]: :(auto never always)" \
