@@ -1,7 +1,7 @@
 Repoctl Releases
 ================
 
-## Version 0.17 (1 November 2017)
+## Version 0.17 (31 January 2018)
 This release adds dependency resolution for the `down` command
 and fixes a bug that occurs when trying to update a repository that
 has more than 250 packages.
@@ -11,6 +11,8 @@ has more than 250 packages.
   - Bugfix: issue #28, in which AUR queries for a local database with more
     than 250 packages failed.
   - Update: better error messages when pre/post command actions fail.
+  - Update: somewhat improved zsh completion (contributed by KoHcoJlb).
+  - New: generated bash completion via the cobra library.
 
 ## Version 0.16 (22 November 2016)
 This release adds action hooks to the configuration, and shows the configuration
