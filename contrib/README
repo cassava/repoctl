@@ -1,5 +1,13 @@
 A brief explanation of the files in this directory:
 
-    `zsh_completion`: In case you use Zsh, you can install the Zsh completion
-        file for repo-keep, which makes using `repo` much easier. Put it in
-        the directory `/usr/share/zsh/site-functions/` as the file `_repo`.
+    `repoctl_completion.bash`: In case you use bash, you can install the
+        bash completion file into `/usr/share/bash-completion/` as the
+        file `repoctl`.
+        This file is generated automatically by a function in the Cobra
+        library that is used for the command line interface of repoctl.
+
+    `repoctl_completion.zsh`: In case you use Zsh, you can install the Zsh completion
+        file for repo-keep, which makes using `repoctl` much easier. Put it in
+        the directory `/usr/share/zsh/site-functions/` as the file `_repoctl`.
+        This file must currently be maintained manually, in contrast to the
+        bash completion file above. :-(
