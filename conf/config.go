@@ -100,9 +100,9 @@ type Configuration struct {
 	repodir    string
 
 	// AddParameters are parameters to add to the repo-add command line.
-	AddParameters []string `toml:"add_param"`
+	AddParameters []string `toml:"add_params"`
 	// RemoveParameters are parameters to add to the repo-remove command line.
-	RemoveParameters []string `toml:"rm_param"`
+	RemoveParameters []string `toml:"rm_params"`
 	// Packages to ignore when doing AUR related tasks.
 	IgnoreAUR []string `toml:"ignore_aur"`
 
