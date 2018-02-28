@@ -8,6 +8,8 @@ import "github.com/spf13/cobra"
 
 func init() {
 	MainCmd.AddCommand(resetCmd)
+
+	resetCmd.Flags().BoolVarP(&keepCacheFiles, "keep-cache", "k", false, "keep cache files untouched")
 }
 
 var resetCmd = &cobra.Command{
@@ -19,6 +21,6 @@ var resetCmd = &cobra.Command{
   recreates it by running the update command.
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return Repo.Reset(nil)
+		return Repo.Reset(nil, keepCacheFiles)
 	},
 }
