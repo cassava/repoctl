@@ -156,7 +156,7 @@ func (r *Repo) unlink(h errs.Handler, pkgfiles []string) error {
 //
 // TODO: What happens when there are multiple files, and you delete
 // the most recent one. Which file is deleted?
-func (r *Repo) Update(h errs.Handler, pkgnames ...string) error {
+func (r *Repo) Update(h errs.Handler, keepCacheFiles bool, pkgnames ...string) error {
 	errs.Init(&h)
 
 	pkgs, err := r.ReadMeta(h, pkgnames...)
@@ -175,7 +175,7 @@ func (r *Repo) Update(h errs.Handler, pkgnames ...string) error {
 		if p.HasUpdate() || len(pkgnames) > 0 {
 			updates = append(updates, p.Pkg().Filename)
 		}
-		if p.HasObsolete() {
+		if !keepCacheFiles && p.HasObsolete() {
 			obsolete = append(obsolete, pu.Map(p.Obsolete(), pu.PkgFilename)...)
 		}
 	}
@@ -195,7 +195,7 @@ func (r *Repo) Update(h errs.Handler, pkgnames ...string) error {
 
 // Reset deletes the repository database and readd all the packages.
 // This is the same as unlinking the database and then running Update.
-func (r *Repo) Reset(h errs.Handler) error {
+func (r *Repo) Reset(h errs.Handler, keepCacheFiles bool) error {
 	errs.Init(&h)
 
 	err := r.DeleteDatabase()
@@ -203,7 +203,7 @@ func (r *Repo) Reset(h errs.Handler) error {
 		return err
 	}
 
-	return r.Update(h)
+	return r.Update(h, keepCacheFiles)
 }
 
 // DeleteDatabase deletes the repository database (but not the files).

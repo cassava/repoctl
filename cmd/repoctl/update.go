@@ -8,6 +8,8 @@ import "github.com/spf13/cobra"
 
 func init() {
 	MainCmd.AddCommand(updateCmd)
+
+	updateCmd.Flags().BoolVarP(&keepCacheFiles, "keep-cache", "k", false, "keep cache files untouched")
 }
 
 var updateCmd = &cobra.Command{
@@ -24,6 +26,6 @@ var updateCmd = &cobra.Command{
 `,
 	Example: `  repoctl update fairsplit`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return Repo.Update(nil, args...)
+		return Repo.Update(nil, keepCacheFiles, args...)
 	},
 }

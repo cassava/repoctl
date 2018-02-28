@@ -12,13 +12,15 @@ import (
 )
 
 var (
-	statusAUR     bool
-	statusMissing bool
+	keepCacheFiles bool
+	statusAUR      bool
+	statusMissing  bool
 )
 
 func init() {
 	MainCmd.AddCommand(statusCmd)
 
+	statusCmd.Flags().BoolVarP(&keepCacheFiles, "keep-cache", "k", false, "keep cache files untouched")
 	statusCmd.Flags().BoolVarP(&statusAUR, "aur", "a", false, "check AUR for upgrades")
 	statusCmd.Flags().BoolVarP(&statusMissing, "missing", "m", false, "highlight packages missing in AUR")
 }
@@ -31,7 +33,7 @@ var statusCmd = &cobra.Command{
   In particular, the following is shown:
 
     "updated":  database entries that can be updated/added (new package files)
-    "obsolete": package files that can be deleted (or backed up)
+    "obsolete": package files that can be deleted (or backed up) (only without -k)
     "removal":  database entries that should be deleted (no package files)
     "upgrade":  packages with updates in AUR (only with -a)
     "!aur":     packages unavailable in AUR (only with -m)
@@ -70,7 +72,7 @@ var statusCmd = &cobra.Command{
 			if !p.HasFiles() {
 				flags = append(flags, col.Sprint("@rremoval"))
 			}
-			if o := p.Obsolete(); len(o) > 0 {
+			if o := p.Obsolete(); !keepCacheFiles && len(o) > 0 {
 				flags = append(flags, col.Sprintf("@yobsolete(@|%d@y)", len(o)))
 			}
 			if statusMissing && p.AUR == nil && !ignore[p.Name] {
