@@ -24,9 +24,10 @@ type Repo struct {
 	// relative from Directory.
 	Database string
 
-	// Backup specifies whether to backup old packages
+	// Backup specifies whether to backup old packages.
 	Backup bool
-	// BackupDir specifies where old packages are backed up to,
+	// BackupDir specifies where old packages are backed up to.
+	// If the path is not absolute, then it is interpreted as
 	// relative to the repository directory.
 	BackupDir string
 	// IgnoreUpgrades specifies which packages to ignore when looking

@@ -96,11 +96,31 @@ func (r *Repo) Dispatch(h errs.Handler, pkgfiles ...string) error {
 	return r.unlink(h, pkgfiles)
 }
 
+// backupDirAbs returns the absolute path to the backup directory.
+// If r.BackupDir is relative, then it is relative to the repository
+// path, otherwise it is as is.
+func (r *Repo) backupDirAbs() string {
+	if path.IsAbs(r.BackupDir) {
+		return path.Clean(r.BackupDir)
+	}
+	return path.Join(r.Directory, r.BackupDir)
+}
+
 func (r *Repo) backup(h errs.Handler, pkgfiles []string) error {
+	// If the backup directory is the directory where all the
+	// packages are, then the idea is that we leave them in place.
+	backupDir := r.backupDirAbs()
+	if backupDir == r.Directory {
+		for _, f := range pkgfiles {
+			r.printf("caching: %s\n", f)
+		}
+		return nil
+	}
+
 	for _, f := range pkgfiles {
 		src := path.Base(f)
 		r.printf("backing up: %s\n", f)
-		dst := path.Join(r.Directory, r.BackupDir, src)
+		dst := path.Join(backupDir, src)
 		err := osutil.MoveFileLazy(f, dst)
 		if err != nil {
 			err = h(err)
