@@ -23,6 +23,9 @@ var removeCmd = &cobra.Command{
 `,
 	Example: `  repoctl rm fairsplit`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if Repo.Backup && Repo.IsObsoleteCached() {
+			col.Printf("@yWarning: removing only entry from database, use --backup=false to delete package files.\n")
+		}
 		return Repo.Remove(nil, args...)
 	},
 }

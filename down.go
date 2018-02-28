@@ -41,7 +41,6 @@ func (r *Repo) DependencyGraph(h errs.Handler, pkgnames ...string) (*graph.Graph
 func (r *Repo) Download(h errs.Handler, destdir string, extract bool, clobber bool, pkgnames ...string) error {
 	errs.Init(&h)
 	if len(pkgnames) == 0 {
-		r.debugf("repoctl.(Repo).Download: pkgnames empty.\n")
 		return nil
 	}
 

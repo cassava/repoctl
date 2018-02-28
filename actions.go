@@ -34,7 +34,6 @@ func (r *Repo) Move(h errs.Handler, pkgfiles ...string) error {
 func (r *Repo) add(h errs.Handler, pkgfiles []string, ar func(string, string) error, lbl string) error {
 	errs.Init(&h)
 	if len(pkgfiles) == 0 {
-		r.debugf("repoctl.(Repo).add: pkgfiles empty.\n")
 		return nil
 	}
 
@@ -67,7 +66,6 @@ func (r *Repo) add(h errs.Handler, pkgfiles []string, ar func(string, string) er
 func (r *Repo) Remove(h errs.Handler, pkgnames ...string) error {
 	errs.Init(&h)
 	if len(pkgnames) == 0 {
-		r.debugf("repoctl.(Repo).Remove: pkgnames empty.\n")
 		return nil
 	}
 
@@ -86,7 +84,6 @@ func (r *Repo) Remove(h errs.Handler, pkgnames ...string) error {
 func (r *Repo) Dispatch(h errs.Handler, pkgfiles ...string) error {
 	errs.Init(&h)
 	if len(pkgfiles) == 0 {
-		r.debugf("repoctl.(Repo).Dispatch: pkgfiles empty.\n")
 		return nil
 	}
 
@@ -119,7 +116,7 @@ func (r *Repo) backupDirAbs() string {
 func (r *Repo) backup(h errs.Handler, pkgfiles []string) error {
 	if r.IsObsoleteCached() {
 		for _, f := range pkgfiles {
-			r.printf("caching: %s\n", f)
+			r.debugf("cached: %s\n", f)
 		}
 		return nil
 	}

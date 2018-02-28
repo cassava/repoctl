@@ -78,7 +78,7 @@ func (r *Repo) FindUpgrades(h errs.Handler, pkgnames ...string) (Upgrades, error
 	err = pkgs.ReadAUR()
 	if err != nil {
 		if aur.IsNotFound(err) {
-			r.debugf(err.Error())
+			r.debugf("error: %s\n", err.Error())
 		} else {
 			return nil, err
 		}
@@ -123,7 +123,6 @@ func (r *Repo) FindNewest(h errs.Handler, pkgnames ...string) (pacman.Packages, 
 func (r *Repo) FindSimilar(h errs.Handler, pkgfiles ...string) (pacman.Packages, error) {
 	errs.Init(&h)
 	if len(pkgfiles) == 0 {
-		r.debugf("repoctl.(Repo).FindSimilar: pkgfiles empty.\n")
 		return nil, nil
 	}
 

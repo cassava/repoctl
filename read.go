@@ -90,7 +90,7 @@ func (r *Repo) MakeAbs(pkgs pacman.Packages) {
 	for _, p := range pkgs {
 		filepath := path.Join(r.Directory, path.Base(p.Filename))
 		if p.Filename != filepath {
-			r.debugf("repoctl.(Repo).Absolutify: pkgfile filename incorrect: %s\n", p.Filename)
+			r.debugf("note: pkgfile filename incorrect: %s\n", p.Filename)
 		}
 		p.Filename = filepath
 	}
