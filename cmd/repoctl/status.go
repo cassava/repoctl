@@ -14,6 +14,7 @@ import (
 var (
 	statusAUR     bool
 	statusMissing bool
+	statusCached  bool
 )
 
 func init() {
@@ -21,6 +22,7 @@ func init() {
 
 	statusCmd.Flags().BoolVarP(&statusAUR, "aur", "a", false, "check AUR for upgrades")
 	statusCmd.Flags().BoolVarP(&statusMissing, "missing", "m", false, "highlight packages missing in AUR")
+	statusCmd.Flags().BoolVarP(&statusCached, "cached", "c", false, "show how many old package files are cached")
 }
 
 var statusCmd = &cobra.Command{
@@ -32,6 +34,7 @@ var statusCmd = &cobra.Command{
 
     "updated":  database entries that can be updated/added (new package files)
     "obsolete": package files that can be deleted (or backed up)
+    "cached":   package files that are cached (contrary to obsolete)
     "removal":  database entries that should be deleted (no package files)
     "upgrade":  packages with updates in AUR (only with -a)
     "!aur":     packages unavailable in AUR (only with -m)
@@ -71,7 +74,13 @@ var statusCmd = &cobra.Command{
 				flags = append(flags, col.Sprint("@rremoval"))
 			}
 			if o := p.Obsolete(); len(o) > 0 {
-				flags = append(flags, col.Sprintf("@yobsolete(@|%d@y)", len(o)))
+				if Repo.IsObsoleteCached() {
+					if statusCached {
+						flags = append(flags, col.Sprintf("@ycached(@|%d@y)", len(o)))
+					}
+				} else {
+					flags = append(flags, col.Sprintf("@yobsolete(@|%d@y)", len(o)))
+				}
 			}
 			if statusMissing && p.AUR == nil && !ignore[p.Name] {
 				flags = append(flags, col.Sprint("@y!aur"))

@@ -96,6 +96,16 @@ func (r *Repo) Dispatch(h errs.Handler, pkgfiles ...string) error {
 	return r.unlink(h, pkgfiles)
 }
 
+// IsObsoleteCached returns true when obsolete package files should
+// be cached instead of backed-up or deleted.
+//
+// If the backup directory is the directory where all the
+// packages are, then the idea is that we leave them in place.
+func (r *Repo) IsObsoleteCached() bool {
+	// TODO: this assumes that r.Directory is absolute and clean.
+	return r.backupDirAbs() == r.Directory
+}
+
 // backupDirAbs returns the absolute path to the backup directory.
 // If r.BackupDir is relative, then it is relative to the repository
 // path, otherwise it is as is.
@@ -107,16 +117,14 @@ func (r *Repo) backupDirAbs() string {
 }
 
 func (r *Repo) backup(h errs.Handler, pkgfiles []string) error {
-	// If the backup directory is the directory where all the
-	// packages are, then the idea is that we leave them in place.
-	backupDir := r.backupDirAbs()
-	if backupDir == r.Directory {
+	if r.IsObsoleteCached() {
 		for _, f := range pkgfiles {
 			r.printf("caching: %s\n", f)
 		}
 		return nil
 	}
 
+	backupDir := r.backupDirAbs()
 	for _, f := range pkgfiles {
 		src := path.Base(f)
 		r.printf("backing up: %s\n", f)
