@@ -1,6 +1,29 @@
 Repoctl Releases
 ================
 
+## Version 0.18 (28 February 2018)
+This release adds an alternate way to deal with obsolete package files, for
+better interoperability with tools like [paccache](https://wiki.archlinux.org/index.php/pacman)
+(see Issue #30 for the discussion; many thanks to @maximbaz).
+
+When backup is enabled and the backup directory resolves to the repository
+directory, then package files are ignored instead of moved or deleted.
+You can make this permanent in the configuration:
+```toml
+backup = true
+backup_dir = ""
+```
+When this is set, you need to pass `--backup=false` to get repoctl to ever
+remove the package files, such as when using `repoctl remove pkgname`.
+
+Other minor changes include:
+
+  - New: `status` command learned `-c` (`--cached`)
+  - Update: pruning the set of debug messages printed with `--debug`.
+  - Bugfix: pull request #31, which fixed `add_params` and `rm_params` parsing
+    in the configuration file (contributed by @maximbaz).
+    Previously, these were incorrectly parsed in the singular tense.
+
 ## Version 0.17 (31 January 2018)
 This release adds dependency resolution for the `down` command
 and fixes a bug that occurs when trying to update a repository that
@@ -11,7 +34,7 @@ has more than 250 packages.
   - Bugfix: issue #28, in which AUR queries for a local database with more
     than 250 packages failed.
   - Update: better error messages when pre/post command actions fail.
-  - Update: somewhat improved zsh completion (contributed by KoHcoJlb).
+  - Update: somewhat improved zsh completion (contributed by @KoHcoJlb).
   - New: generated bash completion via the cobra library.
 
 ## Version 0.16 (22 November 2016)

@@ -4,7 +4,12 @@
 
 package main
 
-import "github.com/spf13/cobra"
+import (
+	"fmt"
+	"os"
+
+	"github.com/spf13/cobra"
+)
 
 func init() {
 	MainCmd.AddCommand(removeCmd)
@@ -20,11 +25,17 @@ var removeCmd = &cobra.Command{
   database, and deletes any associated package files, unless the backup
   option is given, in which case the package files are moved to the
   backup directory.
+
+  If the backup directory resolves to the repository directory,
+  then package files are ignored; repoctl update will add them again.
+  In this case, you probably want to use --backup=false to force
+  them to be deleted.
 `,
-	Example: `  repoctl rm fairsplit`,
+	Example: `  repoctl rm fairsplit
+  repoctl rm --backup=false fairsplit`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if Repo.Backup && Repo.IsObsoleteCached() {
-			col.Printf("@yWarning: removing only entry from database, use --backup=false to delete package files.\n")
+			fmt.Fprintf(os.Stderr, "Warning: removing only database entries, use --backup=false to delete package files.\n")
 		}
 		return Repo.Remove(nil, args...)
 	},

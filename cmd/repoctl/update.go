@@ -21,8 +21,14 @@ var updateCmd = &cobra.Command{
 
   If no package names are given, the entire repository is scanned for
   updates.
+
+  If backup is true, obsolete files are backup up instead of deleted.
+  If the backup directory resolves to the repository directory,
+  then obsolete package files are ignored.
+  You can specify --backup=false to force them to be deleted.
 `,
-	Example: `  repoctl update fairsplit`,
+	Example: `  repoctl update fairsplit
+  repoctl update --backup=false`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return Repo.Update(nil, args...)
 	},

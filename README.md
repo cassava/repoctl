@@ -4,17 +4,15 @@ repoctl
 The **repoctl** program helps you manage your local repository of Pacman
 packages (as found on Arch Linux and derivatives). It is especially useful when
 used together with tools such as [cower](https://github.com/falconindy/cower),
-that help you find and download AUR packages.
+that help you find and download AUR packages, although repoctl can download too. :-)
 
 The repoctl program is distributed under the [MIT License](LICENSE).
 
 ### Installation
-
 The recommended method is to install the `repoctl` package from [AUR](https://aur.archlinux.org/packages/repoctl),
 as this package installs other useful files, such as the Zsh completion script.
 
 Alternatively, if you have [Go](https://golang.org) installed:
-
 ```sh
 go get -u github.com/cassava/repoctl
 cd $GOPATH/src/github.com/cassava/repoctl
@@ -32,7 +30,6 @@ configuration file, so you can change it at a later time.
 
 Let's say you want your repository at `/srv/pkgs`,
 and you want to name it `myrepo`. Then you would run:
-
 ```sh
 repoctl new config /srv/pkgs/myrepo.db.tar.gz
 ```
@@ -43,7 +40,6 @@ Note: repoctl will not create the directory if it does not already exists, so
 make sure you do this at some point.
 
 To add one or more packages to the repository, we can run:
-
 ```sh
 repoctl add xbindkeys-1.8.6-1-x86_64.pkg.tar.xz rxvt-unicode-9.22-6-*.pkg.tar.xz
 ```
@@ -53,7 +49,6 @@ versions of the same package in the database.
 
 You can also use repoctl to manage AUR packages. You can download one or more
 AUR packages with:
-
 ```sh
 cd ~/ibuildhere
 repoctl down cantata-git rxvt-unicode-patched
@@ -63,14 +58,12 @@ These packages are then downloaded and extracted. Note: the `down` subcommand
 currently does not fetch dependencies. If you have configured makepkg to put
 these in your repository (see `PKGDEST` variable in `/etc/makepkg.conf`), then
 you can update your repository database with:
-
 ```sh
 repoctl update
 ```
 
 You can check the status of your repository, including whether there are any
 updates to your packages from AUR, with:
-
 ```sh
 repoctl status -a
 ```
@@ -78,7 +71,6 @@ repoctl status -a
 If you find you have a list of packages that have newer versions on AUR, you
 can get them all in one go. If you are feeling adventurous, you can build
 them in one go too:
-
 ```sh
 cd ~/ibuildhere
 repoctl down -u
@@ -96,7 +88,6 @@ done
 ```
 
 You can pack that last bit on one line with:
-
 ```sh
 for dir in *; do cd $dir; makepkg -cs && repoctl add *.pkg.tar.xz && cd ..  && rm -rf $dir || cd ..; done
 ```
@@ -108,7 +99,6 @@ at each step.
 These are not the only things that repoctl can do, to get a fuller picture, have
 a look at the help, which you can always get on the command or any of the
 subcommands with the `--help` flag or by running
-
 ```sh
 repoctl help [cmd]
 ```
@@ -117,11 +107,23 @@ Enjoy!
 
 ### Tips
 
+#### Caching obsolete packages
+Sometimes you might want to hold on to the obsolete packages and leave them
+in the directory at the same time, and use a tool like [paccache](https://wiki.archlinux.org/index.php/pacman)
+to manage them. You can easily enable this in your config:
+```toml
+# ...
+backup = true
+backup_dir = ""
+```
+Now, obsolete packages will be ignored. They will also be ignored when removing
+packages from the database, but you can temporarily disable the caching by
+setting the `--backup=false` flag.
+
 #### Packages on a remote filesystem
 If you have a super fast internet connection and want your packages on a remote
 server, you can get repoctl to play along with the `pre_action` and
 `post_action` options in the configuration file:
-
 ```toml
 # ...
 pre_action  = "sshfs server:location ~/localmnt"
@@ -161,7 +163,10 @@ ignore_aur = [
 backup = false
 
 # backup_dir specifies which directory backups are stored in.
-# If a relative path is given, then it is relative to the repository.
+# - If a relative path is given, then it is interpreted as relative to
+#   the repository directory.
+# - If the path here resolves to the same as repo, then obsolete packages
+#   are effectively ignored by repoctl, if backup is true.
 backup_dir = "backup/"
 
 # interactive specifies that repoctl should ask before doing anything
@@ -184,4 +189,3 @@ pre_action = "sshfs host:www/pkgs.me ~/mnt"
 # post_action is a command that should be executed before exiting.
 post_action = "fusermount -u ~/mnt"
 ```
-

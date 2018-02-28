@@ -29,8 +29,9 @@ var addCmd = &cobra.Command{
   is given, the "obsolete" package files are moved to a backup
   directory of choice.
 
-  Note: since version 0.14, the semantic meaning of this command has
-        changed. See the update command for the old behavior.
+  If the backup directory resolves to the repository directory,
+  then obsolete package files are ignored.
+  You can specify --backup=false to force them to be deleted.
 `,
 	Example: `  repoctl add -m ./fairsplit-1.0.pkg.tar.gz`,
 	RunE: func(cmd *cobra.Command, args []string) error {
