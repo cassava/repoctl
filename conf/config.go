@@ -59,7 +59,10 @@ repo = {{printt .Repository}}
 backup = {{printt .Backup}}
 
 # backup_dir specifies which directory backups are stored in.
-# If a relative path is given, then
+# - If a relative path is given, then it is interpreted as relative to
+#   the repository directory.
+# - If the path here resolves to the same as repo, then obsolete packages
+#   are effectively ignored by repoctl, if backup is true.
 backup_dir = {{printt .BackupDir}}
 
 # interactive specifies that repoctl should ask before doing anything
