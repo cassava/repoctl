@@ -65,8 +65,8 @@ var MainCmd = &cobra.Command{
 	Long: `Repoctl helps manage local Pacman repositories, and acts in particular as
 a supplement to the repo-add and repo-remove tools that come with Pacman.
 
-Whether compiling and installing from AUR every time is not what you want,
-or if you want to host your own repository, repoctl is right for you.
+If compiling and installing from AUR every time is not what you want,
+or if you want to host your own repository, then repoctl might be for you.
 
 Note that in all of these commands, the following terminology is used:
 
