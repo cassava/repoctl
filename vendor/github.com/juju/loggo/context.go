@@ -39,6 +39,7 @@ func NewContext(rootLevel Level) *Context {
 		level:   rootLevel,
 		context: context,
 	}
+	context.root.parent = context.root
 	context.modules[""] = context.root
 	return context
 }
@@ -154,6 +155,14 @@ func (c *Context) AddWriter(name string, writer Writer) error {
 	}
 	c.writers[name] = writer
 	return nil
+}
+
+// Writer returns the named writer if one exists.
+// If there is not a writer with the specified name, nil is returned.
+func (c *Context) Writer(name string) Writer {
+	c.writersMutex.Lock()
+	defer c.writersMutex.Unlock()
+	return c.writers[name]
 }
 
 // RemoveWriter remotes the specified writer. If a writer is not found with

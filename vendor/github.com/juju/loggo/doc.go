@@ -26,22 +26,26 @@ Each module can specify its own severity level.  Logging calls that are of
 a lower severity than the module's effective severity level are not written
 out.
 
+Loggers are created through their Context. There is a default global context
+that is used if you just want simple use. Contexts are used where you may want
+different sets of writers for different loggers. Most use cases are fine with
+just using the default global context.
+
 Loggers are created using the GetLogger function.
 	logger := loggo.GetLogger("foo.bar")
 
-By default there is one writer registered, which will write to Stderr,
+The default global context has one writer registered, which will write to Stderr,
 and the root module, which will only emit warnings and above.
 If you want to continue using the default
 logger, but have it emit all logging levels you need to do the following.
 
-	writer, _, err := loggo.RemoveWriter("default")
+	writer, err := loggo.RemoveWriter("default")
 	// err is non-nil if and only if the name isn't found.
 	loggo.RegisterWriter("default", writer)
 
 To make loggo produce colored output, you can do the following,
 having imported github.com/juju/loggo/loggocolor:
 
-	loggo.RemoveWriter("default")
-	loggo.RegisterWriter("default", loggocolor.NewWriter(os.Stderr))
+	loggo.ReplaceDefaultWriter(loggocolor.NewWriter(os.Stderr))
 */
 package loggo

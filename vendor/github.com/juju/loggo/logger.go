@@ -27,6 +27,28 @@ func (logger Logger) getModule() *module {
 	return logger.impl
 }
 
+// Parent returns the Logger whose module name is the same
+// as this logger without the last period and suffix.
+// For example the parent of the logger that has the module
+// "a.b.c" is "a.b".
+// The Parent of the root logger is still the root logger.
+func (logger Logger) Parent() Logger {
+	return Logger{logger.getModule().parent}
+}
+
+// Child returns the Logger whose module name is the composed of this
+// Logger's name and the specified name.
+func (logger Logger) Child(name string) Logger {
+	module := logger.getModule()
+	path := module.name
+	if path == "" {
+		path = name
+	} else {
+		path += "." + name
+	}
+	return module.context.GetLogger(path)
+}
+
 // Name returns the logger's module name.
 func (logger Logger) Name() string {
 	return logger.getModule().Name()

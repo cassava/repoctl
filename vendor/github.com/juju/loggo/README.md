@@ -27,20 +27,31 @@ Each module can specify its own severity level.  Logging calls that are of
 a lower severity than the module's effective severity level are not written
 out.
 
+Loggers are created through their Context. There is a default global context
+that is used if you just want simple use. Contexts are used where you may want
+different sets of writers for different loggers. Most use cases are fine with
+just using the default global context.
+
 Loggers are created using the GetLogger function.
 
 
 	logger := loggo.GetLogger("foo.bar")
 
-By default there is one writer registered, which will write to Stderr,
+The default global context has one writer registered, which will write to Stderr,
 and the root module, which will only emit warnings and above.
 If you want to continue using the default
 logger, but have it emit all logging levels you need to do the following.
 
 
-	writer, _, err := loggo.RemoveWriter("default")
+	writer, err := loggo.RemoveWriter("default")
 	// err is non-nil if and only if the name isn't found.
-	loggo.RegisterWriter("default", writer, loggo.TRACE)
+	loggo.RegisterWriter("default", writer)
+
+To make loggo produce colored output, you can do the following,
+having imported github.com/juju/loggo/loggocolor:
+
+
+	loggo.ReplaceDefaultWriter(loggocolor.NewWriter(os.Stderr))
 
 
 
@@ -54,24 +65,6 @@ a Context.
 
 
 ## Variables
-``` go
-var (
-    // SeverityColor defines the colors for the levels output by the ColorWriter.
-    SeverityColor = map[Level]*ansiterm.Context{
-        TRACE:   ansiterm.Foreground(ansiterm.Default),
-        DEBUG:   ansiterm.Foreground(ansiterm.Green),
-        INFO:    ansiterm.Foreground(ansiterm.BrightBlue),
-        WARNING: ansiterm.Foreground(ansiterm.Yellow),
-        ERROR:   ansiterm.Foreground(ansiterm.BrightRed),
-        CRITICAL: &ansiterm.Context{
-            Foreground: ansiterm.White,
-            Background: ansiterm.Red,
-        },
-    }
-    // LocationColor defines the colors for the location output by the ColorWriter.
-    LocationColor = ansiterm.Foreground(ansiterm.BrightBlue)
-)
-```
 ``` go
 var TimeFormat = initTimeFormat()
 ```
@@ -308,6 +301,15 @@ ResetWriters is generally only used in testing and removes all the writers.
 
 
 
+### func (\*Context) Writer
+``` go
+func (c *Context) Writer(name string) Writer
+```
+Writer returns the named writer if one exists.
+If there is not a writer with the specified name, nil is returned.
+
+
+
 ## type Entry
 ``` go
 type Entry struct {
@@ -421,6 +423,15 @@ func GetLogger(name string) Logger
 GetLogger returns a Logger for the given module name,
 creating it and its parents if necessary.
 
+
+
+
+### func (Logger) Child
+``` go
+func (logger Logger) Child(name string) Logger
+```
+Child returns the Logger whose module name is the composed of this
+Logger's name and the specified name.
 
 
 
@@ -566,6 +577,18 @@ Name returns the logger's module name.
 
 
 
+### func (Logger) Parent
+``` go
+func (logger Logger) Parent() Logger
+```
+Parent returns the Logger whose module name is the same
+as this logger without the last period and suffix.
+For example the parent of the logger that has the module
+"a.b.c" is "a.b".
+The Parent of the root logger is still the root logger.
+
+
+
 ### func (Logger) SetLogLevel
 ``` go
 func (logger Logger) SetLogLevel(level Level)
@@ -655,14 +678,6 @@ Writer is implemented by any recipient of log messages.
 
 
 
-
-
-### func NewColorWriter
-``` go
-func NewColorWriter(writer io.Writer) Writer
-```
-NewColorWriter will write out colored severity levels if the writer is
-outputting to a terminal.
 
 
 ### func NewMinimumLevelWriter

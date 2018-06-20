@@ -11,6 +11,8 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+
+	"github.com/juju/errors"
 )
 
 // UserHomeDir returns the home directory for the specified user, or the
@@ -49,6 +51,15 @@ func NormalizePath(dir string) (string, error) {
 		dir = userHomePathRegexp.ReplaceAllString(dir, fmt.Sprintf("%s$path", userHomeDir))
 	}
 	return filepath.Clean(dir), nil
+}
+
+// ExpandPath normalises (via Normalize) a path returning an absolute path.
+func ExpandPath(path string) (string, error) {
+	normPath, err := NormalizePath(path)
+	if err != nil {
+		return "", errors.Annotate(err, "unable to normalise file path")
+	}
+	return filepath.Abs(normPath)
 }
 
 // EnsureBaseDir ensures that path is always prefixed by baseDir,
