@@ -1,6 +1,12 @@
 Repoctl Releases
 ================
 
+## Version 0.19 (unreleased)
+This release fixes some minor bugs.
+
+- Bugfix: issue #35, in which signature files are recognized as package
+  files and are attempted to be read.
+
 ## Version 0.18 (28 February 2018)
 This release adds an alternate way to deal with obsolete package files, for
 better interoperability with tools like [paccache](https://wiki.archlinux.org/index.php/pacman)
