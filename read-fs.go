@@ -86,6 +86,10 @@ func ReadNames(h errs.Handler, dirpath string, pkgnames ...string) (Packages, er
 			continue
 		}
 		for _, fp := range matches {
+			if !alpm.HasPackageFormat(fp) {
+				// Globbing also finds signatures, which we currently ignore
+				continue
+			}
 			p, err := Read(fp)
 			if err != nil {
 				err = h(err)
