@@ -159,7 +159,7 @@ func (r *Repo) FindUpdates(h errs.Handler, pkgnames ...string) (pacman.Packages,
 
 	// All packages that are newer than the packages in the database,
 	// packages in the database that don't have files are excluded.
-	dbpkgs = pu.Filter(dbpkgs, func(p pacman.AnyPackage) bool { return r.Exists(p) }).Pkgs()
+	dbpkgs = pu.Filter(dbpkgs, r.Exists).Pkgs()
 	return pu.Filter(pkgs, pu.NewerFltr(dbpkgs)).Pkgs(), nil
 }
 
