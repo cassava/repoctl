@@ -13,6 +13,41 @@ import (
 	pu "github.com/goulash/pacman/pkgutil"
 )
 
+// Link tries to hard link the file, and failing that, copies it over.
+func (r *Repo) Link(h errs.Handler, pkgfiles ...string) error {
+	return r.add(h, pkgfiles, linkFile, "linking")
+}
+
+// TODO: Get this in the osutil package.
+func linkFile(src, dst string) error {
+	// Before we delete dst, make sure src exists!
+	if ex, err := osutil.FileExists(src); !ex {
+		if err != nil {
+			return err
+		}
+		return &NotExistsError{src}
+	}
+
+	// Check if dst exists, so we can delete prior to linking.
+	if ex, err := osutil.FileExists(dst); !ex {
+		if err != nil {
+			return err
+		}
+	} else {
+		err = os.Remove(dst)
+		if err != nil {
+			return err
+		}
+	}
+
+	err := os.Link(src, dst)
+	if err != nil {
+		// If we can't link it (not same filesystem, etc.), then try copying.
+		return osutil.CopyFileLazy(src, dst)
+	}
+	return nil
+}
+
 // Copy copies the given files into the repository if they do not already
 // exist there and adds them to the database.
 func (r *Repo) Copy(h errs.Handler, pkgfiles ...string) error {

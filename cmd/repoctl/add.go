@@ -7,12 +7,14 @@ package main
 import "github.com/spf13/cobra"
 
 var movePackages bool
+var linkPackages bool
 var addRequireSignature bool
 
 func init() {
 	MainCmd.AddCommand(addCmd)
 
 	addCmd.Flags().BoolVarP(&movePackages, "move", "m", false, "move packages into repository")
+	addCmd.Flags().BoolVarP(&linkPackages, "link", "l", false, "link packages instead of copying")
 	addCmd.Flags().BoolVarP(&addRequireSignature, "require-signature", "r", false, "require package signatures")
 }
 
@@ -43,6 +45,9 @@ var addCmd = &cobra.Command{
 
 		if movePackages {
 			return Repo.Move(nil, args...)
+		}
+		if linkPackages {
+			return Repo.Link(nil, args...)
 		}
 		return Repo.Copy(nil, args...)
 	},
