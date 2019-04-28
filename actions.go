@@ -20,26 +20,6 @@ func (r *Repo) Link(h errs.Handler, pkgfiles ...string) error {
 
 // TODO: Get this in the osutil package.
 func linkFile(src, dst string) error {
-	// Before we delete dst, make sure src exists!
-	if ex, err := osutil.FileExists(src); !ex {
-		if err != nil {
-			return err
-		}
-		return &NotExistsError{src}
-	}
-
-	// Check if dst exists, so we can delete prior to linking.
-	if ex, err := osutil.FileExists(dst); !ex {
-		if err != nil {
-			return err
-		}
-	} else {
-		err = os.Remove(dst)
-		if err != nil {
-			return err
-		}
-	}
-
 	err := os.Link(src, dst)
 	if err != nil {
 		// If we can't link it (not same filesystem, etc.), then try copying.
