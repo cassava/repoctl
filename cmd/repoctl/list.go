@@ -33,6 +33,8 @@ var (
 	listSynchronize bool
 	// Same as all of the above.
 	listAllOptions bool
+	// Only show registered packages.
+	filterRegistered bool
 
 	searchPOSIX bool
 )
@@ -40,6 +42,7 @@ var (
 func init() {
 	MainCmd.AddCommand(listCmd)
 
+	listCmd.Flags().BoolVarP(&filterRegistered, "registered", "r", false, "only show packages that are in the database")
 	listCmd.Flags().BoolVarP(&listVersioned, "versioned", "v", false, "show package versions along with name")
 	listCmd.Flags().BoolVarP(&listPending, "pending", "p", false, "mark pending changes to the database")
 	listCmd.Flags().BoolVarP(&listDuplicates, "duplicates", "d", false, "mark packages with duplicate package files")
@@ -57,7 +60,7 @@ var listCmd = &cobra.Command{
 
   All packages that are in the managed repository are listed,
   whether or not they are registered with the database.
-  If you want to filter packages, see the filter command.
+  If you only want to show registered packages, use the -r flag.
   
   When marking entries, the following symbols are used:
 
@@ -103,6 +106,10 @@ var listCmd = &cobra.Command{
 		pkgs, err := Repo.ListMeta(nil, listSynchronize, func(mp pacman.AnyPackage) string {
 			p := mp.(*meta.Package)
 			if regex != nil && !regex.MatchString(p.PkgName()) {
+				return ""
+			}
+
+			if filterRegistered && !p.IsRegistered() {
 				return ""
 			}
 
