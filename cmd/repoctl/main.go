@@ -116,7 +116,7 @@ func main() {
 		// We didn't manage to load any configuration, which means that repoctl
 		// is unconfigured. There are some commands that work nonetheless, so
 		// we can't stop now -- which is why we don't os.Exit(1).
-		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		fmt.Fprintf(os.Stderr, "error: %s\n", err)
 	}
 
 	// Arguments from the command line override the configuration file,
@@ -130,13 +130,13 @@ func main() {
 	if err != nil {
 		// If this is an ExecError, we deal with it specially:
 		if e, ok := err.(*ExecError); ok {
-			fmt.Fprintf(os.Stderr, "Error: command %q failed: %s\n", e.Command, e.Err)
-			fmt.Fprintf(os.Stderr, "Command output:\n%s", e.Output)
+			fmt.Fprintf(os.Stderr, "error: command %q failed: %s\n", e.Command, e.Err)
+			fmt.Fprintf(os.Stderr, "command output:\n%s", e.Output)
 			os.Exit(1)
 		}
 
 		// All other errors:
-		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		fmt.Fprintf(os.Stderr, "error: %s\n", err)
 		if e, ok := err.(*UsageError); ok {
 			e.Usage()
 		}

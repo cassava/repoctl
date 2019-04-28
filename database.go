@@ -5,11 +5,11 @@
 package repoctl
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 var (
@@ -66,30 +66,24 @@ func joinArgs(args ...interface{}) []string {
 
 // system runs cmd, and prints the stderr output to ew, if ew is not nil.
 func system(cmd *exec.Cmd, ew io.Writer) error {
-	if ew != nil {
+	if ew == nil {
 		return cmd.Run()
 	}
 
-	out, err := cmd.StderrPipe()
+	bs, err := cmd.CombinedOutput()
 	if err != nil {
-		return err
-	}
-
-	err = cmd.Start()
-	if err != nil {
-		return err
-	}
-
-	rd := bufio.NewReader(out)
-	for {
-		line, err := rd.ReadString('\n')
-		if err != nil {
-			break
+		command := strings.Join(cmd.Args, " ")
+		fmt.Fprintln(ew, "error executing:", command)
+		fmt.Fprintln(ew, "---")
+		if strings.HasSuffix(string(bs), "\n") {
+			fmt.Fprint(ew, string(bs))
+		} else {
+			fmt.Fprintln(ew, string(bs))
 		}
-		fmt.Fprintln(ew, line)
+		fmt.Fprintln(ew, "...")
+		return fmt.Errorf("command exited with non-zero return code: %s", command)
 	}
-
-	return cmd.Wait()
+	return nil
 }
 
 // in performs a function in a directory, and then returns to the

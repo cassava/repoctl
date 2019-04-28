@@ -90,7 +90,7 @@ in the current directory.
 			f.Close()
 		}
 		for _, u := range ups {
-			fmt.Fprintf(os.Stderr, "Warning: unknown package %s\n", u)
+			fmt.Fprintf(os.Stderr, "warning: unknown package %s\n", u)
 		}
 		return Repo.DownloadPackages(nil, aps, downDest, downExtract, downClobber)
 	},
