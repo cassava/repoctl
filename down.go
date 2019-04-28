@@ -47,7 +47,10 @@ func (r *Repo) Download(h errs.Handler, destdir string, extract bool, clobber bo
 	// If a package cannot be found, we want to report it.
 	aurpkgs, err := r.ReadAUR(h, pkgnames...)
 	if err != nil {
-		return err
+		err = h(err)
+		if err != nil {
+			return err
+		}
 	}
 	return r.DownloadPackages(h, uniqueBases(aurpkgs), destdir, extract, clobber)
 }
