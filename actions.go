@@ -241,7 +241,7 @@ func (r *Repo) Update(h errs.Handler, pkgnames ...string) error {
 				if err != nil {
 					r.errorf("skipping %s: %s", f, err)
 					continue
-				} else if spkg.HasSignature() {
+				} else if !spkg.HasSignature() {
 					r.errorf("skipping %s: require signature but none found", f)
 					continue
 				}
