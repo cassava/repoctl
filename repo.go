@@ -24,6 +24,8 @@ type Repo struct {
 	// relative from Directory.
 	Database string
 
+	// RequireSignature specifies whether files can be added without signature.
+	RequireSignature bool
 	// Backup specifies whether to backup old packages.
 	Backup bool
 	// BackupDir specifies where old packages are backed up to.
@@ -148,4 +150,54 @@ func (r *Repo) debugf(format string, obj ...interface{}) {
 	if r.Debug != nil {
 		fmt.Fprintf(r.Debug, format, obj...)
 	}
+}
+
+// SignedPkg represents the path components of a potentially signed package.
+type SignedPkg struct {
+	PkgFile string
+	SigFile string
+}
+
+// NewSignedPkg returns a new SignedPkg, accompanied with an error if there
+// is an error reading whether the signature file exists or not.
+func NewSignedPkg(p string) (*SignedPkg, error) {
+	if ex, err := osutil.FileExists(p); !ex {
+		if err != nil {
+			return nil, err
+		}
+		return nil, &NotExistsError{p}
+	}
+	if ex, err := osutil.FileExists(p + ".sig"); ex {
+		return &SignedPkg{p, p + ".sig"}, err
+	}
+	return &SignedPkg{p, ""}, nil
+}
+
+// PathSet returns the path of the package file and the signature file.
+func (p *SignedPkg) PathSet() string {
+	if p.HasSignature() {
+		return p.PkgFile + "{,.sig}"
+	}
+	return p.PkgFile
+}
+
+// NameSet returns the basename of the package file and the signature file.
+func (p *SignedPkg) NameSet() string {
+	return path.Base(p.PathSet())
+}
+
+// HasSignature returns whether the package is accompanied by a signature file.
+func (p *SignedPkg) HasSignature() bool { return p.SigFile != "" }
+
+// Apply executes the function f for the package path, then the signature path.
+// It returns the first error encountered.
+func (p *SignedPkg) Apply(f func(string, bool) error) error {
+	err := f(p.PkgFile, false)
+	if err != nil {
+		return err
+	}
+	if p.HasSignature() {
+		return f(p.SigFile, true)
+	}
+	return nil
 }

@@ -7,11 +7,13 @@ package main
 import "github.com/spf13/cobra"
 
 var movePackages bool
+var addRequireSignature bool
 
 func init() {
 	MainCmd.AddCommand(addCmd)
 
 	addCmd.Flags().BoolVarP(&movePackages, "move", "m", false, "move packages into repository")
+	addCmd.Flags().BoolVarP(&addRequireSignature, "require-signature", "r", false, "require package signatures")
 }
 
 var addCmd = &cobra.Command{
@@ -35,10 +37,13 @@ var addCmd = &cobra.Command{
 `,
 	Example: `  repoctl add -m ./fairsplit-1.0.pkg.tar.gz`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if addRequireSignature {
+			Repo.RequireSignature = true
+		}
+
 		if movePackages {
 			return Repo.Move(nil, args...)
-		} else {
-			return Repo.Copy(nil, args...)
 		}
+		return Repo.Copy(nil, args...)
 	},
 }

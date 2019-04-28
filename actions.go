@@ -38,10 +38,24 @@ func (r *Repo) add(h errs.Handler, pkgfiles []string, ar func(string, string) er
 	}
 
 	added := make([]string, 0, len(pkgfiles))
-	for _, src := range pkgfiles {
-		dst := path.Join(r.Directory, path.Base(src))
-		r.printf("%s and adding to repository: %s\n", lbl, src)
-		err := ar(src, dst)
+	for _, f := range pkgfiles {
+		pkg, err := NewSignedPkg(f)
+		if err != nil {
+			// This means that we are trying to add something that's
+			// non-existant or corrupt.
+			r.errorf("skipping %s: %s", f, err)
+			continue
+		}
+		if r.RequireSignature && !pkg.HasSignature() {
+			r.errorf("skipping %s: require signature but none available", f)
+			continue
+		}
+
+		r.printf("%s and adding to repository: %s\n", lbl, pkg.PathSet())
+		err = pkg.Apply(func(src string, _ bool) error {
+			dst := path.Join(r.Directory, path.Base(src))
+			return ar(src, dst)
+		})
 		if err != nil {
 			err = h(err)
 			if err != nil {
@@ -49,7 +63,7 @@ func (r *Repo) add(h errs.Handler, pkgfiles []string, ar func(string, string) er
 			}
 			continue
 		}
-		added = append(added, dst)
+		added = append(added, path.Join(r.Directory, path.Base(f)))
 	}
 
 	err := r.DatabaseAdd(added...)
@@ -123,16 +137,28 @@ func (r *Repo) backup(h errs.Handler, pkgfiles []string) error {
 
 	backupDir := r.backupDirAbs()
 	for _, f := range pkgfiles {
-		src := path.Base(f)
-		r.printf("backing up: %s\n", f)
-		dst := path.Join(backupDir, src)
-		err := osutil.MoveFileLazy(f, dst)
+		pkg, err := NewSignedPkg(f)
 		if err != nil {
 			err = h(err)
 			if err != nil {
 				return err
 			}
-			continue
+			if pkg == nil {
+				continue
+			}
+		}
+
+		r.printf("backing up: %s\n", pkg.NameSet())
+		err = pkg.Apply(func(f string, _ bool) error {
+			src := path.Base(f)
+			dst := path.Join(backupDir, src)
+			return osutil.MoveFileLazy(f, dst)
+		})
+		if err != nil {
+			err = h(err)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -140,14 +166,27 @@ func (r *Repo) backup(h errs.Handler, pkgfiles []string) error {
 
 func (r *Repo) unlink(h errs.Handler, pkgfiles []string) error {
 	for _, f := range pkgfiles {
-		r.printf("deleting: %s\n", f)
-		err := os.Remove(f)
+		pkg, err := NewSignedPkg(f)
 		if err != nil {
 			err = h(err)
 			if err != nil {
 				return err
 			}
-			continue
+			if pkg == nil {
+				continue
+			}
+		}
+
+		r.printf("deleting: %s\n", pkg.NameSet())
+
+		err = pkg.Apply(func(f string, _ bool) error {
+			return os.Remove(f)
+		})
+		if err != nil {
+			err = h(err)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -177,11 +216,22 @@ func (r *Repo) Update(h errs.Handler, pkgnames ...string) error {
 			missing = append(missing, p.Name)
 			continue
 		}
-		if p.HasUpdate() || len(pkgnames) > 0 {
-			updates = append(updates, p.Pkg().Filename)
-		}
 		if p.HasObsolete() {
 			obsolete = append(obsolete, pu.Map(p.Obsolete(), pu.PkgFilename)...)
+		}
+		if p.HasUpdate() || len(pkgnames) > 0 {
+			f := p.Pkg().Filename
+			if r.RequireSignature {
+				spkg, err := NewSignedPkg(f)
+				if err != nil {
+					r.errorf("skipping %s: %s", f, err)
+					continue
+				} else if spkg.HasSignature() {
+					r.errorf("skipping %s: require signature but none found", f)
+					continue
+				}
+			}
+			updates = append(updates, f)
 		}
 	}
 
@@ -198,7 +248,7 @@ func (r *Repo) Update(h errs.Handler, pkgnames ...string) error {
 	return r.Dispatch(h, obsolete...)
 }
 
-// Reset deletes the repository database and readd all the packages.
+// Reset deletes the repository database and reads all the packages.
 // This is the same as unlinking the database and then running Update.
 func (r *Repo) Reset(h errs.Handler) error {
 	errs.Init(&h)

@@ -54,6 +54,10 @@ repo = {{printt .Repository}}
 # with AUR related tasks, such as determining if there is an update or not.
 #ignore_aur = {{printt .IgnoreAUR}}
 
+# require_signature prevents packages from being added that do not
+# also have a signature file.
+#require_signature = {{printt .RequireSignature}}
+
 # backup specifies whether package files should be backed up or deleted.
 # If it is set to false, then obsolete package files are deleted.
 backup = {{printt .Backup}}
@@ -108,6 +112,8 @@ type Configuration struct {
 	RemoveParameters []string `toml:"rm_params"`
 	// Packages to ignore when doing AUR related tasks.
 	IgnoreAUR []string `toml:"ignore_aur"`
+	// Require signatures for packages that are added to the database.
+	RequireSignature bool `toml:"require_signature"`
 
 	// Backup causes older packages to be backed up rather than deleted.
 	Backup bool `toml:"backup"`

@@ -22,6 +22,7 @@ func (c *Configuration) Repo() *repoctl.Repo {
 	r.IgnoreAUR = c.IgnoreAUR
 	r.AddParameters = c.AddParameters
 	r.RemoveParameters = c.RemoveParameters
+	r.RequireSignature = c.RequireSignature
 	r.Error = os.Stderr
 	if c.Quiet {
 		r.Info = nil

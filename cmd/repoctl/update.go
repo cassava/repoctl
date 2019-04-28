@@ -6,8 +6,12 @@ package main
 
 import "github.com/spf13/cobra"
 
+var updateRequireSignature bool
+
 func init() {
 	MainCmd.AddCommand(updateCmd)
+
+	updateCmd.Flags().BoolVarP(&updateRequireSignature, "require-signature", "r", false, "require package signatures")
 }
 
 var updateCmd = &cobra.Command{
@@ -30,6 +34,10 @@ var updateCmd = &cobra.Command{
 	Example: `  repoctl update fairsplit
   repoctl update --backup=false`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if updateRequireSignature {
+			Repo.RequireSignature = true
+		}
+
 		return Repo.Update(nil, args...)
 	},
 }
