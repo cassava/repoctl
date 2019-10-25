@@ -158,6 +158,10 @@ ignore_aur = [
     "dropbox",
 ]
 
+# require_signature prevents packages from being added that do not
+# also have a signature file.
+require_signature = false
+
 # backup specifies whether package files should be backed up or deleted.
 # If it is set to false, then obsolete package files are deleted.
 backup = false

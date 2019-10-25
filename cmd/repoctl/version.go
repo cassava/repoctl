@@ -39,7 +39,7 @@ var versionCmd = &cobra.Command{
 			Author:    "Ben Morgan",
 			Email:     "neembi@gmail.com",
 			Version:   "0.19",
-			Date:      "28 April, 2019",
+			Date:      "25 October, 2019",
 			Copyright: "2016-2019",
 			Homepage:  "https://github.com/cassava/repoctl",
 			License:   "MIT",

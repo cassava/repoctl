@@ -1,11 +1,22 @@
 Repoctl Releases
 ================
 
-## Version 0.19 (unreleased)
-This release fixes some minor bugs.
+## Version 0.19 (25 October 2019)
+This release fixes several bugs and adds support for signatures and Zst
+compression.
 
+- New: repoctl can find and add signature files that accompany packages.
+- New: `add` command learned `-l` (`--link`) option.
+- New: `add` command learned `-r` (`--require-signature`) option.
+- New: `update` command learned `-r` (`--require-signature`) option.
+- New: configuration file gained `require_signature` field.
+- New: support Zstandard compression for packages.
+- Update: print entire error message when system command fails.
+- Update: issue #34, `list` command learned `-r` (`--registered`) option.
 - Bugfix: issue #35, in which signature files are recognized as package
   files and are attempted to be read.
+- Bugfix: issue #36, do not abort download when some packages not on AUR.
+- Bugfix: issue #47, do not mishandle files compressed with Zstandard.
 
 ## Version 0.18 (28 February 2018)
 This release adds an alternate way to deal with obsolete package files, for
