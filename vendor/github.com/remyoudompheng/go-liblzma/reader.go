@@ -1,4 +1,4 @@
-// Copyright 2012 Rémy Oudompheng. All rights reserved.
+// Copyright 2011-2019 Rémy Oudompheng. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -45,7 +45,8 @@ func NewReader(r io.Reader) (*Decompressor, error) {
 	dec.offset = DefaultBufsize
 	dec.handle = allocLzmaStream(dec.handle)
 	// Initialize decoder
-	ret := C.lzma_auto_decoder(dec.handle, math.MaxUint64, 0)
+	ret := C.lzma_auto_decoder(dec.handle, C.uint64_t(math.MaxUint64),
+		C.uint32_t(concatenated))
 	if Errno(ret) != Ok {
 		return nil, Errno(ret)
 	}
@@ -55,25 +56,29 @@ func NewReader(r io.Reader) (*Decompressor, error) {
 
 func (r *Decompressor) Read(out []byte) (out_count int, er error) {
 	if r.offset >= r.length {
-		var n int
-		n, er = r.rd.Read(r.buffer)
-		if n == 0 {
-			return 0, er
+		n, err := r.rd.Read(r.buffer)
+
+		if err != nil && err != io.EOF {
+			return 0, err
 		}
 		r.offset, r.length = 0, n
 		r.handle.avail_in = C.size_t(n)
 	}
 	r.handle.avail_out = C.size_t(len(out))
+	action := Run
+	if r.handle.avail_in == 0 {
+		action = Finish
+	}
 	ret := C.go_lzma_code(
 		r.handle,
 		unsafe.Pointer(&r.buffer[r.offset]),
 		unsafe.Pointer(&out[0]),
-		C.lzma_action(Run),
+		C.lzma_action(action),
 	)
 	r.offset = r.length - int(r.handle.avail_in)
 	switch Errno(ret) {
 	case Ok:
-		break
+		er = nil
 	case StreamEnd:
 		er = io.EOF
 	default:

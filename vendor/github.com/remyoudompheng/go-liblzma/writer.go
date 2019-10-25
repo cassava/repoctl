@@ -1,4 +1,4 @@
-// Copyright 2012 Rémy Oudompheng. All rights reserved.
+// Copyright 2011-2019 Rémy Oudompheng. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -123,7 +123,6 @@ func (enc *Compressor) Flush() error {
 			return nil
 		}
 	}
-	panic("unreachable")
 }
 
 // Frees any resources allocated by liblzma. It does not close the

@@ -205,3 +205,21 @@ func (c *Context) ResetWriters() {
 	defer c.writersMutex.Unlock()
 	c.writers = make(map[string]Writer)
 }
+
+// ConfigureLoggers configures loggers according to the given string
+// specification, which specifies a set of modules and their associated
+// logging levels.  Loggers are colon- or semicolon-separated; each
+// module is specified as <modulename>=<level>.  White space outside of
+// module names and levels is ignored.  The root module is specified
+// with the name "<root>".
+//
+// An example specification:
+//	`<root>=ERROR; foo.bar=WARNING`
+func (c *Context) ConfigureLoggers(specification string) error {
+	config, err := ParseConfigString(specification)
+	if err != nil {
+		return err
+	}
+	c.ApplyConfig(config)
+	return nil
+}

@@ -14,6 +14,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/klauspost/compress/zstd"
 	lzma "github.com/remyoudompheng/go-liblzma"
 )
 
@@ -23,6 +24,7 @@ import (
 //	.tar.gz
 //	.tar.bz2
 //	.tar.xz
+//	.tar.zst
 func ReadFileFromArchive(archive, file string) ([]byte, error) {
 	d, err := NewDecompressor(archive)
 	if err != nil {
@@ -96,6 +98,13 @@ func NewDecompressor(filepath string) (*Decompressor, error) {
 		d.closer = gz
 	case ".bz2":
 		d.reader = bzip2.NewReader(d.file)
+	case ".zst":
+		zd, err := newZstDecompressor(d.file)
+		if err != nil {
+			return nil, err
+		}
+		d.reader = zd
+		d.closer = zd
 	case ".tar":
 		d.reader = d.file
 	default:
@@ -117,4 +126,29 @@ func (d *Decompressor) Close() error {
 		}
 	}
 	return d.file.Close()
+}
+
+// zstDecompressor wraps the zstd.Decoder type to implement io.Closer,
+// which it unfortunately doesn't quite implement.
+type zstDecompressor struct {
+	decoder *zstd.Decoder
+}
+
+func newZstDecompressor(r io.Reader) (*zstDecompressor, error) {
+	var d zstDecompressor
+	z, err := zstd.NewReader(r)
+	if err != nil {
+		return nil, err
+	}
+	d.decoder = z
+	return &d, nil
+}
+
+func (d *zstDecompressor) Read(p []byte) (int, error) {
+	return d.decoder.Read(p)
+}
+
+func (d *zstDecompressor) Close() error {
+	d.decoder.Close()
+	return nil
 }
