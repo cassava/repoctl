@@ -208,7 +208,7 @@ func (c *Configuration) Init() error {
 
 	// Perform a check on database extension.
 	var extOk bool
-	for _, ext := range []string{".db.tar", ".db.tar.gz", ".db.tar.xz", ".db.tar.bz2"} {
+	for _, ext := range []string{".db.tar", ".db.tar.gz", ".db.tar.xz", ".db.tar.bz2", ".db.tar.zst"} {
 		if strings.HasSuffix(c.database, ext) {
 			extOk = true
 			break
@@ -216,7 +216,7 @@ func (c *Configuration) Init() error {
 	}
 	if !extOk {
 		fmt.Fprintf(os.Stderr, "Warning: specified repository database %q has an unexpected extension.\n", c.database)
-		fmt.Fprintf(os.Stderr, "Should be one of \".db.tar\", \".db.tar.gz\", \".db.tar.xz\", or \"db.tar.bz2\".\n")
+		fmt.Fprintf(os.Stderr, "Should be one of \".db.tar\", \".db.tar.gz\", \".db.tar.xz\", \"db.tar.bz2\", or \"db.tar.zst\".\n")
 	}
 
 	return nil
