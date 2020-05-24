@@ -27,6 +27,12 @@ func (logger Logger) getModule() *module {
 	return logger.impl
 }
 
+// Root returns the root logger for the Logger's context.
+func (logger Logger) Root() Logger {
+	module := logger.getModule()
+	return module.context.GetLogger("")
+}
+
 // Parent returns the Logger whose module name is the same
 // as this logger without the last period and suffix.
 // For example the parent of the logger that has the module

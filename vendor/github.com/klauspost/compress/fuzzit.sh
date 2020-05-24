@@ -11,7 +11,7 @@ go get -u github.com/dvyukov/go-fuzz/go-fuzz github.com/dvyukov/go-fuzz/go-fuzz-
 
 ## Install fuzzit specific version for production or latest version for development :
 # https://github.com/fuzzitdev/fuzzit/releases/latest/download/fuzzit_Linux_x86_64
-wget -q -O fuzzit https://github.com/fuzzitdev/fuzzit/releases/download/v2.4.46/fuzzit_Linux_x86_64
+wget -q -O fuzzit https://github.com/fuzzitdev/fuzzit/releases/latest/download/fuzzit_Linux_x86_64
 chmod a+x fuzzit
 
 go-fuzz-build -libfuzzer -o flate.a github.com/klauspost/compress-fuzz/flate
@@ -47,3 +47,12 @@ clang -fsanitize=fuzzer s2-compress.a -o s2-compress-fuzz
 clang -fsanitize=fuzzer s2-decompress.a -o s2-decompress-fuzz
 ./fuzzit create job --type ${1} klauspost/compress-s2-compress s2-compress-fuzz
 ./fuzzit create job --type ${1} klauspost/compress-s2-decompress s2-decompress-fuzz
+
+rm flate-fuzz || true
+rm fuzzit || true
+rm huff0-compress-fuzz || true
+rm huff0-decompress-fuzz || true
+rm s2-compress-fuzz || true
+rm s2-decompress-fuzz || true
+rm zstd-compress-fuzz || true
+rm zstd-decompress-fuzz || true

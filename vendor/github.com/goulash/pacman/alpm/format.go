@@ -24,10 +24,11 @@ func HasDatabaseFormat(filename string) bool {
 // format that we can do anything with.
 //
 // Currently, only the following formats are supported:
-//  .pkg.tar
+//	.pkg.tar
 //	.pkg.tar.xz
 //	.pkg.tar.gz
 //	.pkg.tar.bz2
+//	.pkg.tar.zst
 //
 func HasPackageFormat(filename string) bool {
 	for _, ext := range []string{".pkg.tar", ".pkg.tar.xz", ".pkg.tar.gz", ".pkg.tar.bz2", ".pkg.tar.zst"} {

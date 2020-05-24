@@ -327,7 +327,7 @@ func (s *fseEncoder) normalizeCount(length int) error {
 		if err != nil {
 			return err
 		}
-		if debug {
+		if debugAsserts {
 			err = s.validateNorm()
 			if err != nil {
 				return err
@@ -336,7 +336,7 @@ func (s *fseEncoder) normalizeCount(length int) error {
 		return s.buildCTable()
 	}
 	s.norm[largest] += stillToDistribute
-	if debug {
+	if debugAsserts {
 		err := s.validateNorm()
 		if err != nil {
 			return err
@@ -516,7 +516,8 @@ func (s *fseEncoder) writeCount(out []byte) ([]byte, error) {
 		previous0 bool
 		charnum   uint16
 
-		maxHeaderSize = ((int(s.symbolLen) * int(tableLog)) >> 3) + 3
+		// maximum header size plus 2 extra bytes for final output if bitCount == 0.
+		maxHeaderSize = ((int(s.symbolLen) * int(tableLog)) >> 3) + 3 + 2
 
 		// Write Table Size
 		bitStream = uint32(tableLog - minEncTablelog)
@@ -599,6 +600,9 @@ func (s *fseEncoder) writeCount(out []byte) ([]byte, error) {
 		}
 	}
 
+	if outP+2 > len(out) {
+		return nil, fmt.Errorf("internal error: %d > %d, maxheader: %d, sl: %d, tl: %d, normcount: %v", outP+2, len(out), maxHeaderSize, s.symbolLen, int(tableLog), s.norm[:s.symbolLen])
+	}
 	out[outP] = byte(bitStream)
 	out[outP+1] = byte(bitStream >> 8)
 	outP += int((bitCount + 7) / 8)
@@ -615,7 +619,7 @@ func (s *fseEncoder) writeCount(out []byte) ([]byte, error) {
 func (s *fseEncoder) bitCost(symbolValue uint8, accuracyLog uint32) uint32 {
 	minNbBits := s.ct.symbolTT[symbolValue].deltaNbBits >> 16
 	threshold := (minNbBits + 1) << 16
-	if debug {
+	if debugAsserts {
 		if !(s.actualTableLog < 16) {
 			panic("!s.actualTableLog < 16")
 		}
@@ -629,7 +633,7 @@ func (s *fseEncoder) bitCost(symbolValue uint8, accuracyLog uint32) uint32 {
 	// linear interpolation (very approximate)
 	normalizedDeltaFromThreshold := (deltaFromThreshold << accuracyLog) >> s.actualTableLog
 	bitMultiplier := uint32(1) << accuracyLog
-	if debug {
+	if debugAsserts {
 		if s.ct.symbolTT[symbolValue].deltaNbBits+tableSize > threshold {
 			panic("s.ct.symbolTT[symbolValue].deltaNbBits+tableSize > threshold")
 		}
