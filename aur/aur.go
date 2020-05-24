@@ -203,17 +203,32 @@ func (p *Package) DownloadURL() string {
 }
 
 const (
-	apiURL = "https://aur.archlinux.org/rpc.php?v=5&type=multiinfo&arg[]=%s"
-	apiArg = "&arg[]="
+	searchURL    = "https://aur.archlinux.org/rpc.php?v=5&type=search&by=name&arg=%s"
+	multiInfoURL = "https://aur.archlinux.org/rpc.php?v=5&type=multiinfo&arg[]=%s"
+	multiInfoArg = "&arg[]="
 )
 
-// generateURL creates a URL that gets the package information from AUR.
-func generateURL(args []string) string {
+// generateMultiInfoURL creates a URL that gets the package information from AUR.
+func generateMultiInfoURL(args []string) string {
 	na := make([]string, len(args))
 	for i, s := range args {
 		na[i] = url.QueryEscape(s)
 	}
-	return fmt.Sprintf(apiURL, strings.Join(na, apiArg))
+	return fmt.Sprintf(multiInfoURL, strings.Join(na, multiInfoArg))
+}
+
+func SearchByName(query string) (Packages, error) {
+	q := fmt.Sprintf(searchURL, url.QueryEscape(query))
+	resp, err := http.Get(q)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var msg response
+	dec := json.NewDecoder(resp.Body)
+	err = dec.Decode(&msg)
+	return msg.Results, err
 }
 
 // Read reads package information from the Arch Linux User Repository (AUR)
@@ -221,7 +236,7 @@ func generateURL(args []string) string {
 //
 // If a package cannot be found, (nil, *NotFoundError) is returned.
 func Read(pkgname string) (*Package, error) {
-	q := generateURL([]string{pkgname})
+	q := generateMultiInfoURL([]string{pkgname})
 	resp, err := http.Get(q)
 	if err != nil {
 		return nil, err
@@ -286,7 +301,7 @@ func ReadAll(pkgnames []string) (Packages, error) {
 }
 
 func readAll(pkgnames []string) (Packages, error) {
-	q := generateURL(pkgnames)
+	q := generateMultiInfoURL(pkgnames)
 	resp, err := http.Get(q)
 	if err != nil {
 		return nil, err
