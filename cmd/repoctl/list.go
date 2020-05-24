@@ -156,6 +156,7 @@ var listCmd = &cobra.Command{
 		}
 
 		// Print packages to stdout
+		sort.Strings(pkgs)
 		printSet(pkgs, "", Conf.Columnate)
 		return nil
 	},
@@ -163,7 +164,6 @@ var listCmd = &cobra.Command{
 
 // printSet prints a set of items and optionally a header.
 func printSet(list []string, h string, cols bool) {
-	sort.Strings(list)
 	if h != "" {
 		fmt.Printf("\n%s\n", h)
 	}
