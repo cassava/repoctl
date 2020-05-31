@@ -2,10 +2,11 @@ package graph
 
 import (
 	"os"
+	"regexp"
 
-	"github.com/goulash/errs"
 	"github.com/cassava/repoctl/pacman"
 	"github.com/cassava/repoctl/pacman/aur"
+	"github.com/goulash/errs"
 )
 
 // A Factory creates a dependency graph given a set of packages.
@@ -38,6 +39,7 @@ type Factory struct {
 // as a leaf in the graph, since we assume that pacman can resolve those
 // dependencies.
 func NewFactory(ignoreRepos ...string) (*Factory, error) {
+	re := regexp.MustCompile(`(=|>|<).*$`)
 	f := Factory{
 		skipInstalled: false,
 		truncate:      false,
@@ -46,6 +48,16 @@ func NewFactory(ignoreRepos ...string) (*Factory, error) {
 			deps := make([]string, 0, len(p.PkgDepends())+len(p.PkgMakeDepends()))
 			deps = append(deps, p.PkgDepends()...)
 			deps = append(deps, p.PkgMakeDepends()...)
+			for i, p := range deps {
+				// Quote from: https://wiki.archlinux.org/index.php/PKGBUILD
+				// > Version restrictions can be specified with comparison
+				// > operators, e.g. depends=('foobar>=1.8.0'); if multiple
+				// > restrictions are needed, the dependency can be repeated for
+				// > each, e.g. depends=('foobar>=1.8.0' 'foobar<2.0.0').
+				if re.MatchString(p) {
+					deps[i] = re.ReplaceAllLiteralString(p, "")
+				}
+			}
 			return deps
 		},
 	}
@@ -132,8 +144,8 @@ func (f *Factory) NewGraph(pkgs aur.Packages) (*Graph, error) {
 	}
 
 	// As long as we have new packages to process, continue.
-	for len(lst) == 0 {
-		new := make([]*Node, 0)
+	for len(lst) != 0 {
+		discovered := make([]*Node, 0)
 		unavailable := make(map[string]bool, 0)
 		pending := make(map[string][]*Node)
 
@@ -157,8 +169,9 @@ func (f *Factory) NewGraph(pkgs aur.Packages) (*Graph, error) {
 					u := g.NewNode(p)
 					if !f.truncate {
 						// Process this package for dependencies
-						new = append(new, u)
+						discovered = append(discovered, u)
 					}
+					g.AddNode(u)
 					g.AddEdgeFromTo(v, u)
 					continue
 				}
@@ -172,17 +185,17 @@ func (f *Factory) NewGraph(pkgs aur.Packages) (*Graph, error) {
 		}
 
 		// This may be called for AUR or unknown packages
-		addFetchedPkg := func(p pacman.AnyPackage) {
+		addFetchedPkg := func(p pacman.AnyPackage) *Node {
 			u := g.NewNode(p)
-			new = append(new, u)
 			g.AddNode(u)
 			for _, v := range pending[u.PkgName()] {
 				g.AddEdgeFromTo(v, u)
 			}
+			return u
 		}
 
 		// Get all unavailable packages from AUR:
-		fromAUR := make([]string, len(unavailable))
+		fromAUR := make([]string, 0, len(unavailable))
 		for k := range unavailable {
 			fromAUR = append(fromAUR, k)
 		}
@@ -207,10 +220,11 @@ func (f *Factory) NewGraph(pkgs aur.Packages) (*Graph, error) {
 			}
 		}
 		for _, p := range pkgs {
-			addFetchedPkg(p)
+			u := addFetchedPkg(p)
+			discovered = append(discovered, u)
 		}
 
-		lst = new
+		lst = discovered
 	}
 
 	return g, nil

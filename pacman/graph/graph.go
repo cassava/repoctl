@@ -21,22 +21,18 @@
 package graph
 
 import (
-	"fmt"
-
-	"github.com/gonum/graph"
 	"github.com/cassava/repoctl/pacman"
 	"github.com/cassava/repoctl/pacman/aur"
+
+	"gonum.org/v1/gonum/graph"
+	"gonum.org/v1/gonum/graph/simple"
 )
 
 // Node implements graph.Node.
 type Node struct {
-	id int
-
+	simple.Node
 	pacman.AnyPackage
 }
-
-// ID returns the unique (within the graph) ID of the node.
-func (n *Node) ID() int { return n.id }
 
 // IsFromAUR returns whether the node comes from AUR.
 func (n *Node) IsFromAUR() bool {
@@ -53,7 +49,8 @@ func (n *Node) AllDepends() []string {
 	return deps
 }
 
-// NumDepends returns the number of make and installation dependencies the package has.
+// NumAllDepends returns the number of make and installation dependencies the
+// package has.
 func (n *Node) NumAllDepends() int {
 	return len(n.PkgDepends()) + len(n.PkgMakeDepends())
 }
@@ -62,54 +59,32 @@ func (n *Node) String() string {
 	return n.PkgName()
 }
 
-// Edge implements the graph.Edge interface.
-type Edge struct {
-	from *Node
-	to   *Node
-}
-
-// From returns the node that has the dependency.
-func (e *Edge) From() graph.Node { return e.from }
-
-// To returns the depdency that the from node has.
-func (e *Edge) To() graph.Node { return e.to }
-
-// Weight returns zero, because depdencies are not weighted.
-func (e *Edge) Weight() float64 { return 0.0 }
-
-// IsFromAUR returns true if the dependency needs to be fetched from AUR.
-func (e *Edge) IsFromAUR() bool { return e.to.IsFromAUR() }
-
-func (e *Edge) String() string { return fmt.Sprintf("%s -> %s", e.from, e.to) }
-
 // Graph implements graph.Graph.
 type Graph struct {
-	names     map[string]*Node
-	nodes     []graph.Node
-	nodeIDs   map[int]graph.Node
-	edgesFrom map[int][]graph.Node
-	edgesTo   map[int][]graph.Node
-	edges     map[int]map[int]graph.Edge
-	nextID    int
+	*simple.DirectedGraph
+
+	names map[string]int64
 }
 
 // NewGraph returns a new graph.
 func NewGraph() *Graph {
 	return &Graph{
-		names:     make(map[string]*Node),
-		nodes:     make([]graph.Node, 0),
-		nodeIDs:   make(map[int]graph.Node),
-		edgesFrom: make(map[int][]graph.Node),
-		edgesTo:   make(map[int][]graph.Node),
-		edges:     make(map[int]map[int]graph.Edge),
-		nextID:    0,
+		DirectedGraph: simple.NewDirectedGraph(),
+		names:         make(map[string]int64),
+	}
+}
+
+// NewNode returns a new node.
+func (g *Graph) NewNode(pkg pacman.AnyPackage) *Node {
+	return &Node{
+		Node:       g.DirectedGraph.NewNode().(simple.Node),
+		AnyPackage: pkg,
 	}
 }
 
 // Has returns whether the node exists within the graph.
-func (g *Graph) Has(n graph.Node) bool {
-	_, ok := g.nodeIDs[n.ID()]
-	return ok
+func (g *Graph) Has(id int64) bool {
+	return g.Node(id) != nil
 }
 
 // HasName returns whether the package with the given name exists within the
@@ -121,59 +96,11 @@ func (g *Graph) HasName(name string) bool {
 
 // NodeWithName returns the node with the given name, or nil.
 func (g *Graph) NodeWithName(name string) *Node {
-	return g.names[name]
-}
-
-// Nodes returns all the nodes in the graph.
-func (g *Graph) Nodes() []graph.Node {
-	return g.nodes
-}
-
-// From returns all nodes that can be reached directly from the given node.
-func (g *Graph) From(v graph.Node) []graph.Node {
-	return g.edgesFrom[v.ID()]
-}
-
-// To returns all nodes that can reach directly to the given node.
-func (g *Graph) To(v graph.Node) []graph.Node {
-	return g.edgesTo[v.ID()]
-}
-
-// HasEdgeBetween returns whether an edge exists between nodes u and v
-// without considering direction.
-func (g *Graph) HasEdgeBetween(u, v graph.Node) bool {
-	return g.HasEdgeFromTo(u, v) || g.HasEdgeFromTo(v, u)
-}
-
-// HasEdgeFromTo returns whether an edge exists in the graph from u to v.
-func (g *Graph) HasEdgeFromTo(u, v graph.Node) bool {
-	for _, n := range g.edgesFrom[u.ID()] {
-		if n == v {
-			return true
-		}
+	id, ok := g.names[name]
+	if !ok {
+		return nil
 	}
-	return false
-}
-
-// Edge returns the edge from u to v if such an edge exists and nil
-// otherwise. The node v must be directly reachable from u as defined
-// by the From method.
-func (g *Graph) Edge(u, v graph.Node) graph.Edge {
-	return g.edges[u.ID()][v.ID()]
-}
-
-// NewNodeID returns a unique ID for a new node.
-func (g *Graph) NewNodeID() int {
-	g.nextID++
-	return g.nextID
-}
-
-// NewNode returns a new node.
-func (g *Graph) NewNode(pkg pacman.AnyPackage) *Node {
-	return &Node{
-		id:         g.NewNodeID(),
-		AnyPackage: pkg,
-	}
+	return g.Node(id).(*Node)
 }
 
 // AddNode adds the node and initializes data structures but does nothing else.
@@ -186,23 +113,15 @@ func (g *Graph) AddNode(v graph.Node) {
 	if g.HasName(n.PkgName()) {
 		panic("package name already in graph")
 	}
-	if g.Has(v) {
+	if g.Has(n.ID()) {
 		panic("node id already here")
 	}
 
-	g.names[n.PkgName()] = n
-	g.nodes = append(g.nodes, n)
-	id := n.ID()
-	g.nodeIDs[id] = n
-	g.edgesFrom[id] = make([]graph.Node, 0, n.NumAllDepends())
-	g.edgesTo[id] = make([]graph.Node, 0)
-	g.edges[id] = make(map[int]graph.Edge)
+	g.DirectedGraph.AddNode(v)
+	g.names[n.PkgName()] = n.ID()
 }
 
-// AddEdgeFromTo adds an edge betwewen the two nodes.
+// AddEdgeFromTo adds a directed edge from u to v.
 func (g *Graph) AddEdgeFromTo(u, v graph.Node) {
-	uid, vid := u.ID(), v.ID()
-	g.edges[uid][vid] = &Edge{from: u.(*Node), to: v.(*Node)}
-	g.edgesFrom[uid] = append(g.edgesFrom[uid], u)
-	g.edgesTo[vid] = append(g.edgesTo[vid], v)
+	g.SetEdge(g.NewEdge(u, v))
 }

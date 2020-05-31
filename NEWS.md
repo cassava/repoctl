@@ -4,10 +4,12 @@ Repoctl Releases
 ## Version 0.20 (unreleased)
 
 - New: `search` command added.
+- New `down` command learned `-n` (`--dry-run`) option.
 - Update: `new config` command now backs up existing configuration files.
 - Update: `github.com/goulash/pacman` dependency moved into repository.
 - Bugfix: `version` command does not show entire configuration.
 - Bugfix: issue #46, do not panic or print errors with large repos.
+- Bugfix: issue #33, recursive download and dependency resolution broken.
 
 ## Version 0.19 (25 October 2019)
 This release fixes several bugs and adds support for signatures and Zst
