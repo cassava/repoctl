@@ -4,7 +4,7 @@ Repoctl Releases
 ## Version 0.20 (unreleased)
 
 - New: `search` command added.
-- Update: `new config` command backs up existing configuration files.
+- Update: `new config` command now backs up existing configuration files.
 
 ## Version 0.19 (25 October 2019)
 This release fixes several bugs and adds support for signatures and Zst
