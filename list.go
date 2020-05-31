@@ -8,8 +8,8 @@ import (
 	"sort"
 
 	"github.com/goulash/errs"
-	"github.com/goulash/pacman"
-	"github.com/goulash/pacman/pkgutil"
+	"github.com/cassava/repoctl/pacman"
+	"github.com/cassava/repoctl/pacman/pkgutil"
 )
 
 func (r *Repo) ListDatabase(f pkgutil.MapFunc) ([]string, error) {

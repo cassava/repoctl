@@ -11,7 +11,7 @@ import (
 
 	"github.com/cassava/repoctl/conf"
 	"github.com/goulash/errs"
-	"github.com/goulash/pacman/pkgutil"
+	"github.com/cassava/repoctl/pacman/pkgutil"
 )
 
 // main loads the configuration and executes the primary command.

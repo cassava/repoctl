@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/goulash/pacman/graph"
-	"github.com/goulash/pacman/pkgutil"
+	"github.com/cassava/repoctl/pacman/graph"
+	"github.com/cassava/repoctl/pacman/pkgutil"
 	"github.com/spf13/cobra"
 )
 

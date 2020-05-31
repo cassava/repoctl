@@ -12,8 +12,8 @@ import (
 
 	"github.com/goulash/errs"
 	"github.com/goulash/osutil"
-	"github.com/goulash/pacman/aur"
-	"github.com/goulash/pacman/graph"
+	"github.com/cassava/repoctl/pacman/aur"
+	"github.com/cassava/repoctl/pacman/graph"
 	"github.com/juju/utils/tar"
 )
 

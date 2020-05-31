@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/goulash/pacman/aur"
+	"github.com/cassava/repoctl/pacman/aur"
 	"github.com/spf13/cobra"
 )
 

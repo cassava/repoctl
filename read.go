@@ -9,10 +9,10 @@ import (
 
 	"github.com/goulash/errs"
 	"github.com/goulash/osutil"
-	"github.com/goulash/pacman"
-	"github.com/goulash/pacman/aur"
-	"github.com/goulash/pacman/meta"
-	pu "github.com/goulash/pacman/pkgutil"
+	"github.com/cassava/repoctl/pacman"
+	"github.com/cassava/repoctl/pacman/aur"
+	"github.com/cassava/repoctl/pacman/meta"
+	pu "github.com/cassava/repoctl/pacman/pkgutil"
 )
 
 // ReadDatabase reads the database at r.Directory/r.Database.

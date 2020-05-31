@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/goulash/osutil"
-	"github.com/goulash/pacman/pkgutil"
+	"github.com/cassava/repoctl/pacman/pkgutil"
 )
 
 type Repo struct {

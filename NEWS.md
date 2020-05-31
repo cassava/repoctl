@@ -5,7 +5,9 @@ Repoctl Releases
 
 - New: `search` command added.
 - Update: `new config` command now backs up existing configuration files.
+- Update: `github.com/goulash/pacman` dependency moved into repository.
 - Bugfix: `version` command does not show entire configuration.
+- Bugfix: issue #46, do not panic or print errors with large repos.
 
 ## Version 0.19 (25 October 2019)
 This release fixes several bugs and adds support for signatures and Zst

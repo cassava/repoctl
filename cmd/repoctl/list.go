@@ -10,8 +10,8 @@ import (
 	"regexp"
 	"sort"
 
-	"github.com/goulash/pacman"
-	"github.com/goulash/pacman/meta"
+	"github.com/cassava/repoctl/pacman"
+	"github.com/cassava/repoctl/pacman/meta"
 	"github.com/goulash/pr"
 	"github.com/spf13/cobra"
 )

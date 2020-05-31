@@ -10,7 +10,7 @@ import (
 
 	"github.com/goulash/errs"
 	"github.com/goulash/osutil"
-	pu "github.com/goulash/pacman/pkgutil"
+	pu "github.com/cassava/repoctl/pacman/pkgutil"
 )
 
 // Link tries to hard link the file, and failing that, copies it over.
