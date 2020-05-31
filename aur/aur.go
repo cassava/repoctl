@@ -269,7 +269,9 @@ func ReadAll(pkgnames []string) (Packages, error) {
 	}
 
 	var pkgs Packages
-	var err *NotFoundError
+	err := &NotFoundError{
+		Names: make([]string, 0, 0),
+	}
 	for len(pkgnames) > 0 {
 		// Select next slice of messages
 		var slice []string
@@ -286,18 +288,19 @@ func ReadAll(pkgnames []string) (Packages, error) {
 		if e != nil {
 			nfe, ok := e.(*NotFoundError)
 			if !ok {
+				// e is not NotFoundError, and we don't know how to handle it,
+				// so return directly as-is.
 				return nil, e
 			}
-
-			if err == nil {
-				err = nfe
-			} else {
-				err.Names = append(err.Names, nfe.Names...)
-			}
+			err.Names = append(err.Names, nfe.Names...)
 		}
 		pkgs = append(pkgs, p...)
 	}
-	return pkgs, err
+	if len(err.Names) == 0 {
+		return pkgs, nil
+	} else {
+		return pkgs, err
+	}
 }
 
 func readAll(pkgnames []string) (Packages, error) {
