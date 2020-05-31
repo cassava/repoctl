@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/goulash/errs"
-	"github.com/goulash/pacman/alpm"
+	"github.com/cassava/repoctl/pacman/alpm"
 )
 
 // ReadDir reads all the packages it finds in a directory.

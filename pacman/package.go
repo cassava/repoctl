@@ -7,7 +7,7 @@ package pacman
 import (
 	"time"
 
-	"github.com/goulash/pacman/alpm"
+	"github.com/cassava/repoctl/pacman/alpm"
 )
 
 // Packages is merely a list of packages

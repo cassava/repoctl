@@ -13,8 +13,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/goulash/pacman"
-	"github.com/goulash/pacman/alpm"
+	"github.com/cassava/repoctl/pacman"
+	"github.com/cassava/repoctl/pacman/alpm"
 )
 
 // Packages is a slice of Package with several methods facilitating

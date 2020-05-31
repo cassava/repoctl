@@ -4,8 +4,8 @@ import (
 	"os"
 
 	"github.com/goulash/errs"
-	"github.com/goulash/pacman"
-	"github.com/goulash/pacman/aur"
+	"github.com/cassava/repoctl/pacman"
+	"github.com/cassava/repoctl/pacman/aur"
 )
 
 // A Factory creates a dependency graph given a set of packages.

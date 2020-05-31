@@ -11,9 +11,9 @@ import (
 	"sort"
 
 	"github.com/goulash/errs"
-	"github.com/goulash/pacman"
-	"github.com/goulash/pacman/alpm"
-	"github.com/goulash/pacman/aur"
+	"github.com/cassava/repoctl/pacman"
+	"github.com/cassava/repoctl/pacman/alpm"
+	"github.com/cassava/repoctl/pacman/aur"
 )
 
 var ErrMultipleDB = errors.New("multiple database files found")

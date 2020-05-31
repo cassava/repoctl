@@ -4,7 +4,7 @@
 
 package pacman
 
-import "github.com/goulash/pacman/alpm"
+import "github.com/cassava/repoctl/pacman/alpm"
 
 type AnyPackages interface {
 	Iterate(func(AnyPackage))

@@ -9,7 +9,7 @@ import (
 	"bytes"
 	"path"
 
-	"github.com/goulash/pacman"
+	"github.com/cassava/repoctl/pacman"
 )
 
 type MapFunc func(pacman.AnyPackage) string

@@ -7,9 +7,9 @@
 package meta
 
 import (
-	"github.com/goulash/pacman"
-	"github.com/goulash/pacman/alpm"
-	"github.com/goulash/pacman/aur"
+	"github.com/cassava/repoctl/pacman"
+	"github.com/cassava/repoctl/pacman/alpm"
+	"github.com/cassava/repoctl/pacman/aur"
 )
 
 type Packages []*Package

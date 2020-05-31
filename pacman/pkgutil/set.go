@@ -4,7 +4,7 @@
 
 package pkgutil
 
-import "github.com/goulash/pacman"
+import "github.com/cassava/repoctl/pacman"
 
 // Intersect returns the intersection between two sets of pacman.Packages.
 func Intersect(ps1, ps2 pacman.Packages) pacman.Packages {

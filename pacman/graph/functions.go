@@ -3,8 +3,8 @@ package graph
 import (
 	"github.com/gonum/graph"
 	"github.com/gonum/graph/traverse"
-	"github.com/goulash/pacman"
-	"github.com/goulash/pacman/aur"
+	"github.com/cassava/repoctl/pacman"
+	"github.com/cassava/repoctl/pacman/aur"
 )
 
 // Dependencies returns a list of all dependencies in the graph,

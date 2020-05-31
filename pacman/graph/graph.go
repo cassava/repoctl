@@ -24,8 +24,8 @@ import (
 	"fmt"
 
 	"github.com/gonum/graph"
-	"github.com/goulash/pacman"
-	"github.com/goulash/pacman/aur"
+	"github.com/cassava/repoctl/pacman"
+	"github.com/cassava/repoctl/pacman/aur"
 )
 
 // Node implements graph.Node.

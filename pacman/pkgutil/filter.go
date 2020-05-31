@@ -12,10 +12,10 @@ import (
 	"strings"
 
 	"github.com/goulash/osutil"
-	"github.com/goulash/pacman"
-	"github.com/goulash/pacman/alpm"
-	"github.com/goulash/pacman/aur"
-	"github.com/goulash/pacman/meta"
+	"github.com/cassava/repoctl/pacman"
+	"github.com/cassava/repoctl/pacman/alpm"
+	"github.com/cassava/repoctl/pacman/aur"
+	"github.com/cassava/repoctl/pacman/meta"
 )
 
 // FilterFunc is a function that given a package, returns true if the package
