@@ -61,19 +61,21 @@ Please report any bugs you may encounter.
 The source code of {{.Name}} is licensed under the {{.License}} license.
 
 {{if .Conf.Unconfigured}}Default{{else}}Current{{end}} configuration:
-    repo        = {{printt .Conf.Repository}}
-    add_params  = {{printt .Conf.AddParameters}}
-    rm_params   = {{printt .Conf.RemoveParameters}}
-    ignore_aur  = {{printt .Conf.IgnoreAUR}}
-    backup      = {{printt .Conf.Backup}}
-    backup_dir  = {{printt .Conf.BackupDir}}
-    interactive = {{printt .Conf.Interactive}}
-    columnate   = {{printt .Conf.Columnate}}
-    color       = {{printt .Conf.Color}}
-    quiet       = {{printt .Conf.Quiet}}
-    debug       = {{printt .Conf.Debug}}
-    pre_action  = {{printt .Conf.PreAction}}
-    post_action = {{printt .Conf.PostAction}}
+    repo                  = {{printt .Conf.Repository}}
+    add_params            = {{printt .Conf.AddParameters}}
+    rm_params             = {{printt .Conf.RemoveParameters}}
+    ignore_aur            = {{printt .Conf.IgnoreAUR}}
+    require_signature     = {{printt .Conf.RequireSignature}}
+    backup                = {{printt .Conf.Backup}}
+    backup_dir            = {{printt .Conf.BackupDir}}
+    interactive           = {{printt .Conf.Interactive}}
+    columnate             = {{printt .Conf.Columnate}}
+    color                 = {{printt .Conf.Color}}
+    quiet                 = {{printt .Conf.Quiet}}
+    debug                 = {{printt .Conf.Debug}}
+    pre_action            = {{printt .Conf.PreAction}}
+    post_action           = {{printt .Conf.PostAction}}
+    action_on_completion  = {{printt .Conf.ActionOnCompletion}}
 `))
 
 // printt returns a TOML representation of the value.
