@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/cassava/repoctl/conf"
@@ -110,8 +111,8 @@ var newConfigCmd = &cobra.Command{
   The default location to create a repoctl configuration file is in
   your $XDG_CONFIG_HOME directory.
 
-  When creating a configuration file, repoctl will overwrite any
-  existing files. You have been warned.
+  When creating a configuration file, repoctl will create a backup of
+  any existing files.
 `,
 	Example: `  repoctl new config /srv/abs/atlas.db.tar.gz
   repoctl new config -c /etc/xdg/repoctl/config.toml /srv/abs/atlas.db.tar.gz
@@ -161,8 +162,28 @@ func newConfig(confpath, repo string) error {
 		}
 	}
 
+	if ex, _ := osutil.FileExists(confpath); ex {
+		backup := generateBackupPath(confpath, ".bak")
+		fmt.Fprintf(os.Stderr, "Backing up current configuration to: %s\n", backup)
+		os.Rename(confpath, backup)
+	}
+
 	fmt.Println("Writing new configuration file at", confpath, "...")
 	Conf.Repository = repo
 	Conf.Unconfigured = false
 	return Conf.WriteFile(confpath)
+}
+
+func generateBackupPath(filepath string, suffix string) string {
+	backupPath := filepath + suffix
+	ex, _ := osutil.FileExists(backupPath)
+
+	if ex {
+		for i := 1; ex; i++ {
+			backupPath = filepath + suffix + "." + strconv.Itoa(i)
+			ex, _ = osutil.FileExists(backupPath)
+		}
+	}
+
+	return backupPath
 }
