@@ -13,15 +13,15 @@ import (
 )
 
 var (
-	searchSortBy    string
-	searchShowVotes bool
+	searchSortBy string
+	searchQuiet  bool
 )
 
 func init() {
 	MainCmd.AddCommand(searchCmd)
 
 	searchCmd.Flags().StringVar(&searchSortBy, "sort-by", "name", "which key to sort results by")
-	searchCmd.Flags().BoolVarP(&searchShowVotes, "show-votes", "v", false, "whether to show votes by each name")
+	searchCmd.Flags().BoolVarP(&searchQuiet, "quiet", "q", false, "show only the name")
 }
 
 var searchCmd = &cobra.Command{
@@ -80,14 +80,20 @@ var searchCmd = &cobra.Command{
 			pkgset[p.Name] = true
 
 			var s string
-			if searchShowVotes {
-				s = fmt.Sprintf("%s  (%d)", p.Name, p.NumVotes)
-			} else {
+			if searchQuiet {
 				s = p.Name
+			} else {
+				s = col.Sprintf("@{!m}aur/@{!w}%s @{!g}%s @{r}(%d)\n@|    %s", p.Name, p.Version, p.NumVotes, p.Description)
 			}
 			pkgnames = append(pkgnames, s)
 		}
-		printSet(pkgnames, "", Conf.Columnate)
+		if searchQuiet {
+			printSet(pkgnames, "", Conf.Columnate)
+		} else {
+			for _, p := range pkgnames {
+				fmt.Println(p)
+			}
+		}
 
 		return nil
 	},
