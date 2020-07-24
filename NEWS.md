@@ -1,7 +1,7 @@
 Repoctl Releases
 ================
 
-## Version 0.20 (unreleased)
+## Version 0.20 (24 July 2020)
 
 - New: `search` command added.
 - New `down` command learned `-n` (`--dry-run`) option.
