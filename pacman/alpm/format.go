@@ -15,9 +15,17 @@ const PackageGlob = "-*.pkg.tar*"
 //
 // Currently, only the following formats are supported:
 //	.db.tar.gz
+//  .db.tar.xz
+//  .db.tar.gz2
+//  .db.tar.zst
 //
 func HasDatabaseFormat(filename string) bool {
-	return strings.HasSuffix(filename, ".db.tar.gz")
+	for _, ext := range []string{".db.tar", ".db.tar.xz", ".db.tar.gz", ".db.tar.bz2", ".db.tar.zst"} {
+		if strings.HasSuffix(filename, ext) {
+			return true
+		}
+	}
+	return false
 }
 
 // HasPackageFormat returns true if the filename matches a pacman package

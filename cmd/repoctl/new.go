@@ -96,6 +96,7 @@ var newConfigCmd = &cobra.Command{
 
     - ".db.tar"             - ".db.tar.gz"
     - ".db.tar.xz"          - ".db.tar.bz2"
+	- ".db.tar.zst"
 
   The recommended database extension to use is ".db.tar.gz".
 
