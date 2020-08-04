@@ -10,8 +10,8 @@ import (
 	"os/exec"
 
 	"github.com/cassava/repoctl/conf"
-	"github.com/goulash/errs"
 	"github.com/cassava/repoctl/pacman/pkgutil"
+	"github.com/goulash/errs"
 )
 
 // main loads the configuration and executes the primary command.
@@ -44,14 +44,14 @@ func main() {
 	if conf.PreAction != "" && conf.ActionOnCompletion {
 		err := exec.Command("sh", "-c", conf.PreAction).Run()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "Error: post action %q failed.\n", conf.PreAction)
+			fmt.Fprintf(os.Stderr, "Error: post action %q failed.\n", conf.PreAction)
 		}
 	}
 	var postAction = func() {
 		if conf.PostAction != "" && conf.ActionOnCompletion {
 			err := exec.Command("sh", "-c", conf.PostAction).Run()
 			if err != nil {
-				fmt.Fprintln(os.Stderr, "Error: post action %q failed.\n", conf.PostAction)
+				fmt.Fprintf(os.Stderr, "Error: post action %q failed.\n", conf.PostAction)
 			}
 		}
 	}
