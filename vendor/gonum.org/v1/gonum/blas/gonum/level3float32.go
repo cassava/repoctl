@@ -273,22 +273,20 @@ func (Implementation) Ssymm(s blas.Side, ul blas.Uplo, m, n int, alpha float32, 
 		return
 	}
 
-	if beta == 0 {
-		for i := 0; i < m; i++ {
-			ctmp := c[i*ldc : i*ldc+n]
-			for j := range ctmp {
-				ctmp[j] = 0
-			}
-		}
-	}
-
 	if alpha == 0 {
-		if beta != 0 {
+		if beta == 0 {
 			for i := 0; i < m; i++ {
 				ctmp := c[i*ldc : i*ldc+n]
-				for j := 0; j < n; j++ {
-					ctmp[j] *= beta
+				for j := range ctmp {
+					ctmp[j] = 0
 				}
+			}
+			return
+		}
+		for i := 0; i < m; i++ {
+			ctmp := c[i*ldc : i*ldc+n]
+			for j := 0; j < n; j++ {
+				ctmp[j] *= beta
 			}
 		}
 		return
@@ -607,29 +605,16 @@ func (Implementation) Ssyr2k(ul blas.Uplo, tA blas.Transpose, n, k int, alpha fl
 				atmp := a[i*lda : i*lda+k]
 				btmp := b[i*ldb : i*ldb+k]
 				ctmp := c[i*ldc+i : i*ldc+n]
-				if beta == 0 {
-					for jc := range ctmp {
-						j := i + jc
-						var tmp1, tmp2 float32
-						binner := b[j*ldb : j*ldb+k]
-						for l, v := range a[j*lda : j*lda+k] {
-							tmp1 += v * btmp[l]
-							tmp2 += atmp[l] * binner[l]
-						}
-						ctmp[jc] = alpha * (tmp1 + tmp2)
+				for jc := range ctmp {
+					j := i + jc
+					var tmp1, tmp2 float32
+					binner := b[j*ldb : j*ldb+k]
+					for l, v := range a[j*lda : j*lda+k] {
+						tmp1 += v * btmp[l]
+						tmp2 += atmp[l] * binner[l]
 					}
-				} else {
-					for jc := range ctmp {
-						j := i + jc
-						var tmp1, tmp2 float32
-						binner := b[j*ldb : j*ldb+k]
-						for l, v := range a[j*lda : j*lda+k] {
-							tmp1 += v * btmp[l]
-							tmp2 += atmp[l] * binner[l]
-						}
-						ctmp[jc] *= beta
-						ctmp[jc] += alpha * (tmp1 + tmp2)
-					}
+					ctmp[jc] *= beta
+					ctmp[jc] += alpha * (tmp1 + tmp2)
 				}
 			}
 			return
@@ -638,27 +623,15 @@ func (Implementation) Ssyr2k(ul blas.Uplo, tA blas.Transpose, n, k int, alpha fl
 			atmp := a[i*lda : i*lda+k]
 			btmp := b[i*ldb : i*ldb+k]
 			ctmp := c[i*ldc : i*ldc+i+1]
-			if beta == 0 {
-				for j := 0; j <= i; j++ {
-					var tmp1, tmp2 float32
-					binner := b[j*ldb : j*ldb+k]
-					for l, v := range a[j*lda : j*lda+k] {
-						tmp1 += v * btmp[l]
-						tmp2 += atmp[l] * binner[l]
-					}
-					ctmp[j] = alpha * (tmp1 + tmp2)
+			for j := 0; j <= i; j++ {
+				var tmp1, tmp2 float32
+				binner := b[j*ldb : j*ldb+k]
+				for l, v := range a[j*lda : j*lda+k] {
+					tmp1 += v * btmp[l]
+					tmp2 += atmp[l] * binner[l]
 				}
-			} else {
-				for j := 0; j <= i; j++ {
-					var tmp1, tmp2 float32
-					binner := b[j*ldb : j*ldb+k]
-					for l, v := range a[j*lda : j*lda+k] {
-						tmp1 += v * btmp[l]
-						tmp2 += atmp[l] * binner[l]
-					}
-					ctmp[j] *= beta
-					ctmp[j] += alpha * (tmp1 + tmp2)
-				}
+				ctmp[j] *= beta
+				ctmp[j] += alpha * (tmp1 + tmp2)
 			}
 		}
 		return
@@ -666,13 +639,7 @@ func (Implementation) Ssyr2k(ul blas.Uplo, tA blas.Transpose, n, k int, alpha fl
 	if ul == blas.Upper {
 		for i := 0; i < n; i++ {
 			ctmp := c[i*ldc+i : i*ldc+n]
-			switch beta {
-			case 0:
-				for j := range ctmp {
-					ctmp[j] = 0
-				}
-			case 1:
-			default:
+			if beta != 1 {
 				for j := range ctmp {
 					ctmp[j] *= beta
 				}
@@ -692,13 +659,7 @@ func (Implementation) Ssyr2k(ul blas.Uplo, tA blas.Transpose, n, k int, alpha fl
 	}
 	for i := 0; i < n; i++ {
 		ctmp := c[i*ldc : i*ldc+i+1]
-		switch beta {
-		case 0:
-			for j := range ctmp {
-				ctmp[j] = 0
-			}
-		case 1:
-		default:
+		if beta != 1 {
 			for j := range ctmp {
 				ctmp[j] *= beta
 			}

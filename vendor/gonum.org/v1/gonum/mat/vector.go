@@ -13,11 +13,10 @@ import (
 var (
 	vector *VecDense
 
-	_ Matrix        = vector
-	_ allMatrix     = vector
-	_ Vector        = vector
-	_ Reseter       = vector
-	_ MutableVector = vector
+	_ Matrix    = vector
+	_ allMatrix = vector
+	_ Vector    = vector
+	_ Reseter   = vector
 )
 
 // Vector is a vector.
@@ -25,12 +24,6 @@ type Vector interface {
 	Matrix
 	AtVec(int) float64
 	Len() int
-}
-
-// A MutableVector can set elements of a vector.
-type MutableVector interface {
-	Vector
-	SetVec(i int, v float64)
 }
 
 // TransposeVec is a type for performing an implicit transpose of a Vector.
@@ -194,9 +187,9 @@ func (v *VecDense) Zero() {
 	}
 }
 
-// CloneFromVec makes a copy of a into the receiver, overwriting the previous value
+// CloneVec makes a copy of a into the receiver, overwriting the previous value
 // of the receiver.
-func (v *VecDense) CloneFromVec(a Vector) {
+func (v *VecDense) CloneVec(a Vector) {
 	if v == a {
 		return
 	}
@@ -211,14 +204,14 @@ func (v *VecDense) CloneFromVec(a Vector) {
 		return
 	}
 	for i := 0; i < a.Len(); i++ {
-		v.setVec(i, a.AtVec(i))
+		v.SetVec(i, a.AtVec(i))
 	}
 }
 
 // VecDenseCopyOf returns a newly allocated copy of the elements of a.
 func VecDenseCopyOf(a Vector) *VecDense {
 	v := &VecDense{}
-	v.CloneFromVec(a)
+	v.CloneVec(a)
 	return v
 }
 

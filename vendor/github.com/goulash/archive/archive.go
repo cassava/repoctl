@@ -12,10 +12,9 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 
-	"github.com/klauspost/compress/zstd"
-	lzma "github.com/remyoudompheng/go-liblzma"
+	"github.com/ulikunitz/xz"
 )
 
 // ReadFileFromArchive tries to read the file specified from the (compressed) archive.
@@ -56,7 +55,98 @@ func ReadFileFromTar(r io.Reader, file string) ([]byte, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("file '%s' not found", file)
+	return nil, fmt.Errorf("cannot find file %q", file)
+}
+
+// ExtractArchive extracts an archive on disk to the provided destination
+// directory.
+func ExtractArchive(archive, destdir string) error {
+	d, err := NewDecompressor(archive)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+
+	return ExtractTar(d, destdir)
+}
+
+// ExtractTar extracts all files from the reader into the provided destination
+// directory.
+func ExtractTar(r io.Reader, destdir string) error {
+	tr := tar.NewReader(r)
+
+	mkParentDirs := func(fpath string) error {
+		// If the directory component of fpath is already a directory, MkdirAll
+		// does nothing and returns nil.
+		err := os.MkdirAll(filepath.Dir(fpath), os.FileMode(0755))
+		if err != nil {
+			return fmt.Errorf("cannot create parent directories for %q: %s", fpath, err)
+		}
+		return nil
+	}
+
+	mkFile := func(fpath string, mode os.FileMode, r io.Reader) error {
+		file, err := os.OpenFile(fpath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, mode)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		_, err = io.Copy(file, r)
+		return err
+	}
+
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return err
+		}
+
+		fpath := filepath.Join(destdir, hdr.Name)
+		switch hdr.Typeflag {
+		case tar.TypeDir:
+			err = os.MkdirAll(fpath, os.FileMode(hdr.Mode))
+			if err != nil {
+				return fmt.Errorf("cannot extract directory %q: %s", fpath, err)
+			}
+
+		case tar.TypeReg, tar.TypeRegA:
+			err = mkParentDirs(fpath)
+			if err != nil {
+				return err
+			}
+			err = mkFile(fpath, os.FileMode(hdr.Mode), tr)
+			if err != nil {
+				return fmt.Errorf("cannot extract file %q: %s", fpath, err)
+			}
+
+		case tar.TypeSymlink:
+			err = mkParentDirs(fpath)
+			if err != nil {
+				return err
+			}
+			err = os.Symlink(hdr.Linkname, fpath)
+			if err != nil {
+				return fmt.Errorf("cannot extract symlink %q to %q: %s", hdr.Linkname, fpath, err)
+			}
+
+		case tar.TypeLink, tar.TypeChar, tar.TypeBlock, tar.TypeFifo:
+			// These types could be potentially handled in the future, for now we'll
+			// just ignore them and print a message.
+			println("not extracting %q: link, char, block, and fifo types not handled", fpath)
+
+		default:
+			// We can pretty much ignore the remaining types, as they aren't
+			// something we'd put on the filesystem:
+			//
+			//	 TypeCont, TypeXHeader, TypeXGlobalHeader, TypeGNUSparse,
+			//   TypeGNULongName, TypeGNULongLink
+		}
+	}
+
+	return nil
 }
 
 // Decompressor is a universal decompressor that, given a filepath,
@@ -72,23 +162,22 @@ type Decompressor struct {
 
 // NewDecompressor creates a new decompressor based on the file extension
 // of the given file. The returned Decompressor can be Read and Closed.
-func NewDecompressor(filepath string) (*Decompressor, error) {
+func NewDecompressor(fpath string) (*Decompressor, error) {
 	var d Decompressor
 	var err error
 
-	d.file, err = os.Open(filepath)
+	d.file, err = os.Open(fpath)
 	if err != nil {
 		return nil, err
 	}
 
-	switch path.Ext(filepath) {
+	switch filepath.Ext(fpath) {
 	case ".xz":
-		xz, err := lzma.NewReader(d.file)
+		xzr, err := xz.NewReader(d.file)
 		if err != nil {
 			return nil, err
 		}
-		d.reader = xz
-		d.closer = xz
+		d.reader = xzr
 	case ".gz":
 		gz, err := gzip.NewReader(d.file)
 		if err != nil {
@@ -126,29 +215,4 @@ func (d *Decompressor) Close() error {
 		}
 	}
 	return d.file.Close()
-}
-
-// zstDecompressor wraps the zstd.Decoder type to implement io.Closer,
-// which it unfortunately doesn't quite implement.
-type zstDecompressor struct {
-	decoder *zstd.Decoder
-}
-
-func newZstDecompressor(r io.Reader) (*zstDecompressor, error) {
-	var d zstDecompressor
-	z, err := zstd.NewReader(r)
-	if err != nil {
-		return nil, err
-	}
-	d.decoder = z
-	return &d, nil
-}
-
-func (d *zstDecompressor) Read(p []byte) (int, error) {
-	return d.decoder.Read(p)
-}
-
-func (d *zstDecompressor) Close() error {
-	d.decoder.Close()
-	return nil
 }

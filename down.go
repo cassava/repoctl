@@ -10,11 +10,11 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/goulash/errs"
-	"github.com/goulash/osutil"
 	"github.com/cassava/repoctl/pacman/aur"
 	"github.com/cassava/repoctl/pacman/graph"
-	"github.com/juju/utils/tar"
+	"github.com/goulash/archive"
+	"github.com/goulash/errs"
+	"github.com/goulash/osutil"
 )
 
 // DependencyGraph returns a dependency graph of the given package names.
@@ -104,7 +104,7 @@ func DownloadExtractAUR(ap *aur.Package, destdir string, clobber bool) error {
 		return err
 	}
 
-	return tar.UntarFiles(gr, destdir)
+	return archive.ExtractTar(gr, destdir)
 }
 
 // DownloadTarballAUR downloads the given package from AUR.
