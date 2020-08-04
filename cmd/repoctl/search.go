@@ -44,6 +44,13 @@ var searchCmd = &cobra.Command{
 `,
 	Example: `  repoctl search --sort-by=votes firefox
   repoctl search flir flirc flirc-bin`,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// Prevent errors that we print being printed a second time by cobra.
+		cmd.SilenceErrors = true
+		cmd.SilenceUsage = true
+
+		return nil
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var pkgs aur.Packages
 		for _, q := range args {

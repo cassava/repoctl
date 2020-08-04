@@ -50,7 +50,13 @@ var newCmd = &cobra.Command{
 
   See the respective commands for more information.
 `,
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error { return nil },
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// Prevent errors that we print being printed a second time by cobra.
+		cmd.SilenceErrors = true
+		cmd.SilenceUsage = true
+
+		return nil
+	},
 }
 
 var (

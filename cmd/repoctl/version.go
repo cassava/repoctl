@@ -19,10 +19,16 @@ func init() {
 }
 
 var versionCmd = &cobra.Command{
-	Use:               "version",
-	Short:             "show version and date information",
-	Long:              "Show the official version number of repoctl, as well as the release date.",
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error { return nil },
+	Use:   "version",
+	Short: "show version and date information",
+	Long:  "Show the official version number of repoctl, as well as the release date.",
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// Prevent errors that we print being printed a second time by cobra.
+		cmd.SilenceErrors = true
+		cmd.SilenceUsage = true
+
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		var progInfo = struct {
 			Name      string

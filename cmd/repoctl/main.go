@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/cassava/repoctl"
 	"github.com/cassava/repoctl/conf"
@@ -74,9 +75,17 @@ Note that in all of these commands, the following terminology is used:
     pkgfile: is the path to a package file, e.g. pacman-3.5.3-i686.pkg.tar.xz
 `,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		// This function can be overriden if it's not necessary for a command.
+		// Prevent errors that we print being printed a second time by cobra.
 		cmd.SilenceErrors = true
 		cmd.SilenceUsage = true
+
+		if strings.HasPrefix(cmd.Use, "help") {
+			return nil
+		}
+
+		// Make sure that repoctl is configured and that the configuration
+		// makes sense. This function can be overriden if it's not necessary
+		// for a command.
 		if Conf.Unconfigured {
 			return errors.New("repoctl is unconfigured, please create configuration")
 		} else if Conf.Repository == "" {
@@ -84,9 +93,11 @@ Note that in all of these commands, the following terminology is used:
 		}
 		Repo = Conf.Repo()
 
+		// Run preaction if defined.
 		if Conf.PreAction != "" {
 			return runShellCommand(Conf.PreAction)
 		}
+
 		return nil
 	},
 	PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
