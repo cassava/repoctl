@@ -32,7 +32,7 @@ var (
 // Also, profile creation?
 var newCmd = &cobra.Command{
 	Use:   "new [command] [flags]",
-	Short: "create a new repository or configuration file",
+	Short: "Create a new repository or configuration file",
 	Long: `Create a new repository or configuration file.
 
   For repoctl to work, there must be at least one repository and one
@@ -74,7 +74,7 @@ func init() {
 
 var newRepoCmd = &cobra.Command{
 	Use:   "repo </path/to/repo/database>",
-	Short: "create a new repository and configuration file",
+	Short: "Create a new repository and configuration file",
 	Long: `Create a new repository with configuration file.
 
   FIXME: This function still needs to be implemented.
@@ -86,7 +86,7 @@ var newRepoCmd = &cobra.Command{
 
 var newConfigCmd = &cobra.Command{
 	Use:   "config </path/to/repo/database>",
-	Short: "create a new configuration file",
+	Short: "Create a new configuration file",
 	Long: `Create a new initial configuration file.
 
   The minimal configuration of repoctl is read from a configuration

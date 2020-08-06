@@ -16,7 +16,7 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update [pkgname...]",
-	Short: "update database in repository",
+	Short: "Update database in repository",
 	Long: `Update database by adding packages and dispatching obsolete files.
 
   Package files that are newer than the registered versions in the

@@ -42,7 +42,7 @@ func init() {
 var downCmd = &cobra.Command{
 	Use:     "down [pkgname...]",
 	Aliases: []string{"download"},
-	Short:   "download and extract tarballs from AUR",
+	Short:   "Download and extract tarballs from AUR",
 	Long: `Download and extract tarballs from AUR for given packages.
 
   Alternatively, all packages, or those with updates can be downloaded.

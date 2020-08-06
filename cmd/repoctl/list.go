@@ -55,7 +55,7 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:     "list [regex]",
 	Aliases: []string{"ls"},
-	Short:   "list packages that belong to the managed repository",
+	Short:   "List packages that belong to the managed repository",
 	Long: `List packages that belong to the managed repository.
 
   All packages that are in the managed repository are listed,

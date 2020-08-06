@@ -21,7 +21,7 @@ func init() {
 
 var queryCmd = &cobra.Command{
 	Use:   "query [pkgname...]",
-	Short: "query package information from AUR",
+	Short: "Query package information from AUR",
 	Long: `Query package information from AUR.
 
   This command queries AUR for the specified packages and returns as much

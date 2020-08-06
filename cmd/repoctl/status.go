@@ -27,7 +27,7 @@ func init() {
 
 var statusCmd = &cobra.Command{
 	Use:   "status [--aur]",
-	Short: "show pending changes and packages that can be upgraded",
+	Short: "Show pending changes and packages that can be upgraded",
 	Long: `Show pending changes to the database and packages that can be updated.
 
   In particular, the following is shown:

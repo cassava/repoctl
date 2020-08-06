@@ -12,7 +12,7 @@ func init() {
 
 var resetCmd = &cobra.Command{
 	Use:   "reset",
-	Short: "recreate repository database",
+	Short: "Recreate repository database",
 	Long: `Delete the repository database and re-add all packages in repository.
 
   Essentially, this command deletes the repository database and

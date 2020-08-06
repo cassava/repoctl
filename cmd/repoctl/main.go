@@ -62,12 +62,12 @@ func runShellCommand(cmd string) error {
 
 var MainCmd = &cobra.Command{
 	Use:   "repoctl",
-	Short: "manage local Pacman repositories",
+	Short: "Manage local Pacman repositories",
 	Long: `Repoctl helps manage local Pacman repositories, and acts in particular as
 a supplement to the repo-add and repo-remove tools that come with Pacman.
 
-If compiling and installing from AUR every time is not what you want,
-or if you want to host your own repository, then repoctl might be for you.
+It also comes with several commands for searching, querying, and downloading
+packages from AUR.
 
 Note that in all of these commands, the following terminology is used:
 

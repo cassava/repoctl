@@ -18,7 +18,7 @@ func init() {
 var removeCmd = &cobra.Command{
 	Use:     "remove <pkgname...>",
 	Aliases: []string{"rm"},
-	Short:   "remove and delete packages from the database",
+	Short:   "Remove and delete packages from the database",
 	Long: `Remove and delete the package files from the repository.
 
   This command removes the specified package from the repository

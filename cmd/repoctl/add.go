@@ -20,7 +20,7 @@ func init() {
 
 var addCmd = &cobra.Command{
 	Use:   "add <pkgfile...>",
-	Short: "copy and add packages to the repository",
+	Short: "Copy and add packages to the repository",
 	Long: `Add (and copy if necessary) the package file to the repository.
 
   Similarly to the repo-add script, this command copies the package

@@ -29,7 +29,7 @@ func init() {
 
 var searchCmd = &cobra.Command{
 	Use:   "search [pkgname...]",
-	Short: "search for packages on AUR",
+	Short: "Search for packages on AUR",
 	Long: `Search for packages hosted on AUR.
 
   This command searches the specified arguments on AUR by the name property.
