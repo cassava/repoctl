@@ -33,6 +33,7 @@ var removeCmd = &cobra.Command{
 `,
 	Example: `  repoctl rm fairsplit
   repoctl rm --backup=false fairsplit`,
+	ValidArgsFunction: completeRepoPackageNames,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if Repo.Backup && Repo.IsObsoleteCached() {
 			fmt.Fprintf(os.Stderr, "warning: removing only database entries, use --backup=false to delete package files.\n")

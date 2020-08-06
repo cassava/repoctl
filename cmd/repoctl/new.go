@@ -79,8 +79,21 @@ var newRepoCmd = &cobra.Command{
 
   FIXME: This function still needs to be implemented.
 `,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return errors.New("not implemented")
+		dbpath := args[0]
+
+		err := newConfigCmd.RunE(cmd, args)
+		if err != nil {
+			return err
+		}
+
+		dbdir := filepath.Dir(dbpath)
+		err = os.MkdirAll(dbdir, os.FileMode(0755))
+		if err != nil {
+			return fmt.Errorf("cannot create directory %q: %s", dbdir, err)
+		}
+		return resetCmd.RunE(cmd, []string{})
 	},
 }
 
@@ -124,11 +137,8 @@ var newConfigCmd = &cobra.Command{
 	Example: `  repoctl new config /srv/abs/atlas.db.tar.gz
   repoctl new config -c /etc/xdg/repoctl/config.toml /srv/abs/atlas.db.tar.gz
   REPOCTL_CONFIG=/etc/repoctl.conf repoctl new config /srv/abs/atlas.db.tar.gz`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return &UsageError{"new config", "new config command takes only one argument", cmd.Usage}
-		}
-
 		return newConfig(nConf, args[0])
 	},
 }

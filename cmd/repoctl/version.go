@@ -19,9 +19,11 @@ func init() {
 }
 
 var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "Show version and date information",
-	Long:  "Show the official version number of repoctl, as well as the release date.",
+	Use:                   "version",
+	Short:                 "Show version information and current configuration",
+	Long:                  "Show version information of repoctl, as well as the current configuration.",
+	Args:                  cobra.ExactArgs(0),
+	DisableFlagsInUseLine: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// Prevent errors that we print being printed a second time by cobra.
 		cmd.SilenceErrors = true

@@ -24,6 +24,7 @@ var hostCmd = &cobra.Command{
 	Use:     "host",
 	Aliases: []string{"serve"},
 	Short:   "host repository on a network",
+	Args:    cobra.ExactArgs(0),
 	Long: `Host the repository on a network.
 
   This is essentially static file serving the repository on a specific

@@ -37,7 +37,8 @@ var addCmd = &cobra.Command{
   then obsolete package files are ignored.
   You can specify --backup=false to force them to be deleted.
 `,
-	Example: `  repoctl add -m ./fairsplit-1.0.pkg.tar.gz`,
+	Example:           `  repoctl add -m ./fairsplit-1.0.pkg.tar.gz`,
+	ValidArgsFunction: completeLocalPackageFiles,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if addRequireSignature {
 			Repo.RequireSignature = true

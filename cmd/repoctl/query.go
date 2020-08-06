@@ -42,8 +42,16 @@ var queryCmd = &cobra.Command{
     - Keywords
 
   Metadata properties that are empty are not shown.
+
+  Running this command without any arguments is not an error. (This means you
+  can use another command to generate a list of packages to query and if the
+  list has no elements, that's ok.)
 `,
-	Example: `  repoctl query firefox56 flirc-bin`,
+	Example: `  repoctl query firefox56 flirc-bin
+  repoctl query $(repoctl search -q firefox)
+`,
+	DisableFlagsInUseLine: true,
+	ValidArgsFunction:     completeAURPackageNames,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// Prevent errors that we print being printed a second time by cobra.
 		cmd.SilenceErrors = true
@@ -166,7 +174,7 @@ func formatAURPackageInfo(p *aur.Package, hspace int) string {
 		fmt.Fprintf(&buf, "    Keywords: %s\n", wrap(p.Keywords, 14))
 	}
 
-	fmt.Fprintf(&buf, "    Snapshot URL: %s\n", p.URLPath)
+	fmt.Fprintf(&buf, "    Snapshot URL: %s%s\n", "https://aur.archlinux.org", p.URLPath)
 	fmt.Fprintf(&buf, "    Maintainer: %s\n", p.Maintainer)
 	fmt.Fprintf(&buf, "    Votes: %d\n", p.NumVotes)
 	fmt.Fprintf(&buf, "    Popularity: %f\n", p.Popularity)

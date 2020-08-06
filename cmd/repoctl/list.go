@@ -77,11 +77,8 @@ var listCmd = &cobra.Command{
 
   If a valid regular expression is supplied, only packages that match
   the expression will be listed.`,
+	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) > 1 {
-			return &UsageError{"list", "list command takes at most one argument", cmd.Usage}
-		}
-
 		if listAllOptions {
 			listVersioned = true
 			listPending = true

@@ -22,7 +22,7 @@ var (
 func init() {
 	MainCmd.AddCommand(searchCmd)
 
-	searchCmd.Flags().StringVar(&searchSortBy, "sort-by", "name", "which key to sort results by")
+	searchCmd.Flags().StringVar(&searchSortBy, "sort-by", "name", "which key to sort results by") // FIXME: Add Completion!
 	searchCmd.Flags().BoolVarP(&searchQuiet, "quiet", "q", false, "show only the name")
 	searchCmd.Flags().BoolVarP(&searchInfo, "info", "i", false, "show package information")
 }

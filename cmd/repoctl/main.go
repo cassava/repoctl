@@ -73,6 +73,22 @@ Note that in all of these commands, the following terminology is used:
 
     pkgname: is the name of the package, e.g. pacman
     pkgfile: is the path to a package file, e.g. pacman-3.5.3-i686.pkg.tar.xz
+
+There are several places that repoctl reads its configuration from.
+If $REPOCTL_CONFIG is set, then only this path is loaded. Otherwise,
+the following paths are checked for repoctl/config.toml:
+
+  1. All the paths in $XDG_CONFIG_DIRS, where a colon ":" acts as
+     the separator. If $XDG_CONFIG_DIRS is not set or empty, then
+     it defaults to /etc/xdg.
+  2. The path given by $XDG_CONFIG_HOME. If $XDG_CONFIG_HOME is not
+     set, it defaults to $HOME/.config.
+
+In most systems then, repoctl will read:
+
+  /etc/xdg/repoctl/config.toml
+  /home/you/.config/repoctl/config.toml
+
 `,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// Prevent errors that we print being printed a second time by cobra.

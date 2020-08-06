@@ -39,11 +39,8 @@ var statusCmd = &cobra.Command{
     "upgrade":  packages with updates in AUR (only with -a)
     "!aur":     packages unavailable in AUR (only with -m)
 `,
+	Args: cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) > 0 {
-			return &UsageError{"status", "status command takes no arguments", cmd.Usage}
-		}
-
 		col.Printf("On repo @{!y}%s\n\n", Repo.Name())
 
 		pkgs, err := Repo.ReadMeta(nil)
@@ -65,10 +62,10 @@ var statusCmd = &cobra.Command{
 		for _, p := range pkgs {
 			var flags []string
 			if p.HasUpgrade() && !ignore[p.Name] {
-				flags = append(flags, col.Sprintf("@gupgrade(@|%s->%s@g)", p.Version(), p.AUR.Version))
+				flags = append(flags, col.Sprintf("@gupgrade(@|%s -> %s@g)", p.Version(), p.AUR.Version))
 			}
 			if p.HasUpdate() {
-				flags = append(flags, col.Sprintf("@gupdated(@|%s->%s@g)", p.VersionRegistered(), p.Version()))
+				flags = append(flags, col.Sprintf("@gupdated(@|%s -> %s@g)", p.VersionRegistered(), p.Version()))
 			}
 			if !p.HasFiles() {
 				flags = append(flags, col.Sprint("@rremoval"))
@@ -88,7 +85,7 @@ var statusCmd = &cobra.Command{
 
 			if len(flags) > 0 {
 				nothing = false
-				fmt.Printf("\t%s:", p.Name)
+				fmt.Printf("    %s:", p.Name)
 				for _, f := range flags {
 					fmt.Printf(" %s", f)
 				}

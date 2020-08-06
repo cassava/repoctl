@@ -7,12 +7,12 @@ package repoctl
 import (
 	"path"
 
-	"github.com/goulash/errs"
-	"github.com/goulash/osutil"
 	"github.com/cassava/repoctl/pacman"
 	"github.com/cassava/repoctl/pacman/aur"
 	"github.com/cassava/repoctl/pacman/meta"
 	pu "github.com/cassava/repoctl/pacman/pkgutil"
+	"github.com/goulash/errs"
+	"github.com/goulash/osutil"
 )
 
 // ReadDatabase reads the database at r.Directory/r.Database.
