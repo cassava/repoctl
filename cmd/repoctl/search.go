@@ -1,4 +1,4 @@
-// Copyright (c) 2016, Ben Morgan. All rights reserved.
+// Copyright (c) 2020, Ben Morgan. All rights reserved.
 // Use of this source code is governed by an MIT license
 // that can be found in the LICENSE file.
 
@@ -9,12 +9,14 @@ import (
 	"sort"
 
 	"github.com/cassava/repoctl/pacman/aur"
+	"github.com/goulash/pr"
 	"github.com/spf13/cobra"
 )
 
 var (
 	searchSortBy string
 	searchQuiet  bool
+	searchInfo   bool
 )
 
 func init() {
@@ -22,6 +24,7 @@ func init() {
 
 	searchCmd.Flags().StringVar(&searchSortBy, "sort-by", "name", "which key to sort results by")
 	searchCmd.Flags().BoolVarP(&searchQuiet, "quiet", "q", false, "show only the name")
+	searchCmd.Flags().BoolVarP(&searchInfo, "info", "i", false, "show package information")
 }
 
 var searchCmd = &cobra.Command{
@@ -39,8 +42,9 @@ var searchCmd = &cobra.Command{
     popularity-reverse
 
   The default is "name". Duplicate results are filtered from the output.
-  Note: This command is currently somewhat experimental; the flags may be
-  subject to change.
+
+  Search results are formatted similarly to Pacman search results, and can
+  also be expanded to include other metadata by using the --info flag.
 `,
 	Example: `  repoctl search --sort-by=votes firefox
   repoctl search flir flirc flirc-bin`,
@@ -76,6 +80,15 @@ var searchCmd = &cobra.Command{
 			return fmt.Errorf("unknown sort-by key '%s'", searchSortBy)
 		}
 
+		// Get the terminal width and fallback to a massive value if it's not
+		// available. This prevents wrapping and lets us for example grep the
+		// output better.
+		terminalWidth := pr.StdoutTerminalWidth()
+		if terminalWidth <= 0 {
+			// FIXME: This is a hack
+			terminalWidth = 1024
+		}
+
 		// Print the list
 		var pkgnames []string
 		pkgset := make(map[string]bool)
@@ -89,6 +102,9 @@ var searchCmd = &cobra.Command{
 			var s string
 			if searchQuiet {
 				s = p.Name
+			} else if searchInfo {
+				s = col.Sprintf("@{!m}aur/@{!w}%s @{!g}%s @{r}(%d)\n@|", p.Name, p.Version, p.NumVotes)
+				s += col.Sprintf("@.%s", formatAURPackageInfo(p, terminalWidth))
 			} else {
 				s = col.Sprintf("@{!m}aur/@{!w}%s @{!g}%s @{r}(%d)\n@|    %s", p.Name, p.Version, p.NumVotes, p.Description)
 			}

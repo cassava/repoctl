@@ -70,12 +70,28 @@ var downCmd = &cobra.Command{
         )
     done
 
-  Caveat: Automatic dependency resolution does not currently handle version
-  resolution or library specifications, as noted in the Arch wiki at:
-  https://wiki.archlinux.org/index.php/PKGBUILD#Dependencies
+  You can just output the correct build order by adding the -n flag to
+  prevent downloading of tarballs.
+
+  Caveats:
+
+  1. Automatic dependency resolution does not currently handle version
+     resolution or library specifications, as noted in the Arch wiki at:
+       https://wiki.archlinux.org/index.php/PKGBUILD#Dependencies
+
+  2. Package dependencies are not resolved that are only "provided"
+     by other packages. Here, we currently print an "unknown package" warning.
+
+	 For example, at the time of writing firefox56 requires mime-types.
+	 This package does not exist, but is provided by other packages.
+	 We can check this with:
+	   repoctl query $(repoctl search -q mime-types)
+	 Which leads us to see that mailcap-mime-types provides mime-types.
+	 This caveat will be resolved in the future.
 `,
 	Example: `  repoctl down -u
   repoctl down -o build-order.txt -u`,
+
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		if downAll || downUpgrades {
 			return MainCmd.PersistentPreRunE(cmd, args)
