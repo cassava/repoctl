@@ -32,14 +32,14 @@ var queryCmd = &cobra.Command{
   command, but it uses a different AUR request. This command shows the
   following additional metadata:
 
-	- Groups
-	- Dependencies
-	- Make Dependencies
-	- Optional Dependencies
-	- Conflicts
-	- Provides
-	- Replaces
-	- Keywords
+    - Groups
+    - Dependencies
+    - Make Dependencies
+    - Optional Dependencies
+    - Conflicts
+    - Provides
+    - Replaces
+    - Keywords
 
   Metadata properties that are empty are not shown.
 `,
