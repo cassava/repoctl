@@ -158,8 +158,13 @@ type Package struct {
 	FirstSubmitted uint64
 	LastModified   uint64
 	URLPath        string
+	Groups         []string
 	Depends        []string
 	MakeDepends    []string
+	OptDepends     []string
+	Conflicts      []string
+	Provides       []string
+	Replaces       []string
 	License        []string
 	Keywords       []string
 }
@@ -182,6 +187,7 @@ func (p *Package) Pkg() *pacman.Package {
 		//License:     p.License,
 		Depends:     p.Depends,
 		MakeDepends: p.MakeDepends,
+		// TODO: Update this here
 	}
 }
 
