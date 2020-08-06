@@ -8,12 +8,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 
-	"github.com/goulash/errs"
 	"github.com/cassava/repoctl/pacman/alpm"
+	"github.com/goulash/errs"
 )
 
 // ReadDir reads all the packages it finds in a directory.
+//
+// Note: this will try to read each package, and currently it does this
+// in an inefficient manner, decompressing the entire package in memory.
+// Even a directory with only a few files will take a while to process.
 func ReadDir(h errs.Handler, dirpath string) (Packages, error) {
 	errs.Init(&h)
 
@@ -30,7 +35,7 @@ func ReadDir(h errs.Handler, dirpath string) (Packages, error) {
 			}
 			return filepath.SkipDir
 		}
-		if !info.Mode().IsDir() && alpm.HasPackageFormat(filename) {
+		if alpm.HasPackageFormat(filename) {
 			p, err := Read(filename)
 			if err != nil && h != nil {
 				println(err)
@@ -38,6 +43,39 @@ func ReadDir(h errs.Handler, dirpath string) (Packages, error) {
 			}
 
 			pkgs = append(pkgs, p)
+		}
+
+		return nil
+	})
+
+	return pkgs, err
+}
+
+// ReadDirApproxOnlyNames returns the names of all packages it finds
+// in a directory.
+//
+// This does not have the performance issues that ReadDir has.
+func ReadDirApproxOnlyNames(h errs.Handler, dirpath string) ([]string, error) {
+	errs.Init(&h)
+	re := regexp.MustCompile(alpm.PackageRegex)
+
+	var pkgs []string
+	dirpath = filepath.Clean(dirpath)
+	err := filepath.Walk(dirpath, func(filename string, info os.FileInfo, err error) error {
+		if err != nil && h != nil {
+			println(err)
+			return h(err)
+		}
+		if info.Mode().IsDir() {
+			if filename == dirpath {
+				return nil
+			}
+			return filepath.SkipDir
+		}
+
+		matches := re.FindStringSubmatch(filepath.Base(filename))
+		if matches != nil {
+			pkgs = append(pkgs, matches[1])
 		}
 
 		return nil
