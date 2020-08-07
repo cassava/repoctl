@@ -10,10 +10,10 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/goulash/errs"
 	"github.com/cassava/repoctl/pacman"
 	"github.com/cassava/repoctl/pacman/alpm"
 	"github.com/cassava/repoctl/pacman/aur"
+	"github.com/goulash/errs"
 )
 
 var ErrMultipleDB = errors.New("multiple database files found")
@@ -22,12 +22,13 @@ var ErrMultipleDB = errors.New("multiple database files found")
 // In any case, it loads all files it can. If there are multiple
 // databases, it returns (nil, ErrMultipleDB). It does not recurse.
 func ReadRepo(h errs.Handler, dirpath string) (Packages, error) {
+	errs.Init(&h)
+
 	var dbpath string
 
 	dirpath = filepath.Clean(dirpath)
 	err := filepath.Walk(dirpath, func(filename string, info os.FileInfo, err error) error {
-		if err != nil && h != nil {
-			println(err)
+		if err != nil {
 			return h(err)
 		}
 		if info.Mode().IsDir() {
@@ -80,7 +81,7 @@ func Read(h errs.Handler, dirpath, dbpath string) (Packages, error) {
 	}
 
 	// Read the packages in the repository directory.
-	fspkgs, err := pacman.ReadDir(h, dirpath)
+	fspkgs, err := pacman.ReadDir(h, dirpath, dbpath)
 	if err != nil {
 		return nil, err
 	}

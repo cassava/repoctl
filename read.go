@@ -6,6 +6,7 @@ package repoctl
 
 import (
 	"path"
+	"path/filepath"
 
 	"github.com/cassava/repoctl/pacman"
 	"github.com/cassava/repoctl/pacman/aur"
@@ -30,12 +31,8 @@ func (r *Repo) ReadDatabase() (pacman.Packages, error) {
 	return pkgs, err
 }
 
-// ReadDir reads all packages that are found in the repository
-// directory.
 func (r *Repo) ReadDir(h errs.Handler) (pacman.Packages, error) {
-	errs.Init(&h)
-
-	pkgs, err := pacman.ReadDir(h, r.Directory)
+	pkgs, err := pacman.ReadDir(h, r.Directory, filepath.Join(r.Directory, r.Database))
 	r.MakeAbs(pkgs)
 	return pkgs, err
 }
