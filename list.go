@@ -7,9 +7,9 @@ package repoctl
 import (
 	"sort"
 
-	"github.com/goulash/errs"
 	"github.com/cassava/repoctl/pacman"
 	"github.com/cassava/repoctl/pacman/pkgutil"
+	"github.com/goulash/errs"
 )
 
 func (r *Repo) ListDatabase(f pkgutil.MapFunc) ([]string, error) {
@@ -47,7 +47,10 @@ func (r *Repo) ListMeta(h errs.Handler, aur bool, f func(pacman.AnyPackage) stri
 	if err != nil {
 		return nil, err
 	}
-	_ = pkgs.ReadAUR()
+	if aur {
+		r.debugf("info: querying AUR for packages...\n")
+		_ = pkgs.ReadAUR()
+	}
 	return List(pkgs, f), nil
 }
 
