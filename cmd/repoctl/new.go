@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/cassava/repoctl/conf"
+	"github.com/cassava/repoctl/pacman/alpm"
 	"github.com/goulash/osutil"
 	"github.com/spf13/cobra"
 )
@@ -156,16 +157,15 @@ func newConfig(confpath, repo string) error {
 		}
 	}
 
-	var extOk bool
-	for _, ext := range []string{".db.tar", ".db.tar.gz", ".db.tar.xz", ".db.tar.bz2"} {
-		if strings.HasSuffix(repo, ext) {
-			extOk = true
-			break
+	if !alpm.HasDatabaseFormat(repo) {
+		fmt.Fprintf(os.Stderr, "Warning: Specified repository database %q has an unexpected extension.\n", repo)
+		fmt.Fprintf(os.Stderr, "         It should conform to this pattern: .db.tar.(zst|xz|gz|bz2).\n")
+		base := filepath.Base(repo)
+		if i := strings.IndexRune(base, '.'); i != -1 {
+			base = base[:i]
 		}
-	}
-	if !extOk {
-		fmt.Fprintf(os.Stderr, "Warning: specified repository database %q has an unexpected extension.\n", repo)
-		fmt.Fprintf(os.Stderr, "Should be one of \".db.tar\", \".db.tar.gz\", \".db.tar.xz\", or \"db.tar.bz2\".\n")
+		fmt.Fprintf(os.Stderr, "         For example: %s.db.tar.zst\n", filepath.Join(filepath.Dir(repo), base))
+		fmt.Fprintf(os.Stderr, "Warning: Continuing anyway.\n")
 	}
 
 	dir := filepath.Dir(confpath)

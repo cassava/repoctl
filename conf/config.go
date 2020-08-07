@@ -11,10 +11,12 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"text/template"
 
 	"github.com/BurntSushi/toml"
+	"github.com/cassava/repoctl/pacman/alpm"
 	"github.com/goulash/osutil"
 	"github.com/goulash/xdg"
 )
@@ -207,16 +209,14 @@ func (c *Configuration) Init() error {
 	c.repodir = path.Dir(c.Repository)
 
 	// Perform a check on database extension.
-	var extOk bool
-	for _, ext := range []string{".db.tar", ".db.tar.gz", ".db.tar.xz", ".db.tar.bz2", ".db.tar.zst"} {
-		if strings.HasSuffix(c.database, ext) {
-			extOk = true
-			break
+	if !alpm.HasDatabaseFormat(c.database) {
+		fmt.Fprintf(os.Stderr, "Warning: Specified repository database %q has an unexpected extension.\n", c.database)
+		fmt.Fprintf(os.Stderr, "         It should conform to this pattern: .db.tar.(zst|xz|gz|bz2).\n")
+		base := filepath.Base(c.database)
+		if i := strings.IndexRune(base, '.'); i != -1 {
+			base = base[:i]
 		}
-	}
-	if !extOk {
-		fmt.Fprintf(os.Stderr, "Warning: specified repository database %q has an unexpected extension.\n", c.database)
-		fmt.Fprintf(os.Stderr, "Should be one of \".db.tar\", \".db.tar.gz\", \".db.tar.xz\", \"db.tar.bz2\", or \"db.tar.zst\".\n")
+		fmt.Fprintf(os.Stderr, "         For example: %s.db.tar.zst\n", filepath.Join(filepath.Dir(c.database), base))
 	}
 
 	return nil
