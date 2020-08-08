@@ -9,7 +9,10 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
+
+	"github.com/cassava/repoctl/pacman"
 )
 
 var (
@@ -22,6 +25,12 @@ func (r *Repo) DatabaseAdd(pkgfiles ...string) error {
 	if len(pkgfiles) == 0 {
 		return nil
 	}
+
+	dbpath := filepath.Join(r.Directory, r.Database)
+	if pacman.IsDatabaseLocked(dbpath) {
+		return fmt.Errorf("database is locked: %s", dbpath+".lck")
+	}
+
 	return in(r.Directory, func() error {
 		for _, p := range pkgfiles {
 			r.printf("adding package to database: %s\n", p)
@@ -37,6 +46,12 @@ func (r *Repo) DatabaseRemove(pkgnames ...string) error {
 	if len(pkgnames) == 0 {
 		return nil
 	}
+
+	dbpath := filepath.Join(r.Directory, r.Database)
+	if pacman.IsDatabaseLocked(dbpath) {
+		return fmt.Errorf("database is locked: %s", dbpath+".lck")
+	}
+
 	return in(r.Directory, func() error {
 		for _, p := range pkgnames {
 			r.printf("removing package from database: %s\n", p)

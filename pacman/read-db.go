@@ -19,6 +19,7 @@ import (
 
 	"github.com/goulash/archive"
 	"github.com/goulash/errs"
+	"github.com/goulash/osutil"
 )
 
 // PacmanConfPath contains the path to the pacman configuration.
@@ -33,6 +34,14 @@ var PacmanLocalDatabasePath = "/var/lib/pacman/local"
 // a repository name into a package database path.
 // This is provided for those with special needs to modify at their own risk.
 var PacmanSyncDatabaseFormat = "/var/lib/pacman/sync/%s.db"
+
+// IsDatabaseLocked returns whether the database given at the path
+// is currently locked for writing or not.
+func IsDatabaseLocked(dbpath string) bool {
+	lockpath := dbpath + ".lck"
+	ex, _ := osutil.FileExists(lockpath)
+	return ex
+}
 
 // ReadDatabase reads all the packages from a database file.
 func ReadDatabase(dbpath string) (Packages, error) {

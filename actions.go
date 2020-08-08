@@ -5,12 +5,15 @@
 package repoctl
 
 import (
+	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 
+	"github.com/cassava/repoctl/pacman"
+	pu "github.com/cassava/repoctl/pacman/pkgutil"
 	"github.com/goulash/errs"
 	"github.com/goulash/osutil"
-	pu "github.com/cassava/repoctl/pacman/pkgutil"
 )
 
 // Link tries to hard link the file, and failing that, copies it over.
@@ -218,6 +221,11 @@ func (r *Repo) unlink(h errs.Handler, pkgfiles []string) error {
 func (r *Repo) Update(h errs.Handler, pkgnames ...string) error {
 	errs.Init(&h)
 
+	dbpath := filepath.Join(r.Directory, r.Database)
+	if pacman.IsDatabaseLocked(dbpath) {
+		return fmt.Errorf("database is locked: %s", dbpath+".lck")
+	}
+
 	pkgs, err := r.ReadMeta(h, pkgnames...)
 	if err != nil {
 		return err
@@ -279,6 +287,10 @@ func (r *Repo) Reset(h errs.Handler) error {
 // DeleteDatabase deletes the repository database (but not the files).
 func (r *Repo) DeleteDatabase() error {
 	db := path.Join(r.Directory, r.Database)
-	r.printf("deleting database: %s\n", db)
-	return os.Remove(db)
+	if ex, _ := osutil.FileExists(db); ex {
+		r.printf("deleting database: %s\n", db)
+		return os.Remove(db)
+	} else {
+		return nil
+	}
 }
