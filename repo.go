@@ -12,8 +12,9 @@ import (
 	"path"
 	"strings"
 
-	"github.com/goulash/osutil"
+	"github.com/cassava/repoctl/conf"
 	"github.com/cassava/repoctl/pacman/pkgutil"
+	"github.com/goulash/osutil"
 )
 
 type Repo struct {
@@ -76,6 +77,35 @@ func New(repo string) *Repo {
 		AddParameters:    make([]string, 0),
 		RemoveParameters: make([]string, 0),
 	}
+}
+
+// NewFromConf creates a new configuration based on the configuration
+// file.
+func NewFromConf(c *conf.Configuration) (*Repo, error) {
+	p, _, err := c.SelectProfile()
+	if err != nil {
+		return nil, err
+	}
+	if p == nil {
+		return nil, ErrProfileInvalid
+	}
+
+	r := New(p.Repository)
+	r.Backup = p.Backup
+	r.BackupDir = p.BackupDir
+	r.IgnoreAUR = p.IgnoreAUR
+	r.AddParameters = p.AddParameters
+	r.RemoveParameters = p.RemoveParameters
+	r.RequireSignature = p.RequireSignature
+	r.Error = os.Stderr
+	if c.Quiet {
+		r.Info = nil
+	}
+	if c.Debug {
+		r.Info = os.Stdout
+		r.Debug = os.Stdout
+	}
+	return r, nil
 }
 
 // Name returns the name of the repository, which is interpreted to be

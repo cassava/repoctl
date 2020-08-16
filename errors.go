@@ -10,6 +10,7 @@ import (
 )
 
 var (
+	ErrProfileInvalid  = errors.New("require valid profile")
 	ErrRepoDirRelative = errors.New("repository directory path must be absolute")
 	ErrRepoDirMissing  = errors.New("repository directory path does not exist")
 	ErrRepoDirInvalid  = errors.New("repository directory path is invalid")

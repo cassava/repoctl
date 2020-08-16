@@ -24,13 +24,15 @@ var hostCmd = &cobra.Command{
 	Use:     "host",
 	Aliases: []string{"serve"},
 	Short:   "host repository on a network",
-	Args:    cobra.ExactArgs(0),
 	Long: `Host the repository on a network.
 
   This is essentially static file serving the repository on a specific
   address and port, and is only meant for temporary use. If you want
   to run something like this for longer, consider using darkhttpd.
 `,
+	Args:     cobra.ExactArgs(0),
+	PreRunE:  ProfileInit,
+	PostRunE: ProfileTeardown,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if ok, _ := osutil.DirExists(Repo.Directory); !ok {
 			return fmt.Errorf("repo directory %q does not exist", Repo.Directory)

@@ -1,15 +1,13 @@
-// Copyright (c) 2016, Ben Morgan. All rights reserved.
+// Copyright (c) 2020, Ben Morgan. All rights reserved.
 // Use of this source code is governed by an MIT license
 // that can be found in the LICENSE file.
 
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 
 	"github.com/cassava/repoctl"
 	"github.com/cassava/repoctl/conf"
@@ -17,47 +15,43 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Repo lets us use the repoctl library to do the most of the work.
-var Repo *repoctl.Repo
+var (
+	// Conf loads and stores the configuration (apart from command line
+	// configuration) of this program, including where the repository is.
+	Conf *conf.Configuration
 
-// Conf loads and stores the configuration (apart from command line
-// configuration) of this program, including where the repository is.
-var Conf = conf.Default()
+	// Profile is what is used to configure the Repo. For many commands
+	// it is optional.
+	Profile *conf.Profile
 
-// col lets us print in colors.
-var col = color.New()
+	// Repo lets us use the repoctl library to do the most of the work.
+	Repo *repoctl.Repo
 
-type UsageError struct {
-	Cmd   string
-	Msg   string
-	Usage func() error
-}
+	// Term lets us print in colors.
+	Term *color.Colorizer
+)
 
-func (e *UsageError) Error() string {
-	return fmt.Sprintf("%s", e.Msg)
-}
-
-type ExecError struct {
-	Err     error
-	Output  string
-	Command string
-}
-
-func (err *ExecError) Error() string { return err.Err.Error() }
-
-// runShellCommand runs the cmd in a shell and returns whether an error occurred.
-// If an error is returned, it is of type *ExecError, which contains the field
-// `Output` that contains the commands stdout and stderr output.
-func runShellCommand(cmd string) error {
-	bs, err := exec.Command("sh", "-c", cmd).CombinedOutput()
+func init() {
+	// Arguments from the command line override the configuration file,
+	// so we have to add the flags after loading the configuration.
+	c, err := conf.FindAll()
 	if err != nil {
-		return &ExecError{
-			Err:     err,
-			Output:  string(bs),
-			Command: cmd,
-		}
+		// We didn't manage to load any configuration, which means that repoctl
+		// is unconfigured. There are some commands that work nonetheless, so
+		// we can't stop now -- which is why we don't os.Exit(1).
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 	}
-	return nil
+	Conf = c
+
+	// Set default terminal output options.
+	Term = color.New()
+	Term.Set(Conf.Color)
+
+	MainCmd.PersistentFlags().StringVarP(&Conf.CurrentProfile, "profile", "P", c.DefaultProfile, "configuration profile to use")
+	MainCmd.PersistentFlags().BoolVarP(&Conf.Columnate, "columns", "s", c.Columnate, "show items in columns rather than lines")
+	MainCmd.PersistentFlags().BoolVarP(&Conf.Quiet, "quiet", "q", c.Quiet, "show minimal amount of information")
+	MainCmd.PersistentFlags().BoolVar(&Conf.Debug, "debug", c.Debug, "show unnecessary debugging information")
+	MainCmd.PersistentFlags().Var(Term, "color", "when to use color (auto|never|always)")
 }
 
 var MainCmd = &cobra.Command{
@@ -95,78 +89,92 @@ In most systems then, repoctl will read:
 		cmd.SilenceErrors = true
 		cmd.SilenceUsage = true
 
-		if strings.HasPrefix(cmd.Use, "help") {
-			return nil
-		}
-
-		// Make sure that repoctl is configured and that the configuration
-		// makes sense. This function can be overriden if it's not necessary
-		// for a command.
-		if Conf.Unconfigured {
-			return errors.New("repoctl is unconfigured, please create configuration")
-		} else if Conf.Repository == "" {
-			return conf.ErrRepoUnset
-		}
-		Repo = Conf.Repo()
-
-		// Run preaction if defined.
-		if Conf.PreAction != "" {
-			return runShellCommand(Conf.PreAction)
-		}
-
 		return nil
 	},
-	PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
-		// If PersistentPreRunE was overridden, then don't execute this step.
-		// We can determine this by looking to see if Repo was set.
-		if Conf.PostAction != "" && Repo != nil {
-			return runShellCommand(Conf.PostAction)
-		}
-		return nil
-	},
-}
-
-func addConfFlags(cmd *cobra.Command) {
-	cmd.PersistentFlags().BoolVarP(&Conf.Backup, "backup", "b", Conf.Backup, "backup obsolete files instead of deleting")
-	cmd.PersistentFlags().StringVarP(&Conf.BackupDir, "backup-dir", "B", Conf.BackupDir, "backup directory relative to repository path")
-	cmd.PersistentFlags().BoolVarP(&Conf.Columnate, "columns", "s", Conf.Columnate, "show items in columns rather than lines")
-	cmd.PersistentFlags().BoolVarP(&Conf.Quiet, "quiet", "q", Conf.Quiet, "show minimal amount of information")
-	cmd.PersistentFlags().BoolVar(&Conf.Debug, "debug", Conf.Debug, "show unnecessary debugging information")
-	col.Set(Conf.Color) // set default, which will be auto if Conf.Color is empty or invalid
-	cmd.PersistentFlags().Var(col, "color", "when to use color (auto|never|always)")
 }
 
 // main loads the configuration and executes the primary command.
 func main() {
-	err := Conf.MergeAll()
-	if err != nil {
-		// We didn't manage to load any configuration, which means that repoctl
-		// is unconfigured. There are some commands that work nonetheless, so
-		// we can't stop now -- which is why we don't os.Exit(1).
-		fmt.Fprintf(os.Stderr, "error: %s\n", err)
-	}
-
-	// Arguments from the command line override the configuration file,
-	// so we have to add the flags after loading the configuration.
-	//
-	// TODO: Maybe in the future we will make it possible to specify the
-	// configuration file via the command line; right now it is not a priority.
-	addConfFlags(MainCmd)
-
-	err = MainCmd.Execute()
+	err := MainCmd.Execute()
 	if err != nil {
 		// If this is an ExecError, we deal with it specially:
 		if e, ok := err.(*ExecError); ok {
-			fmt.Fprintf(os.Stderr, "error: command %q failed: %s\n", e.Command, e.Err)
-			fmt.Fprintf(os.Stderr, "command output:\n%s", e.Output)
+			Term.Fprintf(os.Stderr, "@rError: command %q failed: %s.\n", e.Command, e.Err)
+			Term.Fprintf(os.Stderr, "@.Command output:\n%s", e.Output)
 			os.Exit(1)
 		}
 
 		// All other errors:
-		fmt.Fprintf(os.Stderr, "error: %s\n", err)
-		if e, ok := err.(*UsageError); ok {
-			e.Usage()
-		}
+		Term.Fprintf(os.Stderr, "@rError: %s.\n", err)
 		os.Exit(1)
 	}
 }
+
+// ProfileInit should be used as the PreRunE part of every command
+// that needs to make use of the profile or the Repo.
+//
+// Make sure to use ProfileTeardown in the PostRunE if using this.
+func ProfileInit(cmd *cobra.Command, args []string) error {
+	// Try to load the profile.
+	p, name, err := Conf.SelectProfile()
+	if err != nil {
+		return fmt.Errorf("cannot select unknown profile %q", name)
+	} else if p == nil {
+		return fmt.Errorf("cannot load default profile")
+	}
+
+	// 1. Initialize selected profile
+	err = p.Init()
+	if err != nil {
+		// This currently only happens if the repository is unset or relative.
+		return fmt.Errorf("cannot load profile %q: %s", name, err)
+	}
+
+	// 2. Set the global profile variable.
+	Profile = p
+
+	// 3. Create a new Repo struct from the configuration.
+	Repo, err = repoctl.NewFromConf(Conf)
+	if err != nil {
+		return fmt.Errorf("cannot load profile %q: %s", name, err)
+	}
+
+	// 4. Run pre-action if defined.
+	if Profile.PreAction != "" {
+		return runShellCommand(Profile.PreAction)
+	}
+
+	return nil
+}
+
+// ProfileTeardown should be used as the PostRunE part of every command
+// that needs to make use of the profile or the Repo.
+func ProfileTeardown(cmd *cobra.Command, args []string) error {
+	if Profile != nil && Profile.PostAction != "" {
+		return runShellCommand(Profile.PostAction)
+	}
+	return nil
+}
+
+// runShellCommand runs the cmd in a shell and returns whether an error occurred.
+// If an error is returned, it is of type *ExecError, which contains the field
+// `Output` that contains the commands stdout and stderr output.
+func runShellCommand(cmd string) error {
+	bs, err := exec.Command("sh", "-c", cmd).CombinedOutput()
+	if err != nil {
+		return &ExecError{
+			Err:     err,
+			Output:  string(bs),
+			Command: cmd,
+		}
+	}
+	return nil
+}
+
+type ExecError struct {
+	Err     error
+	Output  string
+	Command string
+}
+
+func (err *ExecError) Error() string { return err.Err.Error() }

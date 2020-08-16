@@ -77,7 +77,9 @@ var listCmd = &cobra.Command{
 
   If a valid regular expression is supplied, only packages that match
   the expression will be listed.`,
-	Args: cobra.MaximumNArgs(1),
+	Args:     cobra.MaximumNArgs(1),
+	PreRunE:  ProfileInit,
+	PostRunE: ProfileTeardown,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if listAllOptions {
 			listVersioned = true

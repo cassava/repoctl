@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cassava/repoctl/conf"
+	"github.com/cassava/repoctl"
 	"github.com/cassava/repoctl/pacman"
 	"github.com/cassava/repoctl/pacman/alpm"
 	"github.com/cassava/repoctl/pacman/aur"
@@ -101,14 +101,10 @@ func completeLocalPackageFiles(cmd *cobra.Command, args []string, toComplete str
 }
 
 func completeRepoPackageNames(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	conf := conf.Default()
-	err := conf.MergeAll()
-	if err != nil {
-		return nil, cobra.ShellCompDirectiveError
-	}
+	// FIXME: Take profiles into account.
 
-	repo := conf.Repo()
-	if repo == nil {
+	repo, err := repoctl.NewFromConf(Conf)
+	if err != nil || repo == nil {
 		return nil, cobra.ShellCompDirectiveError
 	}
 

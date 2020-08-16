@@ -92,19 +92,20 @@ var downCmd = &cobra.Command{
 	Example: `  repoctl down -u
   repoctl down -o build-order.txt -u`,
 
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if downAll || downUpgrades {
-			return MainCmd.PersistentPreRunE(cmd, args)
+			return ProfileInit(cmd, args)
 		}
-
-		// Prevent errors that we print being printed a second time by cobra.
-		cmd.SilenceErrors = true
-		cmd.SilenceUsage = true
 
 		// Create a dummy Repo instance that shouldn't ever lead to this file
 		// being created, but lets us use methods on Repo.
 		Repo = repoctl.New("/tmp/repoctl-tmp.db.tar.gz")
-
+		return nil
+	},
+	PostRunE: func(cmd *cobra.Command, args []string) error {
+		if downAll || downUpgrades {
+			return ProfileTeardown(cmd, args)
+		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {

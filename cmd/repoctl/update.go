@@ -34,6 +34,8 @@ var updateCmd = &cobra.Command{
 	Example: `  repoctl update fairsplit
   repoctl update --backup=false`,
 	ValidArgsFunction: completeRepoPackageNames,
+	PreRunE:           ProfileInit,
+	PostRunE:          ProfileTeardown,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if updateRequireSignature {
 			Repo.RequireSignature = true

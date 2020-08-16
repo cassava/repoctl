@@ -1,25 +1,16 @@
-// Copyright (c) 2016, Ben Morgan. All rights reserved.
+// Copyright (c) 2020, Ben Morgan. All rights reserved.
 // Use of this source code is governed by an MIT license
 // that can be found in the LICENSE file.
 
 package main
 
-import (
-	"errors"
-	"fmt"
-	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
-
-	"github.com/cassava/repoctl/conf"
-	"github.com/cassava/repoctl/pacman/alpm"
-	"github.com/goulash/osutil"
-	"github.com/spf13/cobra"
-)
-
+/*
 func init() {
 	MainCmd.AddCommand(newCmd)
+
+	// conf new
+	// conf add-profile
+	// conf show
 }
 
 var (
@@ -204,3 +195,4 @@ func generateBackupPath(filepath string, suffix string) string {
 
 	return backupPath
 }
+*/

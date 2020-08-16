@@ -52,13 +52,6 @@ var queryCmd = &cobra.Command{
 `,
 	DisableFlagsInUseLine: true,
 	ValidArgsFunction:     completeAURPackageNames,
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		// Prevent errors that we print being printed a second time by cobra.
-		cmd.SilenceErrors = true
-		cmd.SilenceUsage = true
-
-		return nil
-	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		pkgs, err := aur.ReadAll(args)
 		if err != nil {
@@ -89,8 +82,8 @@ var queryCmd = &cobra.Command{
 			}
 			pkgset[p.Name] = true
 
-			col.Printf("@{!m}aur/@{!w}%s @{!g}%s @{r}(%d)\n@|", p.Name, p.Version, p.NumVotes)
-			col.Printf("@.%s\n", formatAURPackageInfo(p, terminalWidth))
+			Term.Printf("@{!m}aur/@{!w}%s @{!g}%s @{r}(%d)\n@|", p.Name, p.Version, p.NumVotes)
+			Term.Printf("@.%s\n", formatAURPackageInfo(p, terminalWidth))
 		}
 
 		return nil

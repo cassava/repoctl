@@ -39,6 +39,8 @@ var addCmd = &cobra.Command{
 `,
 	Example:           `  repoctl add -m ./fairsplit-1.0.pkg.tar.gz`,
 	ValidArgsFunction: completeLocalPackageFiles,
+	PreRunE:           ProfileInit,
+	PostRunE:          ProfileTeardown,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if addRequireSignature {
 			Repo.RequireSignature = true

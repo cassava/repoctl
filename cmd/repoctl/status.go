@@ -39,9 +39,11 @@ var statusCmd = &cobra.Command{
     "upgrade":  packages with updates in AUR (only with -a)
     "!aur":     packages unavailable in AUR (only with -m)
 `,
-	Args: cobra.ExactArgs(0),
+	Args:     cobra.ExactArgs(0),
+	PreRunE:  ProfileInit,
+	PostRunE: ProfileTeardown,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		col.Printf("On repo @{!y}%s\n\n", Repo.Name())
+		Term.Printf("On repo @{!y}%s\n\n", Repo.Name())
 
 		pkgs, err := Repo.ReadMeta(nil)
 		if err != nil {
@@ -62,25 +64,25 @@ var statusCmd = &cobra.Command{
 		for _, p := range pkgs {
 			var flags []string
 			if p.HasUpgrade() && !ignore[p.Name] {
-				flags = append(flags, col.Sprintf("@gupgrade(@|%s -> %s@g)", p.Version(), p.AUR.Version))
+				flags = append(flags, Term.Sprintf("@gupgrade(@|%s -> %s@g)", p.Version(), p.AUR.Version))
 			}
 			if p.HasUpdate() {
-				flags = append(flags, col.Sprintf("@gupdated(@|%s -> %s@g)", p.VersionRegistered(), p.Version()))
+				flags = append(flags, Term.Sprintf("@gupdated(@|%s -> %s@g)", p.VersionRegistered(), p.Version()))
 			}
 			if !p.HasFiles() {
-				flags = append(flags, col.Sprint("@rremoval"))
+				flags = append(flags, Term.Sprint("@rremoval"))
 			}
 			if o := p.Obsolete(); len(o) > 0 {
 				if Repo.IsObsoleteCached() {
 					if statusCached {
-						flags = append(flags, col.Sprintf("@ycached(@|%d@y)", len(o)))
+						flags = append(flags, Term.Sprintf("@ycached(@|%d@y)", len(o)))
 					}
 				} else {
-					flags = append(flags, col.Sprintf("@yobsolete(@|%d@y)", len(o)))
+					flags = append(flags, Term.Sprintf("@yobsolete(@|%d@y)", len(o)))
 				}
 			}
 			if statusMissing && p.AUR == nil && !ignore[p.Name] {
-				flags = append(flags, col.Sprint("@y!aur"))
+				flags = append(flags, Term.Sprint("@y!aur"))
 			}
 
 			if len(flags) > 0 {

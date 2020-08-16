@@ -48,13 +48,6 @@ var searchCmd = &cobra.Command{
 `,
 	Example: `  repoctl search --sort-by=votes firefox
   repoctl search flir flirc flirc-bin`,
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		// Prevent errors that we print being printed a second time by cobra.
-		cmd.SilenceErrors = true
-		cmd.SilenceUsage = true
-
-		return nil
-	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var pkgs aur.Packages
 		for _, q := range args {
@@ -103,10 +96,10 @@ var searchCmd = &cobra.Command{
 			if searchQuiet {
 				s = p.Name
 			} else if searchInfo {
-				s = col.Sprintf("@{!m}aur/@{!w}%s @{!g}%s @{r}(%d)\n@|", p.Name, p.Version, p.NumVotes)
-				s += col.Sprintf("@.%s", formatAURPackageInfo(p, terminalWidth))
+				s = Term.Sprintf("@{!m}aur/@{!w}%s @{!g}%s @{r}(%d)\n@|", p.Name, p.Version, p.NumVotes)
+				s += Term.Sprintf("@.%s", formatAURPackageInfo(p, terminalWidth))
 			} else {
-				s = col.Sprintf("@{!m}aur/@{!w}%s @{!g}%s @{r}(%d)\n@|    %s", p.Name, p.Version, p.NumVotes, p.Description)
+				s = Term.Sprintf("@{!m}aur/@{!w}%s @{!g}%s @{r}(%d)\n@|    %s", p.Name, p.Version, p.NumVotes, p.Description)
 			}
 			pkgnames = append(pkgnames, s)
 		}
