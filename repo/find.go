@@ -2,17 +2,17 @@
 // Use of this source code is governed by an MIT license
 // that can be found in the LICENSE file.
 
-package repoctl
+package repo
 
 import (
 	"fmt"
 
-	"github.com/goulash/errs"
-	"github.com/goulash/osutil"
 	"github.com/cassava/repoctl/pacman"
 	"github.com/cassava/repoctl/pacman/aur"
 	"github.com/cassava/repoctl/pacman/meta"
 	pu "github.com/cassava/repoctl/pacman/pkgutil"
+	"github.com/goulash/errs"
+	"github.com/goulash/osutil"
 )
 
 // Upgrade represents an available AUR upgrade.

@@ -1,176 +1,181 @@
-// Copyright (c) 2015, Ben Morgan. All rights reserved.
+// Copyright (c) 2016, Ben Morgan. All rights reserved.
 // Use of this source code is governed by an MIT license
 // that can be found in the LICENSE file.
 
-package repoctl
+package main
 
 import (
-	"compress/gzip"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 
 	"github.com/cassava/repoctl/pacman/aur"
 	"github.com/cassava/repoctl/pacman/graph"
-	"github.com/goulash/archive"
-	"github.com/goulash/errs"
-	"github.com/goulash/osutil"
+	"github.com/cassava/repoctl/pacman/pkgutil"
+	"github.com/cassava/repoctl/repo"
+	"github.com/spf13/cobra"
 )
 
-// DependencyGraph returns a dependency graph of the given package names.
-func (r *Repo) DependencyGraph(h errs.Handler, pkgnames ...string) (*graph.Graph, error) {
-	errs.Init(&h)
+var (
+	downDest     string
+	downDryRun   bool
+	downClobber  bool
+	downExtract  bool
+	downUpgrades bool
+	downAll      bool
+	downRecurse  bool
+	downOrder    string
+)
 
-	aurpkgs, err := r.ReadAUR(h, pkgnames...)
-	if err != nil {
-		return nil, fmt.Errorf("cannot read AUR: %w", err)
-	}
+func init() {
+	MainCmd.AddCommand(downCmd)
 
-	// Get dependencies
-	f, err := graph.NewFactory()
-	if err != nil {
-		return nil, fmt.Errorf("cannot create dependency graph: %w", err)
-	}
-
-	f.SetSkipInstalled(true)
-	f.SetTruncate(true)
-	return f.NewGraph(uniqueBases(aurpkgs))
+	downCmd.Flags().StringVarP(&downDest, "dest", "d", "", "output directory for tarballs")
+	downCmd.Flags().BoolVarP(&downDryRun, "dry-run", "n", false, "don't download any packages")
+	downCmd.Flags().BoolVarP(&downClobber, "clobber", "l", false, "delete conflicting files and folders")
+	downCmd.Flags().BoolVarP(&downExtract, "extract", "e", true, "extract the downloaded tarballs")
+	downCmd.Flags().BoolVarP(&downUpgrades, "upgrades", "u", false, "download tarballs for all upgrades")
+	downCmd.Flags().BoolVarP(&downRecurse, "recursive", "r", false, "download any necessary dependencies")
+	downCmd.Flags().StringVarP(&downOrder, "order", "o", "", "write the order of compilation based on dependency tree into a file, implies -r")
+	downCmd.Flags().BoolVarP(&downAll, "all", "a", false, "download tarballs for all packages in database")
 }
 
-// Download downloads and extracts the given package tarballs.
-func (r *Repo) Download(h errs.Handler, destdir string, extract bool, clobber bool, pkgnames ...string) error {
-	errs.Init(&h)
-	if len(pkgnames) == 0 {
+var downCmd = &cobra.Command{
+	Use:     "down [pkgname...]",
+	Aliases: []string{"download"},
+	Short:   "Download and extract tarballs from AUR",
+	Long: `Download and extract tarballs from AUR for given packages.
+
+  Alternatively, all packages, or those with updates can be downloaded.
+  Options specified are additive, not exclusive.
+
+  By default, tarballs are deleted after being extracted, and are placed
+  in the current directory.
+
+  Packages can also be downloaded recursively, and the list that these
+  dependencies should be built can be saved. For example, to download
+  all updates to the repository and build them in approximately the
+  correct order:
+
+    repoctl down -o build-order.txt -u
+    for pkg in $(cat build-order.txt); do
+        (
+            cd $pkg
+            makepkg -si
+            ok=$?
+            if $ok; then
+                repoctl add -m *.pkg.tar*
+                cd ..
+                rm -rf $pkg
+            fi
+        )
+    done
+
+  You can just output the correct build order by adding the -n flag to
+  prevent downloading of tarballs.
+
+  Caveats:
+
+  1. Automatic dependency resolution does not currently handle version
+     resolution or library specifications, as noted in the Arch wiki at:
+       https://wiki.archlinux.org/index.php/PKGBUILD#Dependencies
+
+  2. Package dependencies are not resolved that are only "provided"
+     by other packages. Here, we currently print an "unknown package" warning.
+
+	 For example, at the time of writing firefox56 requires mime-types.
+	 This package does not exist, but is provided by other packages.
+	 We can check this with:
+	   repoctl query $(repoctl search -q mime-types)
+	 Which leads us to see that mailcap-mime-types provides mime-types.
+	 This caveat will be resolved in the future.
+`,
+	Example: `  repoctl down -u
+  repoctl down -o build-order.txt -u`,
+
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if downAll || downUpgrades {
+			return ProfileInit(cmd, args)
+		}
+
+		// Create a dummy Repo instance that shouldn't ever lead to this file
+		// being created, but lets us use methods on Repo.
+		Repo = repo.New("/tmp/repoctl-tmp.db.tar.gz")
 		return nil
-	}
+	},
+	PostRunE: func(cmd *cobra.Command, args []string) error {
+		if downAll || downUpgrades {
+			return ProfileTeardown(cmd, args)
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// First, populate the initial list of packages to download.
+		var list []string
+		if downAll {
+			names, err := Repo.ReadNames(nil)
+			if err != nil {
+				return err
+			}
+			list = pkgutil.Map(names, pkgutil.PkgName)
+		} else if downUpgrades {
+			upgrades, err := Repo.FindUpgrades(nil, args...)
+			if err != nil {
+				return err
+			}
+			for _, u := range upgrades {
+				list = append(list, u.New.Name)
+			}
+		} else {
+			list = args
+		}
 
-	// If a package cannot be found, we want to report it.
-	aurpkgs, err := r.ReadAUR(h, pkgnames...)
-	if err != nil {
-		err = h(err)
+		// If no dependencies are wanted, then get to it right away:
+		if !downRecurse && downOrder == "" {
+			// There's not much point to a try run here, but we should respect
+			// the option nevertheless.
+			if downDryRun {
+				return nil
+			}
+			return Repo.Download(nil, downDest, downExtract, downClobber, list...)
+		}
+
+		// Otherwise, get the dependency list and download the packages:
+		aps, err := downDependencies(list)
 		if err != nil {
 			return err
 		}
-	}
-	return r.DownloadPackages(h, uniqueBases(aurpkgs), destdir, extract, clobber)
+		// Don't download any packages if dry run is activated.
+		if downDryRun {
+			return nil
+		}
+		return Repo.DownloadPackages(nil, aps, downDest, downExtract, downClobber)
+	},
 }
 
-// DownloadPackages downloads the given AUR packages, printing messages for each one.
-func (r *Repo) DownloadPackages(h errs.Handler, pkgs aur.Packages, destdir string, extract bool, clobber bool) error {
-	errs.Init(&h)
-	for _, p := range pkgs {
-		r.printf("downloading: %s\n", p.Name)
-		download := DownloadTarballAUR
-		if extract {
-			download = DownloadExtractAUR
-		}
-		err := h(download(p, destdir, clobber))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// DownloadExtractAUR is a helper for Download and DownloadUpgrades.
-func DownloadExtractAUR(ap *aur.Package, destdir string, clobber bool) error {
-	var err error
-	if destdir == "" {
-		destdir, err = os.Getwd()
-		if err != nil {
-			return err
-		}
-	}
-
-	// Make sure we don't clobber anything.
-	if !clobber {
-		ex, err := osutil.DirExists(ap.Name)
-		if err != nil {
-			return err
-		}
-		if ex {
-			return ErrPkgDirExists
-		}
-	}
-
-	response, err := http.Get(ap.DownloadURL())
+func downDependencies(packages []string) (aur.Packages, error) {
+	g, err := Repo.DependencyGraph(nil, packages...)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer response.Body.Close()
-
-	gr, err := gzip.NewReader(response.Body)
-	if err != nil {
-		return err
-	}
-
-	return archive.ExtractTar(gr, destdir)
-}
-
-// DownloadTarballAUR downloads the given package from AUR.
-func DownloadTarballAUR(ap *aur.Package, destdir string, clobber bool) error {
-	var err error
-	if destdir == "" {
-		destdir, err = os.Getwd()
+	_, aps, ups := graph.Dependencies(g)
+	if downOrder != "" {
+		f, err := os.Create(downOrder)
 		if err != nil {
-			return err
+			return nil, err
+		}
+
+		for i := len(aps); i != 0; i-- {
+			fmt.Fprintln(f, aps[i-1].Name)
+		}
+		f.Close()
+	}
+	for _, u := range ups {
+		fmt.Fprintf(os.Stderr, "warning: unknown package %s\n", u)
+		iter := g.To(g.NodeWithName(u).ID())
+		for iter.Next() {
+			node := iter.Node().(*graph.Node)
+			fmt.Fprintf(os.Stderr, "         required by: %s\n", node.PkgName())
 		}
 	}
-
-	url := ap.DownloadURL()
-	of := ap.Name + ".tar.gz"
-
-	// Make sure we don't clobber anything.
-	if !clobber {
-		ex, err := osutil.FileExists(of)
-		if err != nil {
-			return err
-		}
-		if ex {
-			return ErrPkgFileExists
-		}
-	}
-
-	response, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-
-	file, err := os.Create(of)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	_, err = io.Copy(file, response.Body)
-	if err != nil {
-		// Should I delete?
-		return err
-	}
-	return nil
-}
-
-// uniqueBases returns a subset of the given aurpkgs where the package bases
-// are the same.
-func uniqueBases(aurpkgs aur.Packages) aur.Packages {
-	bases := make(aur.Packages, 0, len(aurpkgs))
-	mp := make(map[string]bool)
-	for _, p := range aurpkgs {
-		if mp[p.PackageBase] {
-			continue
-		}
-		mp[p.PackageBase] = true
-		bases = append(bases, p)
-	}
-	return bases
-}
-
-func upgradesToPackages(us Upgrades) aur.Packages {
-	pkgs := make(aur.Packages, len(us))
-	for i, p := range us {
-		pkgs[i] = p.New
-	}
-	return pkgs
+	return aps, nil
 }

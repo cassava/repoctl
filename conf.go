@@ -220,28 +220,28 @@ var confNewCmd = &cobra.Command{
 		}
 
 		// Check that the repo specified is according to the specifications.
-		repo := args[0]
-		if !filepath.IsAbs(repo) {
+		r := args[0]
+		if !filepath.IsAbs(r) {
 			var err error
-			repo, err = filepath.Abs(repo)
+			r, err = filepath.Abs(r)
 			if err != nil {
 				return err
 			}
 		}
 
-		if !alpm.HasDatabaseFormat(repo) {
-			fmt.Fprintf(os.Stderr, "Warning: Specified repository database %q has an unexpected extension.\n", repo)
+		if !alpm.HasDatabaseFormat(r) {
+			fmt.Fprintf(os.Stderr, "Warning: Specified repository database %q has an unexpected extension.\n", r)
 			fmt.Fprintf(os.Stderr, "         It should conform to this pattern: .db.tar.(zst|xz|gz|bz2).\n")
-			base := filepath.Base(repo)
+			base := filepath.Base(r)
 			if i := strings.IndexRune(base, '.'); i != -1 {
 				base = base[:i]
 			}
-			fmt.Fprintf(os.Stderr, "         For example: %s.db.tar.zst\n", filepath.Join(filepath.Dir(repo), base))
+			fmt.Fprintf(os.Stderr, "         For example: %s.db.tar.zst\n", filepath.Join(filepath.Dir(r), base))
 			fmt.Fprintf(os.Stderr, "Warning: Continuing anyway.\n")
 		}
 
 		// Create a new configuration.
-		return newConfig(confPath, repo)
+		return newConfig(confPath, r)
 	},
 }
 

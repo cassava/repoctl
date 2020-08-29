@@ -9,8 +9,8 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/cassava/repoctl"
 	"github.com/cassava/repoctl/conf"
+	"github.com/cassava/repoctl/repo"
 	"github.com/goulash/color"
 	"github.com/spf13/cobra"
 )
@@ -25,7 +25,7 @@ var (
 	Profile *conf.Profile
 
 	// Repo lets us use the repoctl library to do the most of the work.
-	Repo *repoctl.Repo
+	Repo *repo.Repo
 
 	// Term lets us print in colors.
 	Term *color.Colorizer
@@ -134,7 +134,7 @@ func ProfileInit(cmd *cobra.Command, args []string) error {
 	Profile = p
 
 	// 3. Create a new Repo struct from the configuration.
-	Repo, err = repoctl.NewFromConf(Conf)
+	Repo, err = repo.NewFromConf(Conf)
 	if err != nil {
 		return fmt.Errorf("cannot load profile %q: %s", name, err)
 	}

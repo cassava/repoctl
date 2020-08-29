@@ -10,11 +10,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cassava/repoctl"
 	"github.com/cassava/repoctl/pacman"
 	"github.com/cassava/repoctl/pacman/alpm"
 	"github.com/cassava/repoctl/pacman/aur"
 	"github.com/cassava/repoctl/pacman/pkgutil"
+	"github.com/cassava/repoctl/repo"
 	"github.com/spf13/cobra"
 )
 
@@ -103,14 +103,14 @@ func completeLocalPackageFiles(cmd *cobra.Command, args []string, toComplete str
 func completeRepoPackageNames(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	// FIXME: Take profiles into account.
 
-	repo, err := repoctl.NewFromConf(Conf)
-	if err != nil || repo == nil {
+	r, err := repo.NewFromConf(Conf)
+	if err != nil || r == nil {
 		return nil, cobra.ShellCompDirectiveError
 	}
 
 	// Get the names of the packages in the repository
 	var names []string
-	names, err = pacman.ReadDirApproxOnlyNames(nil, repo.Directory)
+	names, err = pacman.ReadDirApproxOnlyNames(nil, r.Directory)
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveError
 	}

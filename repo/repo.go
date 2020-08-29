@@ -3,7 +3,7 @@
 // that can be found in the LICENSE file.
 
 // Package repoctl provides functions for managing Arch repositories.
-package repoctl
+package repo
 
 import (
 	"fmt"
