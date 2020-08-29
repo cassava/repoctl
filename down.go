@@ -6,6 +6,7 @@ package repoctl
 
 import (
 	"compress/gzip"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -23,13 +24,13 @@ func (r *Repo) DependencyGraph(h errs.Handler, pkgnames ...string) (*graph.Graph
 
 	aurpkgs, err := r.ReadAUR(h, pkgnames...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cannot read AUR: %w", err)
 	}
 
 	// Get dependencies
 	f, err := graph.NewFactory()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cannot create dependency graph: %w", err)
 	}
 
 	f.SetSkipInstalled(true)

@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	github.com/BurntSushi/toml v0.3.1
-	github.com/goulash/archive v1.2.0
+	github.com/goulash/archive v1.3.0
 	github.com/goulash/color v1.0.0
 	github.com/goulash/errs v1.0.0
 	github.com/goulash/osutil v1.0.1

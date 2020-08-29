@@ -1,7 +1,7 @@
 # github.com/BurntSushi/toml v0.3.1
 ## explicit
 github.com/BurntSushi/toml
-# github.com/goulash/archive v1.2.0
+# github.com/goulash/archive v1.3.0
 ## explicit
 github.com/goulash/archive
 # github.com/goulash/color v1.0.0

@@ -7,7 +7,6 @@ package pacman
 import (
 	"archive/tar"
 	"bufio"
-	"compress/gzip"
 	"fmt"
 	"io"
 	"os"
@@ -50,16 +49,7 @@ func ReadDatabase(dbpath string) (Packages, error) {
 
 	dr, err = archive.NewDecompressor(dbpath)
 	if err != nil {
-		// First try to open with gzip before failing!
-		f, err := os.Open(dbpath)
-		if err != nil {
-			return nil, err
-		}
-		defer f.Close()
-		dr, err = gzip.NewReader(f)
-		if err != nil {
-			return nil, err
-		}
+		return nil, fmt.Errorf("read database %s: %w", dbpath, err)
 	}
 	defer dr.Close()
 
@@ -70,7 +60,7 @@ func ReadDatabase(dbpath string) (Packages, error) {
 	for hdr != nil {
 		fi := hdr.FileInfo()
 		if !fi.IsDir() {
-			return nil, fmt.Errorf("unexpected file '%s'", hdr.Name)
+			return nil, fmt.Errorf("read database %s: unexpected file '%s'", dbpath, hdr.Name)
 		}
 
 		pr := archive.DirReader(tr, &hdr)
@@ -79,7 +69,7 @@ func ReadDatabase(dbpath string) (Packages, error) {
 			if err == archive.EOA {
 				break
 			}
-			return nil, err
+			return nil, fmt.Errorf("read database %s: %w", dbpath, err)
 		}
 
 		pkgs = append(pkgs, pkg)
@@ -158,7 +148,7 @@ func IsRepositoryEnabled(name string) (bool, error) {
 func EnabledRepositories() ([]string, error) {
 	f, err := os.Open(PacmanConfPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cannot open %s: %s", PacmanConfPath, err)
 	}
 
 	repos := make([]string, 0, 5)

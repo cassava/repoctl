@@ -8,12 +8,14 @@ import (
 	"archive/tar"
 	"compress/bzip2"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
+	"github.com/klauspost/compress/zstd"
 	"github.com/ulikunitz/xz"
 )
 
@@ -46,6 +48,7 @@ func ReadFileFromTar(r io.Reader, file string) ([]byte, error) {
 			return nil, err
 		}
 
+		fmt.Printf("process: %s\n", hdr.Name)
 		if hdr.Name == file {
 			bytes, err := ioutil.ReadAll(tr)
 			if err != nil {
@@ -149,6 +152,8 @@ func ExtractTar(r io.Reader, destdir string) error {
 	return nil
 }
 
+var ErrUnknownCodec = errors.New("unknown compression codec")
+
 // Decompressor is a universal decompressor that, given a filepath,
 // chooses the appropriate decompression algorithm.
 //
@@ -161,7 +166,12 @@ type Decompressor struct {
 }
 
 // NewDecompressor creates a new decompressor based on the file extension
-// of the given file. The returned Decompressor can be Read and Closed.
+// of the given file. If no known file extension is encountered, each of
+// the supported compression codecs is tried until a positive match is
+// found.
+//
+// The returned Decompressor can be Read and Closed, even if the underlying
+// compressor doesn't support the Close interface.
 func NewDecompressor(fpath string) (*Decompressor, error) {
 	var d Decompressor
 	var err error
@@ -171,35 +181,115 @@ func NewDecompressor(fpath string) (*Decompressor, error) {
 		return nil, err
 	}
 
-	switch filepath.Ext(fpath) {
-	case ".xz":
+	tryXz := func() error {
+		_, err := d.file.Seek(0, 0)
+		if err != nil {
+			return err
+		}
 		xzr, err := xz.NewReader(d.file)
 		if err != nil {
-			return nil, err
+			return err
 		}
+		// Success:
 		d.reader = xzr
-	case ".gz":
-		gz, err := gzip.NewReader(d.file)
-		if err != nil {
-			return nil, err
-		}
-		d.reader = gz
-		d.closer = gz
-	case ".bz2":
-		d.reader = bzip2.NewReader(d.file)
-	case ".zst":
-		zd, err := newZstDecompressor(d.file)
-		if err != nil {
-			return nil, err
-		}
-		d.reader = zd
-		d.closer = zd
-	case ".tar":
-		d.reader = d.file
-	default:
-		return nil, fmt.Errorf("unknown file format")
+		return nil
 	}
 
+	tryGzip := func() error {
+		_, err := d.file.Seek(0, 0)
+		if err != nil {
+			return err
+		}
+		gz, err := gzip.NewReader(d.file)
+		if err != nil {
+			return err
+		}
+		// Success:
+		d.reader = gz
+		d.closer = gz
+		return nil
+	}
+
+	tryZst := func() error {
+		_, err := d.file.Seek(0, 0)
+		if err != nil {
+			return err
+		}
+		zd, err := zstd.NewReader(d.file)
+		if err != nil {
+			return err
+		}
+		// zst.Reader doesn't read the header until we start reading,
+		// so we don't know if this is okay yet.
+		buf := make([]byte, 1)
+		_, err = zd.Read(buf)
+		if err != nil {
+			return err
+		}
+		// Success:
+		d.file.Seek(0, 0)
+		zd.Reset(d.file)
+		d.reader = zd
+		d.closer = zd.IOReadCloser()
+		return nil
+	}
+
+	tryBzip2 := func() error {
+		_, err := d.file.Seek(0, 0)
+		if err != nil {
+			return err
+		}
+		bzd := bzip2.NewReader(d.file)
+		// We have to call Read once for the header to be read.
+		buf := make([]byte, 0)
+		_, err = bzd.Read(buf)
+		if err != nil {
+			return err
+		}
+		// Success:
+		d.reader = bzd
+		return nil
+	}
+
+	tryAll := func() bool {
+		if tryXz() == nil {
+			return true
+		}
+		if tryGzip() == nil {
+			return true
+		}
+		if tryZst() == nil {
+			return true
+		}
+		if tryBzip2() == nil {
+			return true
+		}
+		return false
+	}
+
+	switch filepath.Ext(fpath) {
+	case ".xz":
+		err = tryXz()
+	case ".gz":
+		err = tryGzip()
+	case ".zst":
+		err = tryZst()
+	case ".bz2":
+		err = tryBzip2()
+	case ".tar":
+		// special use-case
+		d.reader = d.file
+	default:
+		// Try each of the decompressors:
+		ok := tryAll()
+		if !ok {
+			return nil, ErrUnknownCodec
+		}
+	}
+
+	if err != nil {
+		return nil, err
+	}
 	return &d, nil
 }
 
