@@ -37,6 +37,7 @@ var PropertiesTmpl = template.Must(template.New("properties").Funcs(template.Fun
 var ConfigurationTmpl = template.Must(template.New("config").Funcs(template.FuncMap{
 	"printt": printt,
 }).Parse(`# repoctl configuration
+
 # columnate specifies that listings should be in columns rather than
 # in lines. This only applies to the list command.
 columnate = {{ printt .Columnate }}
@@ -52,8 +53,7 @@ quiet = {{ printt .Quiet }}
 # specified on the command line.
 default_profile = {{ printt .DefaultProfile }}
 
-{{ range $key, $value := .Profiles }}
-[profiles.{{  $key }}]
+{{ range $key, $value := .Profiles }}[profiles.{{  $key }}]
   # repo is the full path to the repository that will be managed by repoctl.
   # The packages that belong to the repository are assumed to lie in the
   # same folder.
@@ -61,19 +61,19 @@ default_profile = {{ printt .DefaultProfile }}
 
   # add_params is the set of parameters that will be passed to repo-add
   # when it is called. Specify one time for each parameter.
-  #add_params = {{ printt $value.AddParameters }}
+  add_params = {{ printt $value.AddParameters }}
 
   # rm_params is the set of parameters that will be passed to repo-remove
   # when it is called. Specify one time for each parameter.
-  #rm_params = {{ printt $value.RemoveParameters }}
+  rm_params = {{ printt $value.RemoveParameters }}
 
   # ignore_aur is a set of package names that are ignored in conjunction
   # with AUR related tasks, such as determining if there is an update or not.
-  #ignore_aur = {{ printt $value.IgnoreAUR }}
+  ignore_aur = {{ printt $value.IgnoreAUR }}
 
   # require_signature prevents packages from being added that do not
   # also have a signature file.
-  #require_signature = {{ printt $value.RequireSignature }}
+  require_signature = {{ printt $value.RequireSignature }}
 
   # backup specifies whether package files should be backed up or deleted.
   # If it is set to false, then obsolete package files are deleted.
@@ -93,10 +93,10 @@ default_profile = {{ printt .DefaultProfile }}
   # pre_action is a command that should be executed before doing anything
   # with the repository, like reading or modifying it. Useful for mounting
   # a remote filesystem.
-  #pre_action = {{printt $value.PreAction}}
+  pre_action = {{printt $value.PreAction}}
 
   # post_action is a command that should be executed before exiting.
-  #post_action = {{ printt $value.PostAction }}
+  post_action = {{ printt $value.PostAction }}
 {{ end }}
 `))
 

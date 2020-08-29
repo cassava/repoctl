@@ -17,7 +17,6 @@ import (
 )
 
 var (
-	ErrNoConfig        = errors.New("no configuration files found in path")
 	ErrUnsetHOME       = errors.New("HOME environment variable unset")
 	ErrRepoNotAbs      = errors.New("repository path must be absolute")
 	ErrRepoUnset       = errors.New("repository path must be set in configuration")
@@ -155,17 +154,17 @@ func (c *Configuration) MergeFile(filepath string) error {
 		return err
 	}
 	if !ex {
-		return ErrNoConfig
+		return fmt.Errorf("cannot open %s: file not found", filepath)
 	}
 
 	// Deserialize the data into the file.
 	bs, err := ioutil.ReadFile(filepath)
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot read %s: %w", filepath, err)
 	}
 	md, err := toml.Decode(string(bs), c)
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot decode %s: %w", filepath, err)
 	}
 
 	// If there were extra fields that weren't decoded into c, then the TOML
@@ -196,7 +195,7 @@ func (c *Configuration) MergeFile(filepath string) error {
 	// Try to decode the data into the profile.
 	md, err = toml.Decode(string(bs), p)
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot decode into profile %s: %w", filepath, err)
 	}
 
 	invalid := make([]string, 0)
@@ -220,7 +219,7 @@ func (c *Configuration) MergeFile(filepath string) error {
 	}
 	if len(invalid) != 0 {
 		// We successfully migrated, so print a warning.
-		return fmt.Errorf("cannot deserialize unknown fields: %q", invalid)
+		return fmt.Errorf("cannot decode unknown fields: %q", invalid)
 	}
 	return nil
 }

@@ -43,6 +43,8 @@ var versionCmd = &cobra.Command{
 			License:   "MIT",
 		}
 		versionTmpl.Execute(os.Stdout, progInfo)
+
+		// Print the current configuration.
 		fmt.Println()
 		Conf.WriteProperties(os.Stdout)
 	},
