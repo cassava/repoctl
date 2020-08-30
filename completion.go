@@ -96,6 +96,14 @@ var completionCmd = &cobra.Command{
 	},
 }
 
+func completeProfiles(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	result := make([]string, 0, len(Conf.Profiles))
+	for k := range Conf.Profiles {
+		result = append(result, k)
+	}
+	return result, cobra.ShellCompDirectiveDefault
+}
+
 func completeLocalPackageFiles(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return alpm.PackageExtensions, cobra.ShellCompDirectiveFilterFileExt
 }

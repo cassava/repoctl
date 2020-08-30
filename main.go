@@ -48,6 +48,8 @@ func init() {
 	Term.Set(Conf.Color)
 
 	MainCmd.PersistentFlags().StringVarP(&Conf.CurrentProfile, "profile", "P", c.DefaultProfile, "configuration profile to use")
+	MainCmd.RegisterFlagCompletionFunc("profile", completeProfiles)
+
 	MainCmd.PersistentFlags().BoolVarP(&Conf.Columnate, "columns", "s", c.Columnate, "show items in columns rather than lines")
 	MainCmd.PersistentFlags().BoolVarP(&Conf.Quiet, "quiet", "q", c.Quiet, "show minimal amount of information")
 	MainCmd.PersistentFlags().BoolVar(&Conf.Debug, "debug", c.Debug, "show unnecessary debugging information")
