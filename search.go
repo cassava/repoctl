@@ -16,7 +16,7 @@ import (
 
 var (
 	searchSortBy string
-	searchQuiet  bool
+	searchRaw    bool
 	searchInfo   bool
 )
 
@@ -28,7 +28,7 @@ func init() {
 		return []string{"name", "votes", "popularity", "votes-reverse", "popularity-reverse"}, cobra.ShellCompDirectiveDefault
 	})
 
-	searchCmd.Flags().BoolVarP(&searchQuiet, "quiet", "q", false, "show only the name")
+	searchCmd.Flags().BoolVarP(&searchRaw, "raw", "r", false, "show only the name")
 	searchCmd.Flags().BoolVarP(&searchInfo, "info", "i", false, "show package information")
 }
 
@@ -101,7 +101,7 @@ var searchCmd = &cobra.Command{
 			pkgset[p.Name] = true
 
 			var s string
-			if searchQuiet {
+			if searchRaw {
 				s = p.Name
 			} else if searchInfo {
 				s = term.Sprintf("@{!m}aur/@{!w}%s @{!g}%s @{r}(%d)\n@|", p.Name, p.Version, p.NumVotes)
@@ -111,7 +111,7 @@ var searchCmd = &cobra.Command{
 			}
 			pkgnames = append(pkgnames, s)
 		}
-		if searchQuiet {
+		if searchRaw {
 			printSet(pkgnames, "", Conf.Columnate)
 		} else {
 			for _, p := range pkgnames {
