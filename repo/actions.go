@@ -154,6 +154,14 @@ func (r *Repo) backup(h errs.Handler, pkgfiles []string) error {
 	}
 
 	backupDir := r.backupDirAbs()
+	if ex, _ := osutil.DirExists(backupDir); !ex {
+		r.debugf("mkdir: %s\n", backupDir)
+		err := os.MkdirAll(backupDir, os.ModePerm)
+		if err != nil {
+			return fmt.Errorf("cannot create backup directory %s: %w", backupDir, err)
+		}
+	}
+
 	for _, f := range pkgfiles {
 		pkg, err := NewSignedPkg(f)
 		if err != nil {
