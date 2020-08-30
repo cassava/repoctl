@@ -6,13 +6,12 @@ package repo
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/cassava/repoctl/pacman"
+	"github.com/goulash/osutil"
 )
 
 var (
@@ -20,13 +19,36 @@ var (
 	SystemRepoRemove = "/usr/bin/repo-remove"
 )
 
-// DatabaseAdd adds the given packages to the repository database.
-func (r *Repo) DatabaseAdd(pkgfiles ...string) error {
+// DeleteDatabase deletes the repository database (but not the files).
+func (r *Repo) DeleteDatabase() error {
+	dbpath := r.DatabasePath()
+	if ex, _ := osutil.FileExists(dbpath); ex {
+		r.printf("deleting database: %s\n", dbpath)
+		return os.Remove(dbpath)
+	}
+	return nil
+}
+
+// CreateDatabase creates the repository database (but does nothing else).
+func (r *Repo) CreateDatabase() error {
+	dbpath := r.DatabasePath()
+	if ex, _ := osutil.FileExists(dbpath); ex {
+		return nil
+	}
+	if ex, _ := osutil.DirExists(r.Directory); !ex {
+		r.Setup()
+	}
+
+	r.printf("creating database: %s\n", dbpath)
+	args := joinArgs(r.AddParameters, dbpath)
+	cmd := exec.Command(SystemRepoAdd, args...)
+	return r.system(cmd)
+}
 	if len(pkgfiles) == 0 {
 		return nil
 	}
 
-	dbpath := filepath.Join(r.Directory, r.Database)
+	dbpath := r.DatabasePath()
 	if pacman.IsDatabaseLocked(dbpath) {
 		return fmt.Errorf("database is locked: %s", dbpath+".lck")
 	}
@@ -47,7 +69,7 @@ func (r *Repo) DatabaseRemove(pkgnames ...string) error {
 		return nil
 	}
 
-	dbpath := filepath.Join(r.Directory, r.Database)
+	dbpath := r.DatabasePath()
 	if pacman.IsDatabaseLocked(dbpath) {
 		return fmt.Errorf("database is locked: %s", dbpath+".lck")
 	}

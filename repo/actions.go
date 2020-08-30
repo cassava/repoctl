@@ -221,7 +221,7 @@ func (r *Repo) unlink(h errs.Handler, pkgfiles []string) error {
 func (r *Repo) Update(h errs.Handler, pkgnames ...string) error {
 	errs.Init(&h)
 
-	dbpath := filepath.Join(r.Directory, r.Database)
+	dbpath := r.DatabasePath()
 	if pacman.IsDatabaseLocked(dbpath) {
 		return fmt.Errorf("database is locked: %s", dbpath+".lck")
 	}
@@ -269,28 +269,4 @@ func (r *Repo) Update(h errs.Handler, pkgnames ...string) error {
 	}
 
 	return r.Dispatch(h, obsolete...)
-}
-
-// Reset deletes the repository database and reads all the packages.
-// This is the same as unlinking the database and then running Update.
-func (r *Repo) Reset(h errs.Handler) error {
-	errs.Init(&h)
-
-	err := r.DeleteDatabase()
-	if err != nil {
-		return err
-	}
-
-	return r.Update(h)
-}
-
-// DeleteDatabase deletes the repository database (but not the files).
-func (r *Repo) DeleteDatabase() error {
-	db := path.Join(r.Directory, r.Database)
-	if ex, _ := osutil.FileExists(db); ex {
-		r.printf("deleting database: %s\n", db)
-		return os.Remove(db)
-	} else {
-		return nil
-	}
 }

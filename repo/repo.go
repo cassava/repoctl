@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/cassava/repoctl/conf"
@@ -113,6 +114,11 @@ func NewFromConf(c *conf.Configuration) (*Repo, error) {
 func (r *Repo) Name() string {
 	base := path.Base(r.Database)
 	return base[:strings.IndexByte(base, '.')]
+}
+
+// DatabasePath returns the entire path to the database.
+func (r *Repo) DatabasePath() string {
+	return filepath.Join(r.Directory, r.Database)
 }
 
 // IgnoreFltr returns a FilterFunc for filtering out packages that should

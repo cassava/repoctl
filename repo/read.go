@@ -6,7 +6,6 @@ package repo
 
 import (
 	"path"
-	"path/filepath"
 
 	"github.com/cassava/repoctl/pacman"
 	"github.com/cassava/repoctl/pacman/aur"
@@ -19,7 +18,7 @@ import (
 // ReadDatabase reads the database at r.Directory/r.Database.
 // If the database does not exist, then an empty list is returned.
 func (r *Repo) ReadDatabase() (pacman.Packages, error) {
-	dbpath := path.Join(r.Directory, r.Database)
+	dbpath := r.DatabasePath()
 	ex, err := osutil.FileExists(dbpath)
 	if err != nil {
 		return nil, err
@@ -32,7 +31,7 @@ func (r *Repo) ReadDatabase() (pacman.Packages, error) {
 }
 
 func (r *Repo) ReadDir(h errs.Handler) (pacman.Packages, error) {
-	pkgs, err := pacman.ReadDir(h, r.Directory, filepath.Join(r.Directory, r.Database))
+	pkgs, err := pacman.ReadDir(h, r.Directory, r.DatabasePath())
 	r.MakeAbs(pkgs)
 	return pkgs, err
 }
@@ -55,7 +54,7 @@ func (r *Repo) ReadNames(h errs.Handler, pkgnames ...string) (pacman.Packages, e
 func (r *Repo) ReadMeta(h errs.Handler, pkgnames ...string) (meta.Packages, error) {
 	errs.Init(&h)
 
-	pkgs, err := meta.Read(h, r.Directory, path.Join(r.Directory, r.Database))
+	pkgs, err := meta.Read(h, r.Directory, r.DatabasePath())
 	if err != nil {
 		return nil, err
 	}
