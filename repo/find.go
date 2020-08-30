@@ -7,6 +7,7 @@ package repo
 import (
 	"fmt"
 
+	"github.com/cassava/repoctl/internal/term"
 	"github.com/cassava/repoctl/pacman"
 	"github.com/cassava/repoctl/pacman/aur"
 	"github.com/cassava/repoctl/pacman/meta"
@@ -78,7 +79,7 @@ func (r *Repo) FindUpgrades(h errs.Handler, pkgnames ...string) (Upgrades, error
 	err = pkgs.ReadAUR()
 	if err != nil {
 		if aur.IsNotFound(err) {
-			r.debugf("Error: %s\n", err.Error())
+			term.Debugf("Error: %s\n", err.Error())
 		} else {
 			return nil, err
 		}

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/cassava/repoctl/internal/term"
 	"github.com/cassava/repoctl/pacman"
 	"github.com/cassava/repoctl/pacman/aur"
 	"github.com/cassava/repoctl/pacman/meta"
@@ -87,7 +88,7 @@ func (r *Repo) MakeAbs(pkgs pacman.Packages) {
 	for _, p := range pkgs {
 		filepath := path.Join(r.Directory, path.Base(p.Filename))
 		if p.Filename != filepath {
-			r.debugf("Note: pkgfile filename incorrect: %s\n", p.Filename)
+			term.Debugf("Note: package filename data incorrect: %s\n", p.Filename)
 		}
 		p.Filename = filepath
 	}

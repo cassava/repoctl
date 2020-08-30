@@ -5,8 +5,7 @@
 package main
 
 import (
-	"fmt"
-
+	"github.com/cassava/repoctl/internal/term"
 	"github.com/cassava/repoctl/pacman/aur"
 	"github.com/spf13/cobra"
 )
@@ -43,7 +42,8 @@ var statusCmd = &cobra.Command{
 	PreRunE:  ProfileInit,
 	PostRunE: ProfileTeardown,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		Term.Printf("On repo @{!y}%s\n\n", Repo.Name())
+		exceptQuiet()
+		term.Printf("On repo @{!y}%s\n\n", Repo.Name())
 
 		pkgs, err := Repo.ReadMeta(nil)
 		if err != nil {
@@ -64,39 +64,39 @@ var statusCmd = &cobra.Command{
 		for _, p := range pkgs {
 			var flags []string
 			if p.HasUpgrade() && !ignore[p.Name] {
-				flags = append(flags, Term.Sprintf("@gupgrade(@|%s -> %s@g)", p.Version(), p.AUR.Version))
+				flags = append(flags, term.Formatter.Sprintf("@gupgrade(@|%s -> %s@g)", p.Version(), p.AUR.Version))
 			}
 			if p.HasUpdate() {
-				flags = append(flags, Term.Sprintf("@gupdated(@|%s -> %s@g)", p.VersionRegistered(), p.Version()))
+				flags = append(flags, term.Formatter.Sprintf("@gupdated(@|%s -> %s@g)", p.VersionRegistered(), p.Version()))
 			}
 			if !p.HasFiles() {
-				flags = append(flags, Term.Sprint("@rremoval"))
+				flags = append(flags, term.Formatter.Sprint("@rremoval"))
 			}
 			if o := p.Obsolete(); len(o) > 0 {
 				if Repo.IsObsoleteCached() {
 					if statusCached {
-						flags = append(flags, Term.Sprintf("@ycached(@|%d@y)", len(o)))
+						flags = append(flags, term.Formatter.Sprintf("@ycached(@|%d@y)", len(o)))
 					}
 				} else {
-					flags = append(flags, Term.Sprintf("@yobsolete(@|%d@y)", len(o)))
+					flags = append(flags, term.Formatter.Sprintf("@yobsolete(@|%d@y)", len(o)))
 				}
 			}
 			if statusMissing && p.AUR == nil && !ignore[p.Name] {
-				flags = append(flags, Term.Sprint("@y!aur"))
+				flags = append(flags, term.Formatter.Sprint("@y!aur"))
 			}
 
 			if len(flags) > 0 {
 				nothing = false
-				fmt.Printf("    %s:", p.Name)
+				term.Printf("    %s:", p.Name)
 				for _, f := range flags {
-					fmt.Printf(" %s", f)
+					term.Printf(" %s", f)
 				}
-				fmt.Println()
+				term.Println()
 			}
 		}
 
 		if nothing {
-			fmt.Println("Everything up-to-date.")
+			term.Printf("Everything up-to-date.\n")
 		}
 		return nil
 	},

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/cassava/repoctl/internal/term"
 	"github.com/cassava/repoctl/pacman/aur"
 	"github.com/goulash/pr"
 	"github.com/spf13/cobra"
@@ -53,6 +54,8 @@ var searchCmd = &cobra.Command{
 	Example: `  repoctl search --sort-by=votes firefox
   repoctl search flir flirc flirc-bin`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		exceptQuiet()
+
 		var pkgs aur.Packages
 		for _, q := range args {
 			aurpkgs, err := aur.SearchByName(q)
@@ -100,10 +103,10 @@ var searchCmd = &cobra.Command{
 			if searchQuiet {
 				s = p.Name
 			} else if searchInfo {
-				s = Term.Sprintf("@{!m}aur/@{!w}%s @{!g}%s @{r}(%d)\n@|", p.Name, p.Version, p.NumVotes)
-				s += Term.Sprintf("@.%s", formatAURPackageInfo(p, terminalWidth))
+				s = term.Sprintf("@{!m}aur/@{!w}%s @{!g}%s @{r}(%d)\n@|", p.Name, p.Version, p.NumVotes)
+				s += term.Sprintf("@.%s", formatAURPackageInfo(p, terminalWidth))
 			} else {
-				s = Term.Sprintf("@{!m}aur/@{!w}%s @{!g}%s @{r}(%d)\n@|    %s", p.Name, p.Version, p.NumVotes, p.Description)
+				s = term.Sprintf("@{!m}aur/@{!w}%s @{!g}%s @{r}(%d)\n@|    %s", p.Name, p.Version, p.NumVotes, p.Description)
 			}
 			pkgnames = append(pkgnames, s)
 		}
@@ -111,7 +114,7 @@ var searchCmd = &cobra.Command{
 			printSet(pkgnames, "", Conf.Columnate)
 		} else {
 			for _, p := range pkgnames {
-				fmt.Println(p)
+				term.Println(p)
 			}
 		}
 

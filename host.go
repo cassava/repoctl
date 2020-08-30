@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/cassava/repoctl/internal/term"
 	"github.com/goulash/osutil"
 	"github.com/spf13/cobra"
 )
@@ -37,7 +38,7 @@ var hostCmd = &cobra.Command{
 		if ok, _ := osutil.DirExists(Repo.Directory); !ok {
 			return fmt.Errorf("repo directory %q does not exist", Repo.Directory)
 		}
-		fmt.Printf("Serving %s on %s...\n", Repo.Directory, hostListen)
+		term.Printf("Serving %s on %s...\n", Repo.Directory, hostListen)
 		return http.ListenAndServe(hostListen, http.FileServer(http.Dir(Repo.Directory)))
 	},
 }

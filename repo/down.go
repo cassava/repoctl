@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/cassava/repoctl/internal/term"
 	"github.com/cassava/repoctl/pacman/aur"
 	"github.com/cassava/repoctl/pacman/graph"
 	"github.com/goulash/archive"
@@ -28,7 +29,7 @@ func (r *Repo) DependencyGraph(h errs.Handler, pkgnames ...string) (*graph.Graph
 	}
 
 	// Get dependencies
-	r.debugf("Creating dependency graph ...\n")
+	term.Debugf("Creating dependency graph ...\n")
 	f, err := graph.NewFactory()
 	if err != nil {
 		return nil, fmt.Errorf("cannot create dependency graph: %w", err)
@@ -61,7 +62,7 @@ func (r *Repo) Download(h errs.Handler, destdir string, extract bool, clobber bo
 func (r *Repo) DownloadPackages(h errs.Handler, pkgs aur.Packages, destdir string, extract bool, clobber bool) error {
 	errs.Init(&h)
 	for _, p := range pkgs {
-		r.printf("downloading: %s\n", p.Name)
+		term.Printf("Downloading: %s\n", p.Name)
 		download := DownloadTarballAUR
 		if extract {
 			download = DownloadExtractAUR

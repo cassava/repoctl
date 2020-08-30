@@ -6,14 +6,13 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 
 	"github.com/cassava/repoctl/conf"
+	"github.com/cassava/repoctl/internal/term"
 	"github.com/cassava/repoctl/pacman"
 	"github.com/cassava/repoctl/repo"
-	"github.com/goulash/color"
 	"github.com/spf13/cobra"
 )
 
@@ -28,9 +27,6 @@ var (
 
 	// Repo lets us use the repoctl library to do the most of the work.
 	Repo *repo.Repo
-
-	// Term lets us print in colors.
-	Term *color.Colorizer
 )
 
 func init() {
@@ -41,13 +37,13 @@ func init() {
 		// We didn't manage to load any configuration, which means that repoctl
 		// is unconfigured. There are some commands that work nonetheless, so
 		// we can't stop now -- which is why we don't os.Exit(1).
-		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		term.Errorf("Error: %s\n", err)
 	}
 	Conf = c
 
 	// Set default terminal output options.
-	Term = color.New()
-	Term.Set(Conf.Color)
+	term.SetMode(Conf.Color)
+	configureTerm()
 
 	MainCmd.PersistentFlags().StringVarP(&Conf.CurrentProfile, "profile", "P", c.DefaultProfile, "configuration profile to use")
 	MainCmd.RegisterFlagCompletionFunc("profile", completeProfiles)
@@ -55,7 +51,7 @@ func init() {
 	MainCmd.PersistentFlags().BoolVarP(&Conf.Columnate, "columns", "s", c.Columnate, "show items in columns rather than lines")
 	MainCmd.PersistentFlags().BoolVarP(&Conf.Quiet, "quiet", "q", c.Quiet, "show minimal amount of information")
 	MainCmd.PersistentFlags().BoolVar(&Conf.Debug, "debug", c.Debug, "show unnecessary debugging information")
-	MainCmd.PersistentFlags().Var(Term, "color", "when to use color (auto|never|always)")
+	MainCmd.PersistentFlags().Var(term.Formatter, "color", "when to use color (auto|never|always)")
 }
 
 var MainCmd = &cobra.Command{
@@ -113,12 +109,33 @@ And by viewing the status of your repository:
 		cmd.SilenceErrors = true
 		cmd.SilenceUsage = true
 
-		if Conf.Debug {
-			pacman.DebugWriter = newDebugWriter(Term)
-		}
+		configureTerm()
 
 		return nil
 	},
+}
+
+func configureTerm() {
+	if Conf.Quiet {
+		term.StdOut = nil
+	} else {
+		term.StdOut = os.Stdout
+	}
+	if Conf.Debug {
+		term.StdOut = os.Stderr
+		term.DebugOut = os.Stderr
+		pacman.DebugWriter = term.NewDebugWriter(term.DebugOut)
+	} else {
+		term.DebugOut = nil
+		pacman.DebugWriter = nil
+	}
+}
+
+func exceptQuiet() {
+	if Conf.Quiet {
+		term.Debugf("Overriding quiet: doesn't make sense for this command.")
+	}
+	term.StdOut = os.Stdout
 }
 
 // main loads the configuration and executes the primary command.
@@ -127,13 +144,13 @@ func main() {
 	if err != nil {
 		// If this is an ExecError, we deal with it specially:
 		if e, ok := err.(*ExecError); ok {
-			Term.Fprintf(os.Stderr, "@rError: command %q failed: %s.\n", e.Command, e.Err)
-			Term.Fprintf(os.Stderr, "@.Command output:\n%s", e.Output)
+			term.Errorf("Error: command %q failed: %s.\n", e.Command, e.Err)
+			term.Errorff("Command output:\n%s", e.Output)
 			os.Exit(1)
 		}
 
 		// All other errors:
-		Term.Fprintf(os.Stderr, "@rError: %s.\n", err)
+		term.Errorf("Error: %s.\n", err)
 		os.Exit(1)
 	}
 }
@@ -166,9 +183,6 @@ func ProfileInit(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("cannot load profile %q: %s", name, err)
 	}
-	if Conf.Debug {
-		Repo.Debug = newDebugWriter(Term)
-	}
 
 	// 4. Run pre-action if defined.
 	if Profile.PreAction != "" {
@@ -176,26 +190,6 @@ func ProfileInit(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
-}
-
-type debugWriter struct {
-	term *color.Colorizer
-	out  io.Writer
-}
-
-func newDebugWriter(term *color.Colorizer) *debugWriter {
-	if term == nil {
-		return nil
-	}
-
-	return &debugWriter{
-		term: term,
-		out:  os.Stderr,
-	}
-}
-
-func (w *debugWriter) Write(p []byte) (n int, err error) {
-	return w.term.Fprintf(w.out, "@.%s", p)
 }
 
 // ProfileTeardown should be used as the PostRunE part of every command

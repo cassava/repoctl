@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/cassava/repoctl/internal/term"
 	"github.com/cassava/repoctl/pacman"
 	"github.com/goulash/osutil"
 )
@@ -23,7 +24,7 @@ var (
 func (r *Repo) DeleteDatabase() error {
 	dbpath := r.DatabasePath()
 	if ex, _ := osutil.FileExists(dbpath); ex {
-		r.printf("deleting database: %s\n", dbpath)
+		term.Printf("Deleting database: %s\n", dbpath)
 		return os.Remove(dbpath)
 	}
 	return nil
@@ -39,7 +40,7 @@ func (r *Repo) CreateDatabase() error {
 		r.Setup()
 	}
 
-	r.printf("creating database: %s\n", dbpath)
+	term.Printf("Creating database: %s\n", dbpath)
 	args := joinArgs(r.AddParameters, dbpath)
 	cmd := exec.Command(SystemRepoAdd, args...)
 	return r.system(cmd)
@@ -58,7 +59,7 @@ func (r *Repo) AddToDatabase(pkgfiles ...string) error {
 
 	return in(r.Directory, func() error {
 		for _, p := range pkgfiles {
-			r.printf("adding package to database: %s\n", p)
+			term.Printf("Adding package to database: %s\n", p)
 		}
 
 		args := joinArgs(r.AddParameters, r.Database, pkgfiles)
@@ -80,7 +81,7 @@ func (r *Repo) RemoveFromDatabase(pkgnames ...string) error {
 
 	return in(r.Directory, func() error {
 		for _, p := range pkgnames {
-			r.printf("removing package from database: %s\n", p)
+			term.Printf("Removing package from database: %s\n", p)
 		}
 
 		args := joinArgs(r.RemoveParameters, r.Database, pkgnames)
@@ -108,14 +109,14 @@ func joinArgs(args ...interface{}) []string {
 // system runs cmd, and prints the stderr output to ew, if ew is not nil.
 func (r *Repo) system(cmd *exec.Cmd) error {
 	command := strings.Join(cmd.Args, " ")
-	r.debugf("Executing: %s\n", command)
+	term.Debugf("Executing: %s\n", command)
 
 	bs, err := cmd.CombinedOutput()
 	if err != nil {
-		r.errorf("Error executing: %s\n", command)
-		r.errorf("---\n")
-		r.errorf("%s", bs)
-		r.errorf("...\n")
+		term.Errorf("Error executing: %s\n", command)
+		term.Errorff("---\n")
+		term.Errorff("%s", bs)
+		term.Errorff("...\n")
 		return fmt.Errorf("command exited with non-zero return code: %s", command)
 	}
 	return nil

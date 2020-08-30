@@ -7,6 +7,7 @@ package repo
 import (
 	"sort"
 
+	"github.com/cassava/repoctl/internal/term"
 	"github.com/cassava/repoctl/pacman"
 	"github.com/cassava/repoctl/pacman/pkgutil"
 	"github.com/goulash/errs"
@@ -48,7 +49,7 @@ func (r *Repo) ListMeta(h errs.Handler, aur bool, f func(pacman.AnyPackage) stri
 		return nil, err
 	}
 	if aur {
-		r.debugf("Querying AUR for packages ...\n")
+		term.Debugf("Querying AUR for packages ...\n")
 		_ = pkgs.ReadAUR()
 	}
 	return List(pkgs, f), nil

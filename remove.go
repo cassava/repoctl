@@ -5,9 +5,7 @@
 package main
 
 import (
-	"fmt"
-	"os"
-
+	"github.com/cassava/repoctl/internal/term"
 	"github.com/spf13/cobra"
 )
 
@@ -38,7 +36,7 @@ var removeCmd = &cobra.Command{
 	PostRunE:          ProfileTeardown,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if Repo.Backup && Repo.IsObsoleteCached() {
-			fmt.Fprintf(os.Stderr, "Warning: removing only database entries\n")
+			term.Warnf("Warning: removing only database entries\n")
 		}
 		return Repo.Remove(nil, args...)
 	},

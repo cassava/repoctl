@@ -5,10 +5,9 @@
 package main
 
 import (
-	"fmt"
-	"os"
 	"text/template"
 
+	"github.com/cassava/repoctl/internal/term"
 	"github.com/spf13/cobra"
 )
 
@@ -23,6 +22,8 @@ var versionCmd = &cobra.Command{
 	Args:                  cobra.ExactArgs(0),
 	DisableFlagsInUseLine: true,
 	Run: func(cmd *cobra.Command, args []string) {
+		exceptQuiet()
+
 		var progInfo = struct {
 			Name      string
 			Author    string
@@ -42,11 +43,11 @@ var versionCmd = &cobra.Command{
 			Homepage:  "https://github.com/cassava/repoctl",
 			License:   "MIT",
 		}
-		versionTmpl.Execute(os.Stdout, progInfo)
+		versionTmpl.Execute(term.StdOut, progInfo)
 
 		// Print the current configuration.
-		fmt.Println()
-		Conf.WriteProperties(os.Stdout)
+		term.Println()
+		Conf.WriteProperties(term.StdOut)
 	},
 }
 

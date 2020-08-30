@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"sort"
 
+	"github.com/cassava/repoctl/internal/term"
 	"github.com/cassava/repoctl/pacman"
 	"github.com/cassava/repoctl/pacman/meta"
 	"github.com/goulash/pr"
@@ -19,9 +20,6 @@ import (
 var (
 	// Versioned causes packages to be printed with version information.
 	listVersioned bool
-	// Mode can be either "count", "filter", or "mark" (which is the default
-	// if no match is found.
-	listMode string
 	// Pending marks packages that need to be added to the database,
 	// as well as packages that are in the database but are not available.
 	listPending bool
@@ -81,6 +79,8 @@ var listCmd = &cobra.Command{
 	PreRunE:  ProfileInit,
 	PostRunE: ProfileTeardown,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		exceptQuiet()
+
 		if listAllOptions {
 			listVersioned = true
 			listPending = true
@@ -164,17 +164,17 @@ var listCmd = &cobra.Command{
 // printSet prints a set of items and optionally a header.
 func printSet(list []string, h string, cols bool) {
 	if h != "" {
-		fmt.Printf("\n%s\n", h)
+		term.Printf("\n%s\n", h)
 	}
 	if cols {
-		pr.PrintFlex(list)
+		pr.FprintFlex(term.StdOut, pr.StdoutTerminalWidth(), list)
 	} else if h != "" {
 		for _, j := range list {
-			fmt.Println(" ", j)
+			term.Println(" ", j)
 		}
 	} else {
 		for _, j := range list {
-			fmt.Println(j)
+			term.Println(j)
 		}
 	}
 }

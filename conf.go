@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/cassava/repoctl/conf"
+	"github.com/cassava/repoctl/internal/term"
 	"github.com/cassava/repoctl/pacman/alpm"
 	"github.com/goulash/osutil"
 	"github.com/spf13/cobra"
@@ -114,6 +115,7 @@ var confShowCmd = &cobra.Command{
   sufficient for several commands, such as down or version.
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		exceptQuiet()
 		if confShowTemplate {
 			confVar.WriteTemplate(os.Stdout)
 		} else {
@@ -145,11 +147,11 @@ var confMigrateCmd = &cobra.Command{
 
 		if ex, _ := osutil.FileExists(confPath); ex {
 			backup := generateBackupPath(confPath, ".bak")
-			fmt.Fprintf(os.Stderr, "Backing up current configuration to: %s\n", backup)
+			term.Printf("Backing up current configuration to: %s\n", backup)
 			os.Rename(confPath, backup)
 		}
 
-		fmt.Println("Writing new configuration file to:", confPath)
+		term.Printf("Writing new configuration file to: %s\n", confPath)
 		return confVar.WriteFile(confPath)
 	},
 }
@@ -176,7 +178,7 @@ var confEditCmd = &cobra.Command{
 
 		// Create configuration if missing
 		if ex, _ := osutil.Exists(confPath); !ex {
-			fmt.Println("Writing new configuration file to:", confPath)
+			term.Printf("Writing new configuration file to: %s\n", confPath)
 			err := newConfig(confPath, "")
 			if err != nil {
 				return fmt.Errorf("cannot create default config: %w", err)
@@ -184,7 +186,7 @@ var confEditCmd = &cobra.Command{
 		}
 
 		// Launch editor
-		fmt.Fprintf(os.Stderr, "Exec: %s %s\n", confEditorPath, confPath)
+		term.Debugf("Executing: %s %s\n", confEditorPath, confPath)
 		sys := exec.Command(confEditorPath, confPath)
 		sys.Stdin = os.Stdin
 		sys.Stdout = os.Stdout
@@ -253,9 +255,7 @@ var confNewCmd = &cobra.Command{
 func newConfig(file, repo string) error {
 	dir := filepath.Dir(file)
 	if ex, _ := osutil.DirExists(dir); !ex {
-		if Conf.Debug {
-			fmt.Println("Creating directory structure", dir, "...")
-		}
+		term.Debugf("Creating directory structure", dir, "...")
 		err := os.MkdirAll(dir, os.ModePerm)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: %s.\n", err)
@@ -264,11 +264,11 @@ func newConfig(file, repo string) error {
 
 	if ex, _ := osutil.FileExists(file); ex {
 		backup := generateBackupPath(file, ".bak")
-		fmt.Fprintf(os.Stderr, "Backing up current configuration to: %s\n", backup)
+		term.Printf("Backing up current configuration to: %s\n", backup)
 		os.Rename(file, backup)
 	}
 
-	fmt.Println("Writing new configuration file at", file)
+	term.Printf("Writing new configuration file at: %s\n", file)
 	if repo == "" {
 		return conf.Default().WriteFile(file)
 	}

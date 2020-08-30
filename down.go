@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/cassava/repoctl/internal/term"
 	"github.com/cassava/repoctl/pacman/aur"
 	"github.com/cassava/repoctl/pacman/graph"
 	"github.com/cassava/repoctl/pacman/pkgutil"
@@ -161,9 +162,10 @@ func downDependencies(packages []string) (aur.Packages, error) {
 	}
 	_, aps, ups := graph.Dependencies(g)
 	if downOrder != "" {
+		term.Debugf("Writing build-order to: %s", downOrder)
 		f, err := os.Create(downOrder)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("cannot write build-order to %s: %w", downOrder, err)
 		}
 
 		for i := len(aps); i != 0; i-- {
@@ -172,11 +174,11 @@ func downDependencies(packages []string) (aur.Packages, error) {
 		f.Close()
 	}
 	for _, u := range ups {
-		fmt.Fprintf(os.Stderr, "Warning: unknown package %s\n", u)
+		term.Warnf("Warning: unknown package %s\n", u)
 		iter := g.To(g.NodeWithName(u).ID())
 		for iter.Next() {
 			node := iter.Node().(*graph.Node)
-			fmt.Fprintf(os.Stderr, "         Required by: %s\n", node.PkgName())
+			term.Warnff("         Required by: %s\n", node.PkgName())
 		}
 	}
 	return aps, nil

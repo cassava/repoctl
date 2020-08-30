@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/cassava/repoctl/internal/term"
 	"github.com/cassava/repoctl/pacman"
 	pu "github.com/cassava/repoctl/pacman/pkgutil"
 	"github.com/goulash/errs"
@@ -17,7 +18,7 @@ import (
 
 // Link tries to hard link the file, and failing that, copies it over.
 func (r *Repo) Link(h errs.Handler, pkgfiles ...string) error {
-	return r.add(h, pkgfiles, linkFile, "linking")
+	return r.add(h, pkgfiles, linkFile, "Linking")
 }
 
 // TODO: Get this in the osutil package.
@@ -33,7 +34,7 @@ func linkFile(src, dst string) error {
 // Copy copies the given files into the repository if they do not already
 // exist there and adds them to the database.
 func (r *Repo) Copy(h errs.Handler, pkgfiles ...string) error {
-	return r.add(h, pkgfiles, osutil.CopyFileLazy, "copying")
+	return r.add(h, pkgfiles, osutil.CopyFileLazy, "Copying")
 }
 
 // Move moves the given files into the repository if they do not already
@@ -44,7 +45,7 @@ func (r *Repo) Copy(h errs.Handler, pkgfiles ...string) error {
 // The exception is that when the source and destination files are the
 // same; then no move or deletion is performed.
 func (r *Repo) Move(h errs.Handler, pkgfiles ...string) error {
-	return r.add(h, pkgfiles, osutil.MoveFileLazy, "moving")
+	return r.add(h, pkgfiles, osutil.MoveFileLazy, "Moving")
 }
 
 // add does the hard work of Move and Copy.
@@ -60,15 +61,15 @@ func (r *Repo) add(h errs.Handler, pkgfiles []string, ar func(string, string) er
 		if err != nil {
 			// This means that we are trying to add something that's
 			// non-existant or corrupt.
-			r.errorf("Skipping %s: %s", f, err)
+			term.Errorf("Skipping %s: %s", f, err)
 			continue
 		}
 		if r.RequireSignature && !pkg.HasSignature() {
-			r.errorf("Skipping %s: require signature but none available", f)
+			term.Errorf("Skipping %s: require signature but none available", f)
 			continue
 		}
 
-		r.printf("%s and adding to repository: %s\n", lbl, pkg.PathSet())
+		term.Printf("%s and adding to repository: %s\n", lbl, pkg.PathSet())
 		err = pkg.Apply(func(src string, _ bool) error {
 			dst := path.Join(r.Directory, path.Base(src))
 			return ar(src, dst)
@@ -147,14 +148,14 @@ func (r *Repo) backupDirAbs() string {
 func (r *Repo) backup(h errs.Handler, pkgfiles []string) error {
 	if r.IsObsoleteCached() {
 		for _, f := range pkgfiles {
-			r.debugf("Caching: %s\n", f)
+			term.Debugf("Caching: %s\n", f)
 		}
 		return nil
 	}
 
 	backupDir := r.backupDirAbs()
 	if ex, _ := osutil.DirExists(backupDir); !ex {
-		r.debugf("Creating directory: %s\n", backupDir)
+		term.Debugf("Creating directory: %s\n", backupDir)
 		err := os.MkdirAll(backupDir, os.ModePerm)
 		if err != nil {
 			return fmt.Errorf("cannot create backup directory %s: %w", backupDir, err)
@@ -173,7 +174,7 @@ func (r *Repo) backup(h errs.Handler, pkgfiles []string) error {
 			}
 		}
 
-		r.printf("Backing up: %s\n", pkg.NameSet())
+		term.Printf("Backing up: %s\n", pkg.NameSet())
 		err = pkg.Apply(func(f string, _ bool) error {
 			src := path.Base(f)
 			dst := path.Join(backupDir, src)
@@ -202,7 +203,7 @@ func (r *Repo) unlink(h errs.Handler, pkgfiles []string) error {
 			}
 		}
 
-		r.printf("deleting: %s\n", pkg.NameSet())
+		term.Printf("Deleting: %s\n", pkg.NameSet())
 
 		err = pkg.Apply(func(f string, _ bool) error {
 			return os.Remove(f)
@@ -254,10 +255,10 @@ func (r *Repo) Update(h errs.Handler, pkgnames ...string) error {
 			if r.RequireSignature {
 				spkg, err := NewSignedPkg(f)
 				if err != nil {
-					r.errorf("Skipping %s: %s", f, err)
+					term.Errorf("Skipping %s: %s", f, err)
 					continue
 				} else if !spkg.HasSignature() {
-					r.errorf("Skipping %s: require signature but none found", f)
+					term.Errorf("Skipping %s: require signature but none found", f)
 					continue
 				}
 			}

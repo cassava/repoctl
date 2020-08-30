@@ -6,10 +6,10 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
+	"github.com/cassava/repoctl/internal/term"
 	"github.com/cassava/repoctl/pacman/aur"
 	"github.com/goulash/pr"
 	"github.com/spf13/cobra"
@@ -53,6 +53,8 @@ var queryCmd = &cobra.Command{
 	DisableFlagsInUseLine: true,
 	ValidArgsFunction:     completeAURPackageNames,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		exceptQuiet()
+
 		pkgs, err := aur.ReadAll(args)
 		if err != nil {
 			nfe, ok := err.(*aur.NotFoundError)
@@ -60,7 +62,7 @@ var queryCmd = &cobra.Command{
 				return err
 			}
 			for _, n := range nfe.Names {
-				fmt.Fprintf(os.Stderr, "Warning: unknown package %s\n", n)
+				term.Warnf("Warning: unknown package %s\n", n)
 			}
 		}
 
@@ -82,8 +84,8 @@ var queryCmd = &cobra.Command{
 			}
 			pkgset[p.Name] = true
 
-			Term.Printf("@{!m}aur/@{!w}%s @{!g}%s @{r}(%d)\n@|", p.Name, p.Version, p.NumVotes)
-			Term.Printf("@.%s\n", formatAURPackageInfo(p, terminalWidth))
+			term.Printf("@{!m}aur/@{!w}%s @{!g}%s @{r}(%d)\n@|", p.Name, p.Version, p.NumVotes)
+			term.Printf("@.%s\n", formatAURPackageInfo(p, terminalWidth))
 		}
 
 		return nil

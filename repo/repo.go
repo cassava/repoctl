@@ -6,8 +6,6 @@
 package repo
 
 import (
-	"fmt"
-	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -45,12 +43,6 @@ type Repo struct {
 	// RemoveParameters are parameters to add to the repo-remove
 	// command line.
 	RemoveParameters []string
-
-	// Error, Info, and Debug is where output is written to. If set to
-	// nil, no output is written.
-	Error io.Writer
-	Info  io.Writer
-	Debug io.Writer
 }
 
 // New creates a new default configuration with repo as the repository
@@ -69,10 +61,6 @@ func New(repo string) *Repo {
 		Directory: path.Dir(repo),
 		Database:  path.Base(repo),
 		BackupDir: `backup`,
-
-		Error: os.Stderr,
-		Info:  os.Stdout,
-		Debug: nil,
 
 		IgnoreAUR:        make([]string, 0),
 		AddParameters:    make([]string, 0),
@@ -98,14 +86,6 @@ func NewFromConf(c *conf.Configuration) (*Repo, error) {
 	r.AddParameters = p.AddParameters
 	r.RemoveParameters = p.RemoveParameters
 	r.RequireSignature = p.RequireSignature
-	r.Error = os.Stderr
-	if c.Quiet {
-		r.Info = nil
-	}
-	if c.Debug {
-		r.Info = os.Stderr
-		r.Debug = os.Stderr
-	}
 	return r, nil
 }
 
@@ -168,24 +148,6 @@ func (r *Repo) Setup() error {
 	}
 
 	return os.MkdirAll(r.Directory, os.ModePerm)
-}
-
-func (r *Repo) printf(format string, obj ...interface{}) {
-	if r.Info != nil {
-		fmt.Fprintf(r.Info, format, obj...)
-	}
-}
-
-func (r *Repo) errorf(format string, obj ...interface{}) {
-	if r.Error != nil {
-		fmt.Fprintf(r.Error, format, obj...)
-	}
-}
-
-func (r *Repo) debugf(format string, obj ...interface{}) {
-	if r.Debug != nil {
-		fmt.Fprintf(r.Debug, format, obj...)
-	}
 }
 
 // SignedPkg represents the path components of a potentially signed package.
