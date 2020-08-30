@@ -30,6 +30,8 @@ func init() {
 	MainCmd.AddCommand(downCmd)
 
 	downCmd.Flags().StringVarP(&downDest, "dest", "d", "", "output directory for tarballs")
+	downCmd.RegisterFlagCompletionFunc("dest", completeDirectory)
+
 	downCmd.Flags().BoolVarP(&downDryRun, "dry-run", "n", false, "don't download any packages")
 	downCmd.Flags().BoolVarP(&downClobber, "clobber", "l", false, "delete conflicting files and folders")
 	downCmd.Flags().BoolVarP(&downExtract, "extract", "e", true, "extract the downloaded tarballs")
