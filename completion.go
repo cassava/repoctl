@@ -58,15 +58,9 @@ var completionCmd = &cobra.Command{
         repoctl completion fish > ~/.config/fish/completions/repoctl.fish
 `,
 	DisableFlagsInUseLine: true,
+	Hidden:                true,
 	ValidArgs:             []string{"bash", "zsh", "fish"},
 	Args:                  cobra.MaximumNArgs(1),
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		// Prevent errors that we print being printed a second time by cobra.
-		cmd.SilenceErrors = true
-		cmd.SilenceUsage = true
-
-		return nil
-	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var shell string
 		if len(args) == 0 {
@@ -105,7 +99,7 @@ func completeProfiles(cmd *cobra.Command, args []string, toComplete string) ([]s
 	for k := range Conf.Profiles {
 		result = append(result, k)
 	}
-	return result, cobra.ShellCompDirectiveDefault
+	return result, cobra.ShellCompDirectiveNoFileComp
 }
 
 func completeLocalPackageFiles(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -159,5 +153,5 @@ func filterCompletionResults(results []string, args []string, toComplete string)
 		}
 	}
 
-	return filteredResults, cobra.ShellCompDirectiveDefault
+	return filteredResults, cobra.ShellCompDirectiveNoFileComp
 }

@@ -24,7 +24,7 @@ func init() {
 var hostCmd = &cobra.Command{
 	Use:     "host",
 	Aliases: []string{"serve"},
-	Short:   "host repository on a network",
+	Short:   "Host repository on a network",
 	Long: `Host the repository on a network.
 
   This is essentially static file serving the repository on a specific
