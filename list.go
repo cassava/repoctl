@@ -170,11 +170,11 @@ func printSet(list []string, h string, cols bool) {
 		pr.FprintFlex(term.StdOut, pr.StdoutTerminalWidth(), list)
 	} else if h != "" {
 		for _, j := range list {
-			term.Println(" ", j)
+			term.Printf("  %s\n", j)
 		}
 	} else {
 		for _, j := range list {
-			term.Println(j)
+			term.Printf("%s\n", j)
 		}
 	}
 }

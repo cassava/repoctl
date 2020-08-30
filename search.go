@@ -23,7 +23,7 @@ var (
 func init() {
 	MainCmd.AddCommand(searchCmd)
 
-	searchCmd.Flags().StringVarP(&searchSortBy, "sort-by", "s", "name", "which key to sort results by")
+	searchCmd.Flags().StringVarP(&searchSortBy, "sort-by", "b", "name", "which key to sort results by")
 	searchCmd.RegisterFlagCompletionFunc("sort-by", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return []string{"name", "votes", "popularity", "votes-reverse", "popularity-reverse"}, cobra.ShellCompDirectiveDefault
 	})
@@ -114,7 +114,7 @@ var searchCmd = &cobra.Command{
 			printSet(pkgnames, "", Conf.Columnate)
 		} else {
 			for _, p := range pkgnames {
-				term.Println(p)
+				term.Printf("%s\n", p)
 			}
 		}
 
