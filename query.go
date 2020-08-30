@@ -20,7 +20,7 @@ func init() {
 }
 
 var queryCmd = &cobra.Command{
-	Use:   "query [pkgname...]",
+	Use:   "query [PKGNAME ...]",
 	Short: "Query package information from AUR",
 	Long: `Query package information from AUR.
 
@@ -60,7 +60,7 @@ var queryCmd = &cobra.Command{
 				return err
 			}
 			for _, n := range nfe.Names {
-				fmt.Fprintf(os.Stderr, "warning: unknown package %s\n", n)
+				fmt.Fprintf(os.Stderr, "Warning: unknown package %s\n", n)
 			}
 		}
 

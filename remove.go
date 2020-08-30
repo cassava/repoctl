@@ -16,7 +16,7 @@ func init() {
 }
 
 var removeCmd = &cobra.Command{
-	Use:     "remove <pkgname...>",
+	Use:     "remove PKGNAME ...",
 	Aliases: []string{"rm"},
 	Short:   "Remove and delete packages from the database",
 	Long: `Remove and delete the package files from the repository.
@@ -38,7 +38,7 @@ var removeCmd = &cobra.Command{
 	PostRunE:          ProfileTeardown,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if Repo.Backup && Repo.IsObsoleteCached() {
-			fmt.Fprintf(os.Stderr, "warning: removing only database entries, use --backup=false to delete package files.\n")
+			fmt.Fprintf(os.Stderr, "Warning: removing only database entries\n")
 		}
 		return Repo.Remove(nil, args...)
 	},

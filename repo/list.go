@@ -48,7 +48,7 @@ func (r *Repo) ListMeta(h errs.Handler, aur bool, f func(pacman.AnyPackage) stri
 		return nil, err
 	}
 	if aur {
-		r.debugf("info: querying AUR for packages...\n")
+		r.debugf("Querying AUR for packages ...\n")
 		_ = pkgs.ReadAUR()
 	}
 	return List(pkgs, f), nil

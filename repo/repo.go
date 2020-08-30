@@ -103,8 +103,8 @@ func NewFromConf(c *conf.Configuration) (*Repo, error) {
 		r.Info = nil
 	}
 	if c.Debug {
-		r.Info = os.Stdout
-		r.Debug = os.Stdout
+		r.Info = os.Stderr
+		r.Debug = os.Stderr
 	}
 	return r, nil
 }

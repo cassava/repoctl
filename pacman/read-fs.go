@@ -93,7 +93,7 @@ func ReadEveryFileInDir(h errs.Handler, dirpath string) (Packages, error) {
 	dirpath = filepath.Clean(dirpath)
 	err := filepath.Walk(dirpath, func(filename string, info os.FileInfo, err error) error {
 		if err != nil {
-			return h(err)
+			return h(fmt.Errorf("read file %s: %w", filename, err))
 		}
 		if info.Mode().IsDir() {
 			if filename == dirpath {

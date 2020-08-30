@@ -44,8 +44,17 @@ func IsDatabaseLocked(dbpath string) bool {
 
 // ReadDatabase reads all the packages from a database file.
 func ReadDatabase(dbpath string) (Packages, error) {
+	debugf("Read database %s\n", dbpath)
+
 	var dr io.ReadCloser
 	var err error
+
+	if ex, err := osutil.FileExists(dbpath); !ex {
+		if err != nil {
+			return nil, fmt.Errorf("read database %s: %w", dbpath, err)
+		}
+		return nil, fmt.Errorf("read database %s: no such file", dbpath)
+	}
 
 	dr, err = archive.NewDecompressor(dbpath)
 	if err != nil {

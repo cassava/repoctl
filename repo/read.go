@@ -5,6 +5,7 @@
 package repo
 
 import (
+	"fmt"
 	"path"
 
 	"github.com/cassava/repoctl/pacman"
@@ -21,7 +22,7 @@ func (r *Repo) ReadDatabase() (pacman.Packages, error) {
 	dbpath := r.DatabasePath()
 	ex, err := osutil.FileExists(dbpath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cannot read database %s: %w", dbpath, err)
 	} else if !ex {
 		return make(pacman.Packages, 0), nil
 	}
@@ -86,7 +87,7 @@ func (r *Repo) MakeAbs(pkgs pacman.Packages) {
 	for _, p := range pkgs {
 		filepath := path.Join(r.Directory, path.Base(p.Filename))
 		if p.Filename != filepath {
-			r.debugf("note: pkgfile filename incorrect: %s\n", p.Filename)
+			r.debugf("Note: pkgfile filename incorrect: %s\n", p.Filename)
 		}
 		p.Filename = filepath
 	}

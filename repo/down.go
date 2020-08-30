@@ -28,6 +28,7 @@ func (r *Repo) DependencyGraph(h errs.Handler, pkgnames ...string) (*graph.Graph
 	}
 
 	// Get dependencies
+	r.debugf("Creating dependency graph ...\n")
 	f, err := graph.NewFactory()
 	if err != nil {
 		return nil, fmt.Errorf("cannot create dependency graph: %w", err)

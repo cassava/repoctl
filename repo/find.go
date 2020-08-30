@@ -78,7 +78,7 @@ func (r *Repo) FindUpgrades(h errs.Handler, pkgnames ...string) (Upgrades, error
 	err = pkgs.ReadAUR()
 	if err != nil {
 		if aur.IsNotFound(err) {
-			r.debugf("error: %s\n", err.Error())
+			r.debugf("Error: %s\n", err.Error())
 		} else {
 			return nil, err
 		}

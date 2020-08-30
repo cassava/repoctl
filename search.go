@@ -22,13 +22,17 @@ var (
 func init() {
 	MainCmd.AddCommand(searchCmd)
 
-	searchCmd.Flags().StringVar(&searchSortBy, "sort-by", "name", "which key to sort results by") // FIXME: Add Completion!
+	searchCmd.Flags().StringVarP(&searchSortBy, "sort-by", "s", "name", "which key to sort results by")
+	searchCmd.RegisterFlagCompletionFunc("sort-by", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return []string{"name", "votes", "popularity", "votes-reverse", "popularity-reverse"}, cobra.ShellCompDirectiveDefault
+	})
+
 	searchCmd.Flags().BoolVarP(&searchQuiet, "quiet", "q", false, "show only the name")
 	searchCmd.Flags().BoolVarP(&searchInfo, "info", "i", false, "show package information")
 }
 
 var searchCmd = &cobra.Command{
-	Use:   "search [pkgname...]",
+	Use:   "search [PKGNAME ...]",
 	Short: "Search for packages on AUR",
 	Long: `Search for packages hosted on AUR.
 

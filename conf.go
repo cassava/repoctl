@@ -70,10 +70,15 @@ var confCmd = &cobra.Command{
   configuration file. These can be created manually, or repoctl can
   create them for you.
 
-  Whether you already have a repository or not, creating a new config is
-  sufficient:
+  If you already have a repository, creating a new config is sufficient:
 
     repoctl conf new /path/to/repository/database.db.tar.gz
+
+  Otherwise, make sure to run
+
+    repoctl reset
+
+  afterwards.
 
   Repoctl supports multiple repository configuration through profiles.
   You can add a profile by editing the configuration file manually:
@@ -189,7 +194,7 @@ var confEditCmd = &cobra.Command{
 }
 
 var confNewCmd = &cobra.Command{
-	Use:   "new </path/to/repo/database>",
+	Use:   "new DBPATH",
 	Short: "Create a new configuration file",
 	Long: `Create a new initial configuration file.
 

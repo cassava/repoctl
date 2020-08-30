@@ -44,13 +44,16 @@ func (r *Repo) CreateDatabase() error {
 	cmd := exec.Command(SystemRepoAdd, args...)
 	return r.system(cmd)
 }
+
+// AddToDatabase adds the given packages to the repository database.
+func (r *Repo) AddToDatabase(pkgfiles ...string) error {
 	if len(pkgfiles) == 0 {
 		return nil
 	}
 
 	dbpath := r.DatabasePath()
 	if pacman.IsDatabaseLocked(dbpath) {
-		return fmt.Errorf("database is locked: %s", dbpath+".lck")
+		return fmt.Errorf("database is locked: %s.lck", dbpath)
 	}
 
 	return in(r.Directory, func() error {
@@ -60,18 +63,19 @@ func (r *Repo) CreateDatabase() error {
 
 		args := joinArgs(r.AddParameters, r.Database, pkgfiles)
 		cmd := exec.Command(SystemRepoAdd, args...)
-		return system(cmd, r.Error)
+		return r.system(cmd)
 	})
 }
 
-func (r *Repo) DatabaseRemove(pkgnames ...string) error {
+// RemoveFromDatabase removes the given packages from the repository database.
+func (r *Repo) RemoveFromDatabase(pkgnames ...string) error {
 	if len(pkgnames) == 0 {
 		return nil
 	}
 
 	dbpath := r.DatabasePath()
 	if pacman.IsDatabaseLocked(dbpath) {
-		return fmt.Errorf("database is locked: %s", dbpath+".lck")
+		return fmt.Errorf("database is locked: %s.lck", dbpath)
 	}
 
 	return in(r.Directory, func() error {
@@ -81,7 +85,7 @@ func (r *Repo) DatabaseRemove(pkgnames ...string) error {
 
 		args := joinArgs(r.RemoveParameters, r.Database, pkgnames)
 		cmd := exec.Command(SystemRepoRemove, args...)
-		return system(cmd, r.Error)
+		return r.system(cmd)
 	})
 }
 
@@ -102,22 +106,16 @@ func joinArgs(args ...interface{}) []string {
 }
 
 // system runs cmd, and prints the stderr output to ew, if ew is not nil.
-func system(cmd *exec.Cmd, ew io.Writer) error {
-	if ew == nil {
-		return cmd.Run()
-	}
+func (r *Repo) system(cmd *exec.Cmd) error {
+	command := strings.Join(cmd.Args, " ")
+	r.debugf("Executing: %s\n", command)
 
 	bs, err := cmd.CombinedOutput()
 	if err != nil {
-		command := strings.Join(cmd.Args, " ")
-		fmt.Fprintln(ew, "error executing:", command)
-		fmt.Fprintln(ew, "---")
-		if strings.HasSuffix(string(bs), "\n") {
-			fmt.Fprint(ew, string(bs))
-		} else {
-			fmt.Fprintln(ew, string(bs))
-		}
-		fmt.Fprintln(ew, "...")
+		r.errorf("Error executing: %s\n", command)
+		r.errorf("---\n")
+		r.errorf("%s", bs)
+		r.errorf("...\n")
 		return fmt.Errorf("command exited with non-zero return code: %s", command)
 	}
 	return nil

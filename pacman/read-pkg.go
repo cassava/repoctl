@@ -19,15 +19,16 @@ import (
 // Read reads the package information from a pacman package
 // and returns it in the Package datatype.
 func Read(filename string) (*Package, error) {
+	debugf("Read package %s\n", filename)
 	bs, err := archive.ReadFileFromArchive(filename, ".PKGINFO")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read package %s: %w", filename, err)
 	}
 
 	r := bytes.NewReader(bs)
 	info, err := readFilePkgInfo(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read package %s: %w", filename, err)
 	}
 
 	info.Filename = filename

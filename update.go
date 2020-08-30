@@ -6,7 +6,9 @@ package main
 
 import "github.com/spf13/cobra"
 
-var updateRequireSignature bool
+var (
+	updateRequireSignature bool
+)
 
 func init() {
 	MainCmd.AddCommand(updateCmd)
@@ -29,7 +31,6 @@ var updateCmd = &cobra.Command{
   If backup is true, obsolete files are backup up instead of deleted.
   If the backup directory resolves to the repository directory,
   then obsolete package files are ignored.
-  You can specify --backup=false to force them to be deleted.
 `,
 	Example: `  repoctl update fairsplit
   repoctl update --backup=false`,

@@ -40,7 +40,7 @@ func init() {
 }
 
 var downCmd = &cobra.Command{
-	Use:     "down [pkgname...]",
+	Use:     "down [PKGNAME ...]",
 	Aliases: []string{"download"},
 	Short:   "Download and extract tarballs from AUR",
 	Long: `Download and extract tarballs from AUR for given packages.
@@ -170,11 +170,11 @@ func downDependencies(packages []string) (aur.Packages, error) {
 		f.Close()
 	}
 	for _, u := range ups {
-		fmt.Fprintf(os.Stderr, "warning: unknown package %s\n", u)
+		fmt.Fprintf(os.Stderr, "Warning: unknown package %s\n", u)
 		iter := g.To(g.NodeWithName(u).ID())
 		for iter.Next() {
 			node := iter.Node().(*graph.Node)
-			fmt.Fprintf(os.Stderr, "         required by: %s\n", node.PkgName())
+			fmt.Fprintf(os.Stderr, "         Required by: %s\n", node.PkgName())
 		}
 	}
 	return aps, nil

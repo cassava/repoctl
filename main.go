@@ -6,10 +6,12 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 
 	"github.com/cassava/repoctl/conf"
+	"github.com/cassava/repoctl/pacman"
 	"github.com/cassava/repoctl/repo"
 	"github.com/goulash/color"
 	"github.com/spf13/cobra"
@@ -67,8 +69,9 @@ packages from AUR.
 
 Note that in all of these commands, the following terminology is used:
 
-    pkgname: is the name of the package, e.g. pacman
-    pkgfile: is the path to a package file, e.g. pacman-3.5.3-i686.pkg.tar.xz
+  PKGNAME: is the name of the package, e.g. pacman
+  PKGFILE: is the path to a package file, e.g. pacman-3.5.3-i686.pkg.tar.xz
+  DBPATH:  is the (absolute) path to your repo database, e.g. /srv/sirius.db.tar.zst
 
 There are several places that repoctl reads its configuration from.
 If $REPOCTL_CONFIG is set, then only this path is loaded. Otherwise,
@@ -85,11 +88,34 @@ In most systems then, repoctl will read:
   /etc/xdg/repoctl/config.toml
   /home/you/.config/repoctl/config.toml
 
+---
+
+If you are new to repoctl, perform the following commands to get started:
+
+  repoctl conf new DBPATH  # Create a new configuration file
+  repoctl conf edit        # Edit the configuration file
+  repoctl reset            # Initialize the repository
+
+You can then continue by building and adding packages:
+
+  repoctl search QUERY
+  repoctl down -r PKGNAME
+  # cd PKGNAME && makepkg
+  repoctl add PKGFILE ...
+
+And by viewing the status of your repository:
+
+  repoctl status
+
 `,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// Prevent errors that we print being printed a second time by cobra.
 		cmd.SilenceErrors = true
 		cmd.SilenceUsage = true
+
+		if Conf.Debug {
+			pacman.DebugWriter = newDebugWriter(Term)
+		}
 
 		return nil
 	},
@@ -140,6 +166,9 @@ func ProfileInit(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("cannot load profile %q: %s", name, err)
 	}
+	if Conf.Debug {
+		Repo.Debug = newDebugWriter(Term)
+	}
 
 	// 4. Run pre-action if defined.
 	if Profile.PreAction != "" {
@@ -147,6 +176,26 @@ func ProfileInit(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+type debugWriter struct {
+	term *color.Colorizer
+	out  io.Writer
+}
+
+func newDebugWriter(term *color.Colorizer) *debugWriter {
+	if term == nil {
+		return nil
+	}
+
+	return &debugWriter{
+		term: term,
+		out:  os.Stderr,
+	}
+}
+
+func (w *debugWriter) Write(p []byte) (n int, err error) {
+	return w.term.Fprintf(w.out, "@.%s", p)
 }
 
 // ProfileTeardown should be used as the PostRunE part of every command

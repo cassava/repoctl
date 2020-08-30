@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"path/filepath"
 
 	"github.com/cassava/repoctl/pacman"
 	pu "github.com/cassava/repoctl/pacman/pkgutil"
@@ -61,11 +60,11 @@ func (r *Repo) add(h errs.Handler, pkgfiles []string, ar func(string, string) er
 		if err != nil {
 			// This means that we are trying to add something that's
 			// non-existant or corrupt.
-			r.errorf("skipping %s: %s", f, err)
+			r.errorf("Skipping %s: %s", f, err)
 			continue
 		}
 		if r.RequireSignature && !pkg.HasSignature() {
-			r.errorf("skipping %s: require signature but none available", f)
+			r.errorf("Skipping %s: require signature but none available", f)
 			continue
 		}
 
@@ -84,7 +83,7 @@ func (r *Repo) add(h errs.Handler, pkgfiles []string, ar func(string, string) er
 		added = append(added, path.Join(r.Directory, path.Base(f)))
 	}
 
-	err := r.DatabaseAdd(added...)
+	err := r.AddToDatabase(added...)
 	if err != nil {
 		return err
 	}
@@ -105,7 +104,7 @@ func (r *Repo) Remove(h errs.Handler, pkgnames ...string) error {
 	if err != nil {
 		return err
 	}
-	err = h(r.DatabaseRemove(pu.Map(pkgs, pu.PkgName)...))
+	err = h(r.RemoveFromDatabase(pu.Map(pkgs, pu.PkgName)...))
 	if err != nil {
 		return err
 	}
@@ -148,14 +147,14 @@ func (r *Repo) backupDirAbs() string {
 func (r *Repo) backup(h errs.Handler, pkgfiles []string) error {
 	if r.IsObsoleteCached() {
 		for _, f := range pkgfiles {
-			r.debugf("cached: %s\n", f)
+			r.debugf("Caching: %s\n", f)
 		}
 		return nil
 	}
 
 	backupDir := r.backupDirAbs()
 	if ex, _ := osutil.DirExists(backupDir); !ex {
-		r.debugf("mkdir: %s\n", backupDir)
+		r.debugf("Creating directory: %s\n", backupDir)
 		err := os.MkdirAll(backupDir, os.ModePerm)
 		if err != nil {
 			return fmt.Errorf("cannot create backup directory %s: %w", backupDir, err)
@@ -174,7 +173,7 @@ func (r *Repo) backup(h errs.Handler, pkgfiles []string) error {
 			}
 		}
 
-		r.printf("backing up: %s\n", pkg.NameSet())
+		r.printf("Backing up: %s\n", pkg.NameSet())
 		err = pkg.Apply(func(f string, _ bool) error {
 			src := path.Base(f)
 			dst := path.Join(backupDir, src)
@@ -255,10 +254,10 @@ func (r *Repo) Update(h errs.Handler, pkgnames ...string) error {
 			if r.RequireSignature {
 				spkg, err := NewSignedPkg(f)
 				if err != nil {
-					r.errorf("skipping %s: %s", f, err)
+					r.errorf("Skipping %s: %s", f, err)
 					continue
 				} else if !spkg.HasSignature() {
-					r.errorf("skipping %s: require signature but none found", f)
+					r.errorf("Skipping %s: require signature but none found", f)
 					continue
 				}
 			}
@@ -266,12 +265,12 @@ func (r *Repo) Update(h errs.Handler, pkgnames ...string) error {
 		}
 	}
 
-	err = r.DatabaseRemove(missing...)
+	err = r.RemoveFromDatabase(missing...)
 	if err != nil {
 		return err
 	}
 
-	err = r.DatabaseAdd(updates...)
+	err = r.AddToDatabase(updates...)
 	if err != nil {
 		return err
 	}
