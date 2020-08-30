@@ -15,15 +15,12 @@ import (
 	"github.com/cassava/repoctl/pacman/aur"
 	"github.com/cassava/repoctl/pacman/graph"
 	"github.com/goulash/archive"
-	"github.com/goulash/errs"
 	"github.com/goulash/osutil"
 )
 
 // DependencyGraph returns a dependency graph of the given package names.
-func (r *Repo) DependencyGraph(h errs.Handler, pkgnames ...string) (*graph.Graph, error) {
-	errs.Init(&h)
-
-	aurpkgs, err := r.ReadAUR(h, pkgnames...)
+func DependencyGraph(pkgnames []string) (*graph.Graph, error) {
+	aurpkgs, err := aur.ReadAll(pkgnames)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read AUR: %w", err)
 	}
@@ -41,35 +38,32 @@ func (r *Repo) DependencyGraph(h errs.Handler, pkgnames ...string) (*graph.Graph
 }
 
 // Download downloads and extracts the given package tarballs.
-func (r *Repo) Download(h errs.Handler, destdir string, extract bool, clobber bool, pkgnames ...string) error {
-	errs.Init(&h)
+//
+// If a package cannot be found, it will be reported, but
+// the rest of the packages will be downloaded.
+func Download(destdir string, extract bool, clobber bool, pkgnames []string) error {
 	if len(pkgnames) == 0 {
 		return nil
 	}
 
-	// If a package cannot be found, we want to report it.
-	aurpkgs, err := r.ReadAUR(h, pkgnames...)
+	aurpkgs, err := aur.ReadAll(pkgnames)
 	if err != nil {
-		err = h(err)
-		if err != nil {
-			return err
-		}
+		term.Errorf("Error: %s\n", err)
 	}
-	return r.DownloadPackages(h, uniqueBases(aurpkgs), destdir, extract, clobber)
+	return DownloadPackages(uniqueBases(aurpkgs), destdir, extract, clobber)
 }
 
 // DownloadPackages downloads the given AUR packages, printing messages for each one.
-func (r *Repo) DownloadPackages(h errs.Handler, pkgs aur.Packages, destdir string, extract bool, clobber bool) error {
-	errs.Init(&h)
+func DownloadPackages(pkgs aur.Packages, destdir string, extract bool, clobber bool) error {
 	for _, p := range pkgs {
 		term.Printf("Downloading: %s\n", p.Name)
 		download := DownloadTarballAUR
 		if extract {
 			download = DownloadExtractAUR
 		}
-		err := h(download(p, destdir, clobber))
+		err := download(p, destdir, clobber)
 		if err != nil {
-			return err
+			term.Errorf("Error: %s\n", err)
 		}
 	}
 	return nil

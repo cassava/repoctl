@@ -99,10 +99,6 @@ var downCmd = &cobra.Command{
 		if downAll || downUpgrades {
 			return ProfileInit(cmd, args)
 		}
-
-		// Create a dummy Repo instance that shouldn't ever lead to this file
-		// being created, but lets us use methods on Repo.
-		Repo = repo.New("/tmp/repoctl-tmp.db.tar.gz")
 		return nil
 	},
 	PostRunE: func(cmd *cobra.Command, args []string) error {
@@ -139,7 +135,7 @@ var downCmd = &cobra.Command{
 			if downDryRun {
 				return nil
 			}
-			return Repo.Download(nil, downDest, downExtract, downClobber, list...)
+			return repo.Download(downDest, downExtract, downClobber, list)
 		}
 
 		// Otherwise, get the dependency list and download the packages:
@@ -151,12 +147,12 @@ var downCmd = &cobra.Command{
 		if downDryRun {
 			return nil
 		}
-		return Repo.DownloadPackages(nil, aps, downDest, downExtract, downClobber)
+		return repo.DownloadPackages(aps, downDest, downExtract, downClobber)
 	},
 }
 
 func downDependencies(packages []string) (aur.Packages, error) {
-	g, err := Repo.DependencyGraph(nil, packages...)
+	g, err := repo.DependencyGraph(packages)
 	if err != nil {
 		return nil, err
 	}

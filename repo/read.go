@@ -68,6 +68,9 @@ func (r *Repo) ReadMeta(h errs.Handler, pkgnames ...string) (meta.Packages, erro
 
 // ReadAUR reads the given package names from AUR. If no package names
 // are given, ReadAUR reads all the names found in the repository.
+//
+// If you don't need this special feature on zero packages, then please
+// use aur.ReadAll instead!
 func (r *Repo) ReadAUR(h errs.Handler, pkgnames ...string) (aur.Packages, error) {
 	errs.Init(&h)
 	var err error
