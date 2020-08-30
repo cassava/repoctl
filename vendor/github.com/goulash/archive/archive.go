@@ -48,7 +48,6 @@ func ReadFileFromTar(r io.Reader, file string) ([]byte, error) {
 			return nil, err
 		}
 
-		fmt.Printf("process: %s\n", hdr.Name)
 		if hdr.Name == file {
 			bytes, err := ioutil.ReadAll(tr)
 			if err != nil {
@@ -227,8 +226,8 @@ func NewDecompressor(fpath string) (*Decompressor, error) {
 			return err
 		}
 		// Success:
-		d.file.Seek(0, 0)
 		zd.Reset(d.file)
+		d.file.Seek(0, 0)
 		d.reader = zd
 		d.closer = zd.IOReadCloser()
 		return nil

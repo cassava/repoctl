@@ -71,8 +71,8 @@ github.com/googleapis/gax-go/v2 v2.0.4/go.mod h1:0Wqv26UfaUD9n4G6kQubkQ+KchISgw+
 github.com/googleapis/gax-go/v2 v2.0.5/go.mod h1:DWXyrwAJ9X0FpwwEdw+IPEYBICEFu5mhpdKc/us6bOk=
 github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=
 github.com/gorilla/websocket v1.4.2/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
-github.com/goulash/archive v1.3.0 h1:BFH5+QnCxVZvVN2Q935GdvqRPfhi9HFJoMbLRpDmq4Y=
-github.com/goulash/archive v1.3.0/go.mod h1:/eBGpnCpErqAz3LY9A36kClcmhBxJBrtfnlBSo3th50=
+github.com/goulash/archive v1.3.2 h1:cuFsgdyoHTElxV++tHeoyb2UyHquRMBM4cOf47H+hTU=
+github.com/goulash/archive v1.3.2/go.mod h1:/eBGpnCpErqAz3LY9A36kClcmhBxJBrtfnlBSo3th50=
 github.com/goulash/color v1.0.0 h1:Evil6bEy5/6grF95ug8R7bVhmVMNf1t5iX21q4o16Nw=
 github.com/goulash/color v1.0.0/go.mod h1:yzqj8az+313jj24HBWUUV3lbUQZ1iznOHRoJ/UGKeWQ=
 github.com/goulash/errs v1.0.0 h1:aJ6McV3IUpSE/l/cixBLRwN0xvChhn7uESpdZ0yPESU=
