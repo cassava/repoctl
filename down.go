@@ -94,7 +94,7 @@ var downCmd = &cobra.Command{
 `,
 	Example: `  repoctl down -u
   repoctl down -o build-order.txt -u`,
-
+	ValidArgsFunction: completeAURPackageNames,
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if downAll || downUpgrades {
 			return ProfileInit(cmd, args)

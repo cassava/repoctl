@@ -38,9 +38,10 @@ var statusCmd = &cobra.Command{
     "upgrade":  packages with updates in AUR (only with -a)
     "!aur":     packages unavailable in AUR (only with -m)
 `,
-	Args:     cobra.ExactArgs(0),
-	PreRunE:  ProfileInit,
-	PostRunE: ProfileTeardown,
+	Args:              cobra.ExactArgs(0),
+	ValidArgsFunction: completeNoFiles,
+	PreRunE:           ProfileInit,
+	PostRunE:          ProfileTeardown,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		exceptQuiet()
 		term.Printf("On repo @{!y}%s\n\n", Repo.Name())

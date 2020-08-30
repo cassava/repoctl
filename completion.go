@@ -94,6 +94,10 @@ func completeDirectory(cmd *cobra.Command, args []string, toComplete string) ([]
 	return nil, cobra.ShellCompDirectiveFilterDirs
 }
 
+func completeNoFiles(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return nil, cobra.ShellCompDirectiveNoFileComp
+}
+
 func completeProfiles(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	result := make([]string, 0, len(Conf.Profiles))
 	for k := range Conf.Profiles {

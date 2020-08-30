@@ -114,6 +114,8 @@ var confShowCmd = &cobra.Command{
   shows the default repoctl configuration. The default configuration is
   sufficient for several commands, such as down or version.
 `,
+	Args:              cobra.ExactArgs(0),
+	ValidArgsFunction: completeNoFiles,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		exceptQuiet()
 		if confShowTemplate {
@@ -140,6 +142,8 @@ var confMigrateCmd = &cobra.Command{
   erasing any comments you have made in the file. It will do so even if the
   configuration file does not need to be migrated!
 `,
+	Args:              cobra.ExactArgs(0),
+	ValidArgsFunction: completeNoFiles,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if ex, _ := osutil.Exists(confPath); !ex {
 			return fmt.Errorf("cannot migrate %s: file does not exist", confPath)
@@ -168,6 +172,8 @@ var confEditCmd = &cobra.Command{
   If the configuration file does not exist, repoctl will create a template
   for you.
 `,
+	Args:              cobra.ExactArgs(0),
+	ValidArgsFunction: completeNoFiles,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if confPath == "" {
 			return ErrInvalidConfPath

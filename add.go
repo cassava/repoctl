@@ -29,8 +29,8 @@ var addCmd = &cobra.Command{
   allows you to downgrade a package in the repository.
 
   Any other package files in the repository are deleted or backed up,
-  depending on whether the backup option is given. If the backup option
-  is given, the "obsolete" package files are moved to a backup
+  depending on whether the backup option is set. If the backup option
+  is set, the "obsolete" package files are moved to a backup
   directory of choice.
 
   If the backup directory resolves to the repository directory,

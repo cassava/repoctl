@@ -19,6 +19,7 @@ var versionCmd = &cobra.Command{
 	Use:                   "version",
 	Short:                 "Show version information and current configuration",
 	Long:                  "Show version information of repoctl, as well as the current configuration.",
+	ValidArgsFunction:     completeNoFiles,
 	Args:                  cobra.ExactArgs(0),
 	DisableFlagsInUseLine: true,
 	Run: func(cmd *cobra.Command, args []string) {

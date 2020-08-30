@@ -161,6 +161,10 @@ func main() {
 // Make sure to use ProfileTeardown in the PostRunE if using this.
 func ProfileInit(cmd *cobra.Command, args []string) error {
 	// Try to load the profile.
+	if len(Conf.Profiles) == 0 {
+		return fmt.Errorf("please create a configuration profile to proceed")
+	}
+
 	p, name, err := Conf.SelectProfile()
 	if err != nil {
 		return fmt.Errorf("cannot select unknown profile %q", name)

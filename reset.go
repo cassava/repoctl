@@ -25,6 +25,7 @@ var resetCmd = &cobra.Command{
 `,
 	DisableFlagsInUseLine: true,
 	Args:                  cobra.ExactArgs(0),
+	ValidArgsFunction:     completeNoFiles,
 	PreRunE:               ProfileInit,
 	PostRunE:              ProfileTeardown,
 	RunE: func(cmd *cobra.Command, args []string) error {

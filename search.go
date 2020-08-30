@@ -53,6 +53,7 @@ var searchCmd = &cobra.Command{
 `,
 	Example: `  repoctl search --sort-by=votes firefox
   repoctl search flir flirc flirc-bin`,
+	ValidArgsFunction: completeNoFiles,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		exceptQuiet()
 
