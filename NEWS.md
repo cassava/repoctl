@@ -1,15 +1,56 @@
 Repoctl Releases
 ================
 
+## Version 0.21 (30 August 2020)
+This release brings us much closer to a 1.0 release. Many long-standing issues
+have been addressed and the usage of repoctl has been improved in several
+significant ways.
+
+First of all, our [landing page](README.md) has been rewritten, so scan that
+and see if you can learn something useful!
+
+- New: support configuration *profiles*. See `conf` command
+  for configuration help and `-P` (`--profile`) flag for
+  choosing the profile. (This resolves issue #23)
+- New: full completion support for Bash, Zsh, and Fish shells.
+- New: `conf` command added, with the following subcommands:
+  `new`, `edit`, `show`, and `migrate`.
+- New: `search` command learned `-i` (`--info`) flag, to show
+  as much information in search results as possible.
+- New: `search` command learned `-b` as an alias for `--sort-by`.
+- New: `query` command added, to retrieve all metadata on a package in AUR.
+- Remove: `--backup` and `--backup-dir` have been removed,
+  in favor of using profiles to configure these settings.
+- Remove: `new` command removed in favor of `conf` and `reset`.
+- Remove: `action_on_complete` configuration item has been removed,
+  since this causes too many problems.
+- Remove: `unconfigured` configuration item is no longer needed (issue #53).
+- Update: make output more consistent.
+- Update: improve debugging, usage, and error output.
+- Update: `search` command flag `--quiet` renamed to `--raw`.
+- Update: `reset` command can initialize a repository now.
+  This is also the recommended procedure for creating a new repository.
+- Update: configuration is no longer required when it is not needed.
+- Update: radically improve speed of reading directory of packages,
+  which is relevant for `status`, `update`, `list` and `down -u` commands.
+- Update: Streamline repository structure.
+- Fix: issue #37, make backup directory if it does not exist.
+- Fix: issue #52, gz, xz, bz2, and zst database compressions supported now.
+- Fix: issue #57, no more errors reading zst-compressed packages.
+- Fix: abort commands that modify the database when it is locked.
+- Fix: only query AUR for packages when necessary.
+
 ## Version 0.20 (24 July 2020)
 
-- New: `search` command added.
-- New `down` command learned `-n` (`--dry-run`) option.
+- New: `search` command added, to search for matching packages in AUR.
+- New `down` command learned `-n` (`--dry-run`) option, which is
+  useful for showing what a recursive download would retrieve,
+  or outputting the build order.
 - Update: `new config` command now backs up existing configuration files.
 - Update: `github.com/goulash/pacman` dependency moved into repository.
-- Bugfix: `version` command does not show entire configuration.
-- Bugfix: issue #46, do not panic or print errors with large repos.
-- Bugfix: issue #33, recursive download and dependency resolution broken.
+- Fix: `version` command does not show entire configuration.
+- Fix: issue #46, do not panic or print errors with large repos.
+- Fix: issue #33, recursive download and dependency resolution broken.
 
 ## Version 0.19 (25 October 2019)
 This release fixes several bugs and adds support for signatures and Zst
@@ -23,10 +64,10 @@ compression.
 - New: support Zstandard compression for packages.
 - Update: print entire error message when system command fails.
 - Update: issue #34, `list` command learned `-r` (`--registered`) option.
-- Bugfix: issue #35, in which signature files are recognized as package
+- Fix: issue #35, in which signature files are recognized as package
   files and are attempted to be read.
-- Bugfix: issue #36, do not abort download when some packages not on AUR.
-- Bugfix: issue #47, do not mishandle files compressed with Zstandard.
+- Fix: issue #36, do not abort download when some packages not on AUR.
+- Fix: issue #47, do not mishandle files compressed with Zstandard.
 
 ## Version 0.18 (28 February 2018)
 This release adds an alternate way to deal with obsolete package files, for
@@ -47,7 +88,7 @@ Other minor changes include:
 
   - New: `status` command learned `-c` (`--cached`)
   - Update: pruning the set of debug messages printed with `--debug`.
-  - Bugfix: pull request #31, which fixed `add_params` and `rm_params` parsing
+  - Fix: pull request #31, which fixed `add_params` and `rm_params` parsing
     in the configuration file (contributed by @maximbaz).
     Previously, these were incorrectly parsed in the singular tense.
 
@@ -58,7 +99,7 @@ has more than 250 packages.
 
   - New: `down` command learned `-r` and `-o` flags that resolve dependencies
     and write a recommended order of compilation for any downloaded packages.
-  - Bugfix: issue #28, in which AUR queries for a local database with more
+  - Fix: issue #28, in which AUR queries for a local database with more
     than 250 packages failed.
   - Update: better error messages when pre/post command actions fail.
   - Update: somewhat improved zsh completion (contributed by @KoHcoJlb).
@@ -84,8 +125,8 @@ Nothing major however.
 
   - New: `list` command learned to filter with regex argument
   - Update: documentation of list command improved.
-  - Bugfix: status -m does not read AUR
-  - Bugfix: reading repository without database failing
+  - Fix: status -m does not read AUR
+  - Fix: reading repository without database failing
 
 ## Version 0.14 (26 April 2016)
 This release rewrites repoctl to use the cobra library from spf13. Several
@@ -116,14 +157,14 @@ With Go 1.5 allowing vendoring, we stop using gb (sorry).
     `-u` to `-o`
   - Update: AUR retrieval has been improved
   - Update: using spf13/cobra as our commandline engine now
-  - Bugfix: license information correction (was BSD, is MIT)
-  - Bugfix: typographical errors
+  - Fix: license information correction (was BSD, is MIT)
+  - Fix: typographical errors
 
 ## Version 0.13 (19 July 2015)
 This release fixes a critical bug and updates a few other non-functional
 files.
 
-  - Bugfix: was not in correct directory when removing package files
+  - Fix: was not in correct directory when removing package files
   - Update: Zsh completion understands reset command
 
 ## Version 0.12 (17 July 2015)
