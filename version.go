@@ -38,7 +38,7 @@ var versionCmd = &cobra.Command{
 			Name:      "repoctl",
 			Author:    "Ben Morgan",
 			Email:     "cassava@iexu.de",
-			Version:   "0.21",
+			Version:   "0.22 pre-release",
 			Date:      "30 August, 2020",
 			Copyright: "2016-2020",
 			Homepage:  "https://github.com/cassava/repoctl",

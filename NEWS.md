@@ -1,6 +1,13 @@
 Repoctl Releases
 ================
 
+## Version 0.22 (unreleased)
+
+- New: `add` command learned `--no-verify` flag to disable verification of
+  packages prior to copying/moving them repository.
+- Fix: `add` command verifies packages by reading them before
+  copying/moving them to the repository.
+
 ## Version 0.21 (30 August 2020)
 This release brings us much closer to a 1.0 release. Many long-standing issues
 have been addressed and the usage of repoctl has been improved in several

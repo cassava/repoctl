@@ -4,11 +4,17 @@
 
 package main
 
-import "github.com/spf13/cobra"
+import (
+	"fmt"
+
+	"github.com/cassava/repoctl/pacman"
+	"github.com/spf13/cobra"
+)
 
 var movePackages bool
 var linkPackages bool
 var addRequireSignature bool
+var addNoVerify bool
 
 func init() {
 	MainCmd.AddCommand(addCmd)
@@ -16,6 +22,7 @@ func init() {
 	addCmd.Flags().BoolVarP(&movePackages, "move", "m", false, "move packages into repository")
 	addCmd.Flags().BoolVarP(&linkPackages, "link", "l", false, "link packages instead of copying")
 	addCmd.Flags().BoolVarP(&addRequireSignature, "require-signature", "r", false, "require package signatures")
+	addCmd.Flags().BoolVar(&addNoVerify, "no-verify", false, "don't verify packages prior to repository addition")
 }
 
 var addCmd = &cobra.Command{
@@ -44,6 +51,15 @@ var addCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if addRequireSignature {
 			Repo.RequireSignature = true
+		}
+
+		if !addNoVerify {
+			for _, f := range args {
+				_, err := pacman.Read(f)
+				if err != nil {
+					return fmt.Errorf("cannot verify package %s: %w", f, err)
+				}
+			}
 		}
 
 		if movePackages {
