@@ -42,7 +42,6 @@ var addCmd = &cobra.Command{
 
   If the backup directory resolves to the repository directory,
   then obsolete package files are ignored.
-  You can specify --backup=false to force them to be deleted.
 `,
 	Example:           `  repoctl add -m ./fairsplit-1.0.pkg.tar.gz`,
 	ValidArgsFunction: completeLocalPackageFiles,
