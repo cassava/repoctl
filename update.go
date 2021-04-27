@@ -32,8 +32,7 @@ var updateCmd = &cobra.Command{
   If the backup directory resolves to the repository directory,
   then obsolete package files are ignored.
 `,
-	Example: `  repoctl update fairsplit
-  repoctl update --backup=false`,
+	Example:           `  repoctl update fairsplit`,
 	ValidArgsFunction: completeRepoPackageNames,
 	PreRunE:           ProfileInit,
 	PostRunE:          ProfileTeardown,

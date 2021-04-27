@@ -26,11 +26,10 @@ var removeCmd = &cobra.Command{
 
   If the backup directory resolves to the repository directory,
   then package files are ignored; repoctl update will add them again.
-  In this case, you probably want to use --backup=false to force
+  In this case, you probably want to use a profile with backup=false to force
   them to be deleted.
 `,
-	Example: `  repoctl rm fairsplit
-  repoctl rm --backup=false fairsplit`,
+	Example:           `  repoctl rm fairsplit`,
 	ValidArgsFunction: completeRepoPackageNames,
 	PreRunE:           ProfileInit,
 	PostRunE:          ProfileTeardown,
