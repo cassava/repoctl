@@ -209,8 +209,8 @@ func (p *Package) DownloadURL() string {
 }
 
 const (
-	searchURL    = "https://aur.archlinux.org/rpc.php?v=5&type=search&by=name&arg=%s"
-	multiInfoURL = "https://aur.archlinux.org/rpc.php?v=5&type=multiinfo&arg[]=%s"
+	searchURL    = "https://aur.archlinux.org/rpc?v=5&type=search&by=name&arg=%s"
+	multiInfoURL = "https://aur.archlinux.org/rpc?v=5&type=multiinfo&arg[]=%s"
 	multiInfoArg = "&arg[]="
 )
 
