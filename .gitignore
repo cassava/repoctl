@@ -1,3 +1,4 @@
 .lvimrc
 cmd/repoctl/repoctl
 cmd/repols/repols
+repoctl
