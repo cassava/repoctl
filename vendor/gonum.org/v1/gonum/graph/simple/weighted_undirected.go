@@ -8,8 +8,8 @@ import (
 	"fmt"
 
 	"gonum.org/v1/gonum/graph"
-	"gonum.org/v1/gonum/graph/internal/uid"
 	"gonum.org/v1/gonum/graph/iterator"
+	"gonum.org/v1/gonum/graph/set/uid"
 )
 
 var (
@@ -32,7 +32,7 @@ type WeightedUndirectedGraph struct {
 
 	self, absent float64
 
-	nodeIDs uid.Set
+	nodeIDs *uid.Set
 }
 
 // NewWeightedUndirectedGraph returns an WeightedUndirectedGraph with the specified self and absent
@@ -75,16 +75,14 @@ func (g *WeightedUndirectedGraph) Edges() graph.Edges {
 		return graph.Empty
 	}
 	var edges []graph.Edge
-	seen := make(map[[2]int64]struct{})
-	for _, u := range g.edges {
-		for _, e := range u {
-			uid := e.From().ID()
-			vid := e.To().ID()
-			if _, ok := seen[[2]int64{uid, vid}]; ok {
+	for xid, u := range g.edges {
+		for yid, e := range u {
+			if yid < xid {
+				// Do not consider edges when the To node ID is
+				// before the From node ID. Both orientations
+				// are stored.
 				continue
 			}
-			seen[[2]int64{uid, vid}] = struct{}{}
-			seen[[2]int64{vid, uid}] = struct{}{}
 			edges = append(edges, e)
 		}
 	}
@@ -96,20 +94,10 @@ func (g *WeightedUndirectedGraph) Edges() graph.Edges {
 
 // From returns all nodes in g that can be reached directly from n.
 func (g *WeightedUndirectedGraph) From(id int64) graph.Nodes {
-	if _, ok := g.nodes[id]; !ok {
+	if len(g.edges[id]) == 0 {
 		return graph.Empty
 	}
-
-	nodes := make([]graph.Node, len(g.edges[id]))
-	i := 0
-	for from := range g.edges[id] {
-		nodes[i] = g.nodes[from]
-		i++
-	}
-	if len(nodes) == 0 {
-		return graph.Empty
-	}
-	return iterator.NewOrderedNodes(nodes)
+	return iterator.NewNodesByWeightedEdge(g.nodes, g.edges[id])
 }
 
 // HasEdgeBetween returns whether an edge exists between nodes x and y.
@@ -142,17 +130,25 @@ func (g *WeightedUndirectedGraph) Node(id int64) graph.Node {
 }
 
 // Nodes returns all the nodes in the graph.
+//
+// The returned graph.Nodes is only valid until the next mutation of
+// the receiver.
 func (g *WeightedUndirectedGraph) Nodes() graph.Nodes {
 	if len(g.nodes) == 0 {
 		return graph.Empty
 	}
-	nodes := make([]graph.Node, len(g.nodes))
-	i := 0
-	for _, n := range g.nodes {
-		nodes[i] = n
-		i++
+	return iterator.NewNodes(g.nodes)
+}
+
+// NodeWithID returns a Node with the given ID if possible. If a graph.Node
+// is returned that is not already in the graph NodeWithID will return true
+// for new and the graph.Node must be added to the graph before use.
+func (g *WeightedUndirectedGraph) NodeWithID(id int64) (n graph.Node, new bool) {
+	n, ok := g.nodes[id]
+	if ok {
+		return n, false
 	}
-	return iterator.NewOrderedNodes(nodes)
+	return Node(id), true
 }
 
 // RemoveEdge removes the edge with the given end point IDs from the graph, leaving the terminal
@@ -260,16 +256,14 @@ func (g *WeightedUndirectedGraph) WeightedEdgeBetween(xid, yid int64) graph.Weig
 // WeightedEdges returns all the weighted edges in the graph.
 func (g *WeightedUndirectedGraph) WeightedEdges() graph.WeightedEdges {
 	var edges []graph.WeightedEdge
-	seen := make(map[[2]int64]struct{})
-	for _, u := range g.edges {
-		for _, e := range u {
-			uid := e.From().ID()
-			vid := e.To().ID()
-			if _, ok := seen[[2]int64{uid, vid}]; ok {
+	for xid, u := range g.edges {
+		for yid, e := range u {
+			if yid < xid {
+				// Do not consider lines when the To node ID is
+				// before the From node ID. Both orientations
+				// are stored.
 				continue
 			}
-			seen[[2]int64{uid, vid}] = struct{}{}
-			seen[[2]int64{vid, uid}] = struct{}{}
 			edges = append(edges, e)
 		}
 	}

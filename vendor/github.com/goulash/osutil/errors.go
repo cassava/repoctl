@@ -13,5 +13,5 @@ type FileTypeError struct {
 }
 
 func (e FileTypeError) Error() string {
-	return fmt.Sprintf("unexpected file type at %q")
+	return fmt.Sprintf("unexpected file type at %q", e.Filepath)
 }
