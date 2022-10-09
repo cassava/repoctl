@@ -50,7 +50,7 @@ func generateData(vs []string, filename string) {
 	buf := bufio.NewWriter(file)
 	for _, a := range vs {
 		for _, b := range vs {
-			cmd := exec.Command("/usr/bin/vercmp", a, b)
+			cmd := exec.Command("vercmp", a, b)
 			bs, err := cmd.Output()
 			if err != nil {
 				log.Println(err)

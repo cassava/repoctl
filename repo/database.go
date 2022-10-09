@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	SystemRepoAdd    = "/usr/bin/repo-add"
-	SystemRepoRemove = "/usr/bin/repo-remove"
+	SystemRepoAdd    = "repo-add"
+	SystemRepoRemove = "repo-remove"
 )
 
 // DeleteDatabase deletes the repository database (but not the files).
