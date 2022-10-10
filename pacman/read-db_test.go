@@ -16,6 +16,10 @@ import (
 )
 
 func TestReadLocalDatabase(z *testing.T) {
+	if _, err := exec.LookPath("pacman"); err != nil {
+		z.Skipf("pacman required for test, but not available: %s", err)
+	}
+
 	pkgs, err := ReadLocalDatabase(errs.Print(os.Stderr))
 	if err != nil {
 		z.Errorf("unexpected error: %s", err)
@@ -56,6 +60,10 @@ func TestReadLocalDatabase(z *testing.T) {
 }
 
 func TestReadAllSyncDatabases(z *testing.T) {
+	if _, err := exec.LookPath("pacman"); err != nil {
+		z.Skipf("pacman required for test, but not available: %s", err)
+	}
+
 	pkgs, err := ReadAllSyncDatabases()
 	if err != nil {
 		z.Errorf("unexpected error: %s", err)
