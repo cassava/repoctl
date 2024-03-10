@@ -103,6 +103,7 @@ type Package struct {
 	MakeDepends     []string  // makedepend
 	CheckDepends    []string  // checkdepend
 	MakeOptions     []string  // makepkgopt
+	Xdata           []string  // xdata
 }
 
 func (p *Package) Pkg() *Package            { return p }
@@ -185,6 +186,9 @@ func (p *Package) Equals(a *Package) bool {
 		return false
 	}
 	if !isequalset(p.MakeOptions, a.MakeOptions) {
+		return false
+	}
+	if !isequalset(p.Xdata, a.Xdata) {
 		return false
 	}
 

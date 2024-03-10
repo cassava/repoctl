@@ -113,6 +113,8 @@ func readFilePkgInfo(r io.Reader) (*Package, error) {
 			info.Conflicts = append(info.Conflicts, kv[1])
 		case "group":
 			info.Groups = append(info.Groups, kv[1])
+		case "xdata":
+			info.Xdata = append(info.Xdata, strings.Split(kv[1], " ")...)
 		default:
 			return nil, fmt.Errorf("unknown field '%s' in .PKGINFO", kv[0])
 		}
