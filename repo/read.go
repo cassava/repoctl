@@ -39,16 +39,18 @@ func (r *Repo) ReadDir(h errs.Handler) (pacman.Packages, error) {
 }
 
 // ReadNames returns all packages in the repository that match the given
-// names. If no names are given, all packages found are returned.
+// names. If no names are given, no packages are returned.
 func (r *Repo) ReadNames(h errs.Handler, pkgnames ...string) (pacman.Packages, error) {
 	errs.Init(&h)
-	if len(pkgnames) == 0 {
-		return r.ReadDir(h)
-	}
-
 	pkgs, err := pacman.ReadNames(h, r.Directory, pkgnames...)
 	r.MakeAbs(pkgs)
 	return pkgs, err
+}
+
+// ReadAllNames returns all packages in the repository.
+func (r *Repo) ReadAllNames(h errs.Handler) (pacman.Packages, error) {
+	errs.Init(&h)
+	return r.ReadDir(h)
 }
 
 // ReadMeta returns all meta packages in the repository that match the given
