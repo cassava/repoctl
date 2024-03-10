@@ -90,6 +90,9 @@ func (r *Repo) add(h errs.Handler, pkgfiles []string, ar func(string, string) er
 	}
 
 	pkgs, err := r.FindSimilar(h, added...)
+	if err != nil {
+		return err
+	}
 	return r.Dispatch(h, pu.Map(pkgs, pu.PkgFilename)...)
 }
 
