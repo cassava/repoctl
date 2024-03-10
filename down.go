@@ -111,7 +111,7 @@ var downCmd = &cobra.Command{
 		// First, populate the initial list of packages to download.
 		var list []string
 		if downAll {
-			names, err := Repo.ReadNames(nil)
+			names, err := Repo.ReadAllNames(nil)
 			if err != nil {
 				return err
 			}

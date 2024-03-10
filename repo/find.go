@@ -102,7 +102,7 @@ func (r *Repo) FindNewest(h errs.Handler, pkgnames ...string) (pacman.Packages, 
 	var pkgs pacman.Packages
 	var err error
 	if len(pkgnames) == 0 {
-		pkgs, err = r.ReadDir(h)
+		pkgs, err = r.ReadAllNames(h)
 	} else {
 		pkgs, err = r.ReadNames(h, pkgnames...)
 	}
