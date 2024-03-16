@@ -1,8 +1,16 @@
 Repoctl Releases
 ================
 
-## Version 0.22 (unreleased)
+## Version 0.22 (16 March 2024)
+This release is a maintenance release, fixing some long-standing issues
+and also keeping up-to-date with changes to Pacman and AUR.
 
+- Fix: support `xdata` field from pacman 6.1 (@intelfx).
+- Fix: error reading packages leading to all packages removed (@intelfx).
+- Fix: do not hardcode paths to `repo-add` and `repo-remove` (@JustTNE).
+- Fix: update to use new AUR endpoint (@potatoattack).
+- Fix: Remove outdated reference to `--backup` flag in help (@cyrinux).
+- Fix: verify packages before adding them to repository.
 - New: `add` command learned `--no-verify` flag to disable verification of
   packages prior to copying/moving them repository.
 - Fix: `add` command verifies packages by reading them before
