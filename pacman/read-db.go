@@ -278,7 +278,7 @@ func readDatabasePkgInfo(r io.Reader) (*Package, error) {
 		case "groups":
 			info.Groups = append(info.Groups, line)
 		case "xdata":
-			info.Xdata = append(info.Xdata, strings.Split(kv[1], " ")...)
+			info.Xdata = append(info.Xdata, strings.Split(line, " ")...)
 		case "isize", "md5sum", "pgpsig", "sha256sum":
 			// We ignore these fields for now...
 			continue
