@@ -91,8 +91,9 @@ Create a new commit with all the changes:
 
     But hold off on pushing.
 
- 8. In the main repository, push HEAD and tags:
+ 8. In the main repository, create a tag, then push HEAD and tags:
 
+        git tag -a vX.Y.Z -m "repoctl version X.Y.Z release"
         git push
         git push --tags
 

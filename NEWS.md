@@ -1,6 +1,10 @@
 Repoctl Releases
 ================
 
+## Version 0.22.1 (20 March 2024)
+This bugfix release resolves the missing `xdata` field support for
+package databases.
+
 ## Version 0.22 (16 March 2024)
 This release is a maintenance release, fixing some long-standing issues
 and also keeping up-to-date with changes to Pacman and AUR.
