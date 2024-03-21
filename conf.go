@@ -261,7 +261,7 @@ var confNewCmd = &cobra.Command{
 func newConfig(file, repo string) error {
 	dir := filepath.Dir(file)
 	if ex, _ := osutil.DirExists(dir); !ex {
-		term.Debugf("Creating directory structure", dir, "...")
+		term.Debugf("Creating directory structure", dir, "...\n")
 		err := os.MkdirAll(dir, os.ModePerm)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: %s.\n", err)

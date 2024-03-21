@@ -158,10 +158,10 @@ func downDependencies(packages []string) (aur.Packages, error) {
 	}
 	_, aps, ups := graph.Dependencies(g)
 	if downOrder != "" {
-		term.Debugf("Writing build-order to: %s", downOrder)
+		term.Debugf("Writing build-order to: %s\n", downOrder)
 		f, err := os.Create(downOrder)
 		if err != nil {
-			return nil, fmt.Errorf("cannot write build-order to %s: %w", downOrder, err)
+			return nil, fmt.Errorf("cannot write build-order to %s: %w\n", downOrder, err)
 		}
 
 		for i := len(aps); i != 0; i-- {

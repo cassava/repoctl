@@ -133,7 +133,7 @@ func configureTerm() {
 
 func exceptQuiet() {
 	if Conf.Quiet {
-		term.Debugf("Overriding quiet: doesn't make sense for this command.")
+		term.Debugf("Overriding quiet: doesn't make sense for this command.\n")
 	}
 	term.StdOut = os.Stdout
 }
