@@ -56,7 +56,11 @@ func Download(destdir string, extract bool, clobber bool, pkgnames []string) err
 // DownloadPackages downloads the given AUR packages, printing messages for each one.
 func DownloadPackages(pkgs aur.Packages, destdir string, extract bool, clobber bool) error {
 	for _, p := range pkgs {
-		term.Printf("Downloading: %s\n", p.Name)
+		pkgname := p.Name
+		if p.PackageBase != "" {
+			pkgname = p.PackageBase
+		}
+		term.Printf("Downloading: %s\n", pkgname)
 		download := DownloadTarballAUR
 		if extract {
 			download = DownloadExtractAUR
@@ -90,6 +94,7 @@ func DownloadExtractAUR(ap *aur.Package, destdir string, clobber bool) error {
 		}
 	}
 
+	term.Debugf("Fetching URL: %s\n", ap.DownloadURL())
 	response, err := http.Get(ap.DownloadURL())
 	if err != nil {
 		return err
@@ -115,7 +120,11 @@ func DownloadTarballAUR(ap *aur.Package, destdir string, clobber bool) error {
 	}
 
 	url := ap.DownloadURL()
-	of := ap.Name + ".tar.gz"
+	filename := ap.Name
+	if ap.PackageBase != "" {
+		filename = ap.PackageBase
+	}
+	of := filename + ".tar.gz"
 
 	// Make sure we don't clobber anything.
 	if !clobber {
@@ -124,10 +133,12 @@ func DownloadTarballAUR(ap *aur.Package, destdir string, clobber bool) error {
 			return err
 		}
 		if ex {
+			term.Debugf("Skipping download: package file already exists: %s\n", of)
 			return ErrPkgFileExists
 		}
 	}
 
+	term.Debugf("Fetching URL: %s\n", url)
 	response, err := http.Get(url)
 	if err != nil {
 		return err

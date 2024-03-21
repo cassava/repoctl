@@ -205,7 +205,26 @@ func (p *Package) PkgMakeDepends() []string { return p.MakeDepends }
 
 // DownloadURL returns the URL for downloading the PKGBUILD tarball.
 func (p *Package) DownloadURL() string {
-	return fmt.Sprintf("https://aur.archlinux.org%s", p.URLPath)
+	urlPath := p.URLPath
+	if p.PackageBase != p.Name {
+		urlPath = p.downloadURLWithName(p.PackageBase)
+	}
+	return fmt.Sprintf("https://aur.archlinux.org%s", urlPath)
+}
+
+func (p *Package) downloadURLWithName(baseName string) string {
+	fromIdx := strings.LastIndex(p.URLPath, "/")
+	if fromIdx == -1 {
+		panic(fmt.Sprintf("expect package URLPath to contain '/', got %q", p.URLPath))
+	}
+
+	filename := p.URLPath[fromIdx+1:]
+	toIdx := strings.Index(filename, ".")
+	if toIdx == -1 {
+		panic(fmt.Sprintf("expect package URLPath to contain '.' in package name, got %q", p.URLPath))
+	}
+
+	return p.URLPath[:fromIdx+1] + baseName + filename[toIdx:]
 }
 
 const (

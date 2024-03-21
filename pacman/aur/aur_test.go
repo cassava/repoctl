@@ -220,3 +220,14 @@ func TestDownloadURL(z *testing.T) {
 		z.Errorf("download url incorrect: %s", i.DownloadURL())
 	}
 }
+
+func TestDownloadURLWithBaseName(z *testing.T) {
+	i, err := Read("transgui-qt")
+	if err != nil {
+		z.Errorf("unexpected error: %s", err)
+		z.FailNow()
+	}
+	if i.DownloadURL() != "https://aur.archlinux.org/cgit/aur.git/snapshot/transgui.tar.gz" {
+		z.Errorf("download url incorrect: %s", i.DownloadURL())
+	}
+}
