@@ -224,21 +224,24 @@ infof "Commit changes ($package_dir)"
 # Step 7:
 infof "Create new tag"
 git tag -a v${release_version} -m "repoctl version ${release_version} release"
-echo "Unpushed commits:\n"
+printf "Unpushed commits:\n\n"
 git log --oneline --color=always origin/$main_branch..$main_branch | sed -r 's/^/\t/'
 echo
 confirm "Push $main_branch branch?" || exit 2
 git push
 confirm "Push v${release_version} tag?" || exit 2
-git push origin v${release_version}
+git push origin "v${release_version}"
 
 # Step 8:
 infof "Create new Github release"
-echo "Remember to:"
-echo " - include release notes from NEWS.md"
-echo " - upload the archive from $package_dir"
+echo "-> Copying release notes"
+sed -n "/^## Version ${release_version}/,/^##/ { /^##/b; p }" | wl-copy
 echo
-countdown "-> Launching browser" 1
+echo "Remember to:"
+echo " - include release notes from NEWS.md (copied already)"
+echo " - upload the release archive (from $package_dir)"
+echo
+countdown "-> Launching browser" 3
 xdg-open "$github_url/releases/new"
 confirm "Is the release ready?"
 
