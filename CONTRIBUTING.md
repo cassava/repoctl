@@ -49,7 +49,7 @@ Create a new commit with all the changes:
 
     However, do not push this yet. The working directory should be clean.
 
- 6. Create an archive for testing.
+ 5. Create an archive for testing.
 
         git archive --prefix=repoctl-X.Y.Z/ -o ../repoctl.aur/repoctl-X.Y.Z.tar.gz HEAD
 
@@ -58,7 +58,7 @@ Create a new commit with all the changes:
     If you have the rights for pushing to this, then good, otherwise you
     will need to contact the owner of that package on AUR.
 
- 7. In the AUR directory, you need to update the `PKGBUILD` file, in particular
+ 6. In the AUR directory, you need to update the `PKGBUILD` file, in particular
     for the new version:
 
     - version (set to X.Y.Z)
@@ -91,19 +91,19 @@ Create a new commit with all the changes:
 
     But hold off on pushing.
 
- 8. In the main repository, create a tag, then push HEAD and tags:
+ 7. In the main repository, create a tag, then push HEAD and tags:
 
         git tag -a vX.Y.Z -m "repoctl version X.Y.Z release"
         git push
         git push --tags
 
- 9. In the Github Releases page, draft a new release.
+ 8. In the Github Releases page, draft a new release.
 
     - Copy the notes from `NEWS.md` into the description.
     - Upload the source archive that we created in step 6.
     - Create the release.
 
-10. Back in the AUR repository for repoctl, clean the working tree and
+ 9. Back in the AUR repository for repoctl, clean the working tree and
     ensure that everything can be built cleanly from scratch:
 
         git clean -xdf
